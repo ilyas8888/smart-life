@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -119,6 +120,12 @@ public class AiService {
                     .mealType((String) f.getOrDefault("meal_type", null))
                     .foodItem((String) f.get("food_item"))
                     .calories(parseInteger(f.get("calories")))
+                    .proteinG(parseBigDecimal(f.get("protein_g")))
+                    .carbsG(parseBigDecimal(f.get("carbs_g")))
+                    .fatG(parseBigDecimal(f.get("fat_g")))
+                    .fiberG(parseBigDecimal(f.get("fiber_g")))
+                    .quantity((String) f.getOrDefault("quantity", null))
+                    .nutritionDetails((Map<String, Object>) f.getOrDefault("nutrition_details", null))
                     .notes((String) f.getOrDefault("notes", null))
                     .build();
             foodLogRepository.save(foodLog);
@@ -163,6 +170,13 @@ public class AiService {
         if (value == null) return null;
         if (value instanceof Number number) return number.intValue();
         try { return Integer.parseInt(value.toString()); }
+        catch (Exception e) { return null; }
+    }
+
+    private BigDecimal parseBigDecimal(Object value) {
+        if (value == null) return null;
+        if (value instanceof Number number) return BigDecimal.valueOf(number.doubleValue());
+        try { return new BigDecimal(value.toString()); }
         catch (Exception e) { return null; }
     }
 }

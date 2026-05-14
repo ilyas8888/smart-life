@@ -1,5 +1,6 @@
 package com.smartlife.controller;
 
+import com.smartlife.dto.NutritionSummaryDto;
 import com.smartlife.model.FoodLog;
 import com.smartlife.model.User;
 import com.smartlife.repository.FoodLogRepository;
@@ -8,8 +9,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/food-logs")
@@ -26,6 +29,23 @@ public class FoodLogController {
     @GetMapping("/today")
     public List<FoodLog> getTodayFoodLogs(@AuthenticationPrincipal User user) {
         return foodLogRepository.findByUserIdAndLogDate(user.getId(), LocalDate.now());
+    }
+
+    @GetMapping("/summary/today")
+    public NutritionSummaryDto getTodaySummary(@AuthenticationPrincipal User user) {
+        var logs = foodLogRepository.findByUserIdAndLogDate(user.getId(), LocalDate.now());
+        var summary = new NutritionSummaryDto();
+        summary.setTotalCalories(logs.stream().map(l -> l.getCalories() != null ? BigDecimal.valueOf(l.getCalories()) : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
+        summary.setTotalProteinG(logs.stream().map(l -> l.getProteinG() != null ? l.getProteinG() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
+        summary.setTotalCarbsG(logs.stream().map(l -> l.getCarbsG() != null ? l.getCarbsG() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
+        summary.setTotalFatG(logs.stream().map(l -> l.getFatG() != null ? l.getFatG() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
+        summary.setTotalFiberG(logs.stream().map(l -> l.getFiberG() != null ? l.getFiberG() : BigDecimal.ZERO).reduce(BigDecimal.ZERO, BigDecimal::add));
+        summary.setMealCount(logs.size());
+        summary.setMeals(logs.stream().map(l -> Map.<String,Object>of("foodItem", l.getFoodItem(), "mealType",
+                l.getMealType() != null ? l.getMealType() : "", "calories", l.getCalories() != null ? l.getCalories() : 0,
+                "proteinG", l.getProteinG() != null ? l.getProteinG() : 0, "carbsG", l.getCarbsG() != null ? l.getCarbsG() : 0,
+                "fatG", l.getFatG() != null ? l.getFatG() : 0)).toList());
+        return summary;
     }
 
     @DeleteMapping("/{id}")
