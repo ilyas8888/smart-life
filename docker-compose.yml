@@ -1,0 +1,61 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: smartlife-db
+    environment:
+      POSTGRES_DB: smartlife
+      POSTGRES_USER: smartlife_user
+      POSTGRES_PASSWORD: smartlife_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - smartlife-network
+
+  backend:
+    build: ./backend
+    container_name: smartlife-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/smartlife
+      SPRING_DATASOURCE_USERNAME: smartlife_user
+      SPRING_DATASOURCE_PASSWORD: smartlife_pass
+      AI_SERVICE_URL: http://ai-service:8001
+      JWT_SECRET: smartlife-jwt-secret-key-2024-change-in-prod
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - ai-service
+    networks:
+      - smartlife-network
+
+  ai-service:
+    build: ./ai-service
+    container_name: smartlife-ai
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    ports:
+      - "8001:8001"
+    networks:
+      - smartlife-network
+
+  frontend:
+    build: ./frontend
+    container_name: smartlife-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - smartlife-network
+
+networks:
+  smartlife-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
