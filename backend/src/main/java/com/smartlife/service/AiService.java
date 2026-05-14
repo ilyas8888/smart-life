@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -23,6 +24,7 @@ public class AiService {
     private final ReminderRepository reminderRepository;
     private final NoteRepository noteRepository;
     private final ContactRepository contactRepository;
+    private final FoodLogRepository foodLogRepository;
     private final DiaryEntryRepository diaryEntryRepository;
     private final PromptHistoryRepository promptHistoryRepository;
 
@@ -52,6 +54,7 @@ public class AiService {
         List<Map<String, Object>> remindersCreated = new ArrayList<>();
         List<Map<String, Object>> notesCreated = new ArrayList<>();
         List<Map<String, Object>> contactsCreated = new ArrayList<>();
+        List<Map<String, Object>> foodLogsCreated = new ArrayList<>();
 
         // Persist tasks
         var tasks = (List<Map<String, Object>>) aiResult.getOrDefault("tasks", List.of());
@@ -107,6 +110,21 @@ public class AiService {
             contactsCreated.add(Map.of("id", contact.getId(), "name", contact.getName()));
         }
 
+        // Persist food logs
+        var foodLogs = (List<Map<String, Object>>) aiResult.getOrDefault("food_logs", List.of());
+        for (var f : foodLogs) {
+            var foodLog = FoodLog.builder()
+                    .user(user)
+                    .logDate(LocalDate.now())
+                    .mealType((String) f.getOrDefault("meal_type", null))
+                    .foodItem((String) f.get("food_item"))
+                    .calories(parseInteger(f.get("calories")))
+                    .notes((String) f.getOrDefault("notes", null))
+                    .build();
+            foodLogRepository.save(foodLog);
+            foodLogsCreated.add(Map.of("id", foodLog.getId(), "foodItem", foodLog.getFoodItem()));
+        }
+
         response.setTasksCreated(tasksCreated);
         response.setRemindersCreated(remindersCreated);
         response.setNotesCreated(notesCreated);
@@ -121,7 +139,8 @@ public class AiService {
                         "tasks", tasksCreated.size(),
                         "reminders", remindersCreated.size(),
                         "notes", notesCreated.size(),
-                        "contacts", contactsCreated.size()
+                        "contacts", contactsCreated.size(),
+                        "food_logs", foodLogsCreated.size()
                 ))
                 .build();
         promptHistoryRepository.save(history);
@@ -138,5 +157,12 @@ public class AiService {
         if (s == null || s.isBlank()) return LocalDateTime.now().plusHours(1);
         try { return LocalDateTime.parse(s); }
         catch (Exception e) { return LocalDateTime.now().plusHours(1); }
+    }
+
+    private Integer parseInteger(Object value) {
+        if (value == null) return null;
+        if (value instanceof Number number) return number.intValue();
+        try { return Integer.parseInt(value.toString()); }
+        catch (Exception e) { return null; }
     }
 }

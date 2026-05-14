@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Brain, CheckSquare, Bell, FileText, Users, LogOut,
-  Send, Sparkles, ChevronRight, Loader2
+  Send, Sparkles, ChevronRight, Loader2, UtensilsCrossed
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
@@ -11,8 +11,9 @@ import TasksPanel from '../components/TasksPanel'
 import RemindersPanel from '../components/RemindersPanel'
 import NotesPanel from '../components/NotesPanel'
 import ContactsPanel from '../components/ContactsPanel'
+import FoodLogsPanel from '../components/FoodLogsPanel'
 
-type Panel = 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts'
+type Panel = 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food'
 
 export default function DashboardPage() {
   const { firstName, lastName, email, logout } = useAuthStore()
@@ -38,6 +39,7 @@ export default function DashboardPage() {
     { id: 'reminders' as Panel, label: 'Rappels', icon: Bell },
     { id: 'notes' as Panel, label: 'Notes', icon: FileText },
     { id: 'contacts' as Panel, label: 'Contacts', icon: Users },
+    { id: 'food' as Panel, label: 'Alimentation', icon: UtensilsCrossed },
   ]
 
   const handleSend = (e: React.FormEvent) => {
@@ -184,6 +186,7 @@ export default function DashboardPage() {
           {activePanel === 'reminders' && <RemindersPanel />}
           {activePanel === 'notes' && <NotesPanel />}
           {activePanel === 'contacts' && <ContactsPanel />}
+          {activePanel === 'food' && <FoodLogsPanel />}
         </div>
       </main>
     </div>
