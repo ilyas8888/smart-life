@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Brain, CheckSquare, Bell, FileText, Users, LogOut,
-  Send, Sparkles, ChevronRight, Loader2, UtensilsCrossed
+  Send, Sparkles, ChevronRight, Loader2, UtensilsCrossed, CalendarDays
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
@@ -12,12 +12,13 @@ import RemindersPanel from '../components/RemindersPanel'
 import NotesPanel from '../components/NotesPanel'
 import ContactsPanel from '../components/ContactsPanel'
 import FoodLogsPanel from '../components/FoodLogsPanel'
+import AgendaPage from './AgendaPage'
 
-type Panel = 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food'
+type Panel = 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food'
 
 export default function DashboardPage() {
   const { firstName, lastName, email, logout } = useAuthStore()
-  const [activePanel, setActivePanel] = useState<Panel>('prompt')
+  const [activePanel, setActivePanel] = useState<Panel>('agenda')
   const [prompt, setPrompt] = useState('')
   const queryClient = useQueryClient()
 
@@ -34,6 +35,7 @@ export default function DashboardPage() {
   const displayName = firstName ? `${firstName} ${lastName ?? ''}`.trim() : email
 
   const navItems = [
+    { id: 'agenda' as Panel, label: 'Agenda', icon: CalendarDays },
     { id: 'prompt' as Panel, label: 'Prompt IA', icon: Brain },
     { id: 'tasks' as Panel, label: 'Tâches', icon: CheckSquare },
     { id: 'reminders' as Panel, label: 'Rappels', icon: Bell },
@@ -50,11 +52,10 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-gray-900 text-white flex flex-col">
+      <aside className="w-64 bg-slate-900 text-white flex flex-col border-r border-slate-700">
         <div className="p-5 border-b border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="p-1.5 bg-primary-600 rounded-lg">
+            <div className="p-1.5 bg-gradient-to-br from-blue-500 to-violet-600 rounded-lg">
               <Brain size={20} />
             </div>
             <span className="font-bold text-lg">SmartLife</span>
@@ -68,7 +69,7 @@ export default function DashboardPage() {
               onClick={() => setActivePanel(id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 activePanel === id
-                  ? 'bg-primary-600 text-white'
+                  ? 'bg-slate-700 text-white'
                   : 'text-gray-400 hover:bg-gray-800 hover:text-white'
               }`}
             >
@@ -97,10 +98,8 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white border-b border-gray-100 px-6 py-4">
+        <header className="shadow-none border-b border-gray-100 bg-white/80 backdrop-blur-sm px-6 py-4">
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <span>SmartLife</span>
             <ChevronRight size={14} />
@@ -110,8 +109,9 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {/* Panel content */}
         <div className="flex-1 overflow-auto p-6">
+          {activePanel === 'agenda' && <AgendaPage onNavigate={setActivePanel} />}
+
           {activePanel === 'prompt' && (
             <div className="max-w-2xl mx-auto">
               <div className="text-center mb-8">
@@ -130,7 +130,7 @@ export default function DashboardPage() {
               <form onSubmit={handleSend} className="card">
                 <textarea
                   className="w-full resize-none border-0 outline-none text-gray-900 placeholder-gray-400 text-base leading-relaxed min-h-[180px]"
-                  placeholder={`Exemples:\n• "J'ai une réunion avec Ahmed demain à 14h, son numéro c'est le 0555123456"\n• "Rappelle-moi d'appeler le médecin jeudi matin"\n• "J'ai mangé une pizza à midi, j'ai couru 5km ce soir"\n• "Je dois finir le rapport avant vendredi, priorité haute"`}
+                  placeholder={`Exemples:\n- "J'ai une réunion avec Ahmed demain à 14h, son numéro c'est le 0555123456"\n- "Rappelle-moi d'appeler le médecin jeudi matin"\n- "J'ai mangé une pizza à midi, j'ai couru 5km ce soir"\n- "Je dois finir le rapport avant vendredi, priorité haute"`}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   disabled={promptMutation.isPending}
@@ -170,7 +170,7 @@ export default function DashboardPage() {
                           <p className="font-medium text-gray-700">{label} ({items.length})</p>
                           {items.map((item: Record<string, unknown>, i: number) => (
                             <p key={i} className="text-gray-500 text-xs truncate">
-                              • {String(item.title ?? item.name ?? '')}
+                              - {String(item.title ?? item.name ?? '')}
                             </p>
                           ))}
                         </div>

@@ -21,6 +21,8 @@ const priorityColors = {
   HIGH: 'bg-red-100 text-red-700',
 }
 
+const priorityFr = { LOW: 'Basse', MEDIUM: 'Moyenne', HIGH: 'Haute' }
+
 export default function TasksPanel() {
   const qc = useQueryClient()
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
@@ -51,7 +53,7 @@ export default function TasksPanel() {
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityColors[task.priority]}`}>
-              {task.priority}
+              {priorityFr[task.priority]}
             </span>
           </div>
           <p className={`font-medium ${task.status === 'DONE' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
