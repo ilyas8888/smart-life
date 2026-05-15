@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronUp, Dumbbell, Flame, Trash2, UtensilsCrossed } from 'lucide-react'
 import { format } from 'date-fns'
@@ -22,16 +22,6 @@ interface FoodLog {
   loggedAt: string
 }
 
-interface NutritionSummary {
-  totalCalories: number | string | null
-  totalProteinG: number | string | null
-  totalCarbsG: number | string | null
-  totalFatG: number | string | null
-  totalFiberG: number | string | null
-  mealCount: number
-  meals: Record<string, unknown>[]
-}
-
 const dailyGoals = {
   calories: 2000,
   proteinG: 50,
@@ -40,18 +30,20 @@ const dailyGoals = {
   fiberG: 25,
 }
 
-const mealColors: Record<string, string> = {
-  BREAKFAST: 'bg-yellow-100 text-yellow-700',
-  LUNCH: 'bg-green-100 text-green-700',
-  DINNER: 'bg-blue-100 text-blue-700',
-  SNACK: 'bg-gray-100 text-gray-700',
-}
+const mealOrder = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK']
 
 const mealLabels: Record<string, string> = {
-  BREAKFAST: 'Petit-dejeuner',
-  LUNCH: 'Dejeuner',
-  DINNER: 'Diner',
+  BREAKFAST: 'Petit-déjeuner',
+  LUNCH: 'Déjeuner',
+  DINNER: 'Dîner',
   SNACK: 'Snack',
+}
+
+const mealDots: Record<string, string> = {
+  BREAKFAST: 'bg-yellow-400',
+  LUNCH: 'bg-green-500',
+  DINNER: 'bg-blue-500',
+  SNACK: 'bg-gray-400',
 }
 
 const toNumber = (value: number | string | null | undefined) => {
@@ -69,6 +61,28 @@ const progressColor = (percent: number) => {
   if (percent > 100) return 'bg-red-500'
   if (percent >= 80) return 'bg-yellow-500'
   return 'bg-green-500'
+}
+
+const todayString = () => new Date().toISOString().split('T')[0]
+
+const yesterdayString = () => {
+  const date = new Date()
+  date.setDate(date.getDate() - 1)
+  return date.toISOString().split('T')[0]
+}
+
+function dayLabel(date: string) {
+  if (date === todayString()) return "Aujourd'hui"
+  if (date === yesterdayString()) return 'Hier'
+  return format(new Date(`${date}T00:00:00`), 'dd MMM', { locale: fr })
+}
+
+function hasDetails(details: FoodLog['nutritionDetails']) {
+  return Object.entries(details ?? {}).filter(([, value]) => value !== null && value !== '').length > 0
+}
+
+function detailsEntries(details: FoodLog['nutritionDetails']) {
+  return Object.entries(details ?? {}).filter(([, value]) => value !== null && value !== '')
 }
 
 function MacroCard({
@@ -108,55 +122,107 @@ function MacroCard({
   )
 }
 
+function FoodLogRow({
+  log,
+  onDelete,
+}: {
+  log: FoodLog
+  onDelete: (id: number) => void
+}) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const details = detailsEntries(log.nutritionDetails)
+
+  return (
+    <div className="py-2.5 border-b border-gray-50 last:border-0">
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900 truncate">{log.foodItem}</p>
+          {log.quantity && <p className="text-xs text-gray-400 mt-0.5">{log.quantity}</p>}
+          {log.notes && <p className="text-xs text-gray-400 mt-1 truncate">{log.notes}</p>}
+          {hasDetails(log.nutritionDetails) && (
+            <button
+              type="button"
+              onClick={() => setIsExpanded((current) => !current)}
+              className="mt-2 flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              Détails
+              {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+          )}
+        </div>
+
+        <div className="shrink-0 text-right">
+          <p className="text-sm font-semibold text-gray-700">{Math.round(toNumber(log.calories))} kcal</p>
+          <p className="text-xs text-gray-400">
+            P: {formatValue(toNumber(log.proteinG))} · G: {formatValue(toNumber(log.carbsG))} · L: {formatValue(toNumber(log.fatG))}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onDelete(log.id)}
+          className="shrink-0 p-1 text-gray-300 hover:text-red-400 transition-colors"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+
+      {isExpanded && details.length > 0 && (
+        <div className="grid grid-cols-2 gap-1 mt-2 pt-2 border-t border-gray-50">
+          {details.map(([key, value]) => (
+            <div key={key} className="text-xs text-gray-500">
+              <span className="font-medium text-gray-600">{key.replace(/_/g, ' ')}</span>
+              <span className="text-gray-400"> : {String(value)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function FoodLogsPanel() {
   const qc = useQueryClient()
-  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
+  const [selectedDate, setSelectedDate] = useState(todayString())
 
-  const { data: foodLogs = [], isLoading: isLoadingLogs } = useQuery<FoodLog[]>({
+  const { data: foodLogs = [], isLoading } = useQuery<FoodLog[]>({
     queryKey: ['food-logs'],
     queryFn: () => api.get('/food-logs').then((r) => r.data),
-  })
-
-  const { data: summary, isLoading: isLoadingSummary } = useQuery<NutritionSummary>({
-    queryKey: ['nutrition-summary'],
-    queryFn: () => api.get('/food-logs/summary/today').then((r) => r.data),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/food-logs/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['food-logs'] })
-      qc.invalidateQueries({ queryKey: ['nutrition-summary'] })
-      toast.success('Repas supprime')
+      qc.invalidateQueries({ queryKey: ['timeline'] })
+      toast.success('Repas supprimé')
     },
   })
 
-  const groupedLogs = useMemo(() => {
-    return foodLogs.reduce<Record<string, FoodLog[]>>((groups, log) => {
-      groups[log.logDate] = groups[log.logDate] ?? []
-      groups[log.logDate].push(log)
-      return groups
-    }, {})
+  const dates = useMemo(() => {
+    return Array.from(new Set(foodLogs.map((log) => log.logDate))).sort((a, b) => b.localeCompare(a))
   }, [foodLogs])
 
-  const toggleExpanded = (id: number) => {
-    setExpandedIds((current) => {
-      const next = new Set(current)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+  useEffect(() => {
+    if (dates.length === 0) return
+    if (dates.includes(selectedDate)) return
+    setSelectedDate(dates.includes(todayString()) ? todayString() : dates[0])
+  }, [dates, selectedDate])
 
-  if (isLoadingLogs || isLoadingSummary) {
+  const selectedLogs = useMemo(() => {
+    return foodLogs.filter((log) => log.logDate === selectedDate)
+  }, [foodLogs, selectedDate])
+
+  const calories = selectedLogs.reduce((sum, log) => sum + toNumber(log.calories), 0)
+  const proteinG = selectedLogs.reduce((sum, log) => sum + toNumber(log.proteinG), 0)
+  const carbsG = selectedLogs.reduce((sum, log) => sum + toNumber(log.carbsG), 0)
+  const fatG = selectedLogs.reduce((sum, log) => sum + toNumber(log.fatG), 0)
+  const fiberG = selectedLogs.reduce((sum, log) => sum + toNumber(log.fiberG), 0)
+  const fiberPercent = dailyGoals.fiberG > 0 ? (fiberG / dailyGoals.fiberG) * 100 : 0
+
+  if (isLoading) {
     return <div className="text-center py-12 text-gray-400">Chargement...</div>
   }
-
-  const calories = toNumber(summary?.totalCalories)
-  const proteinG = toNumber(summary?.totalProteinG)
-  const carbsG = toNumber(summary?.totalCarbsG)
-  const fatG = toNumber(summary?.totalFatG)
-  const fiberG = toNumber(summary?.totalFiberG)
 
   return (
     <div>
@@ -165,106 +231,85 @@ export default function FoodLogsPanel() {
         Alimentation ({foodLogs.length})
       </h2>
 
-      <div className="mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <MacroCard label="Calories" value={calories} goal={dailyGoals.calories} unit="kcal" icon={Flame} />
-          <MacroCard label="Proteines" value={proteinG} goal={dailyGoals.proteinG} unit="g" icon={Dumbbell} />
-          <MacroCard label="Glucides" value={carbsG} goal={dailyGoals.carbsG} unit="g" icon={UtensilsCrossed} />
-          <MacroCard label="Lipides" value={fatG} goal={dailyGoals.fatG} unit="g" icon={UtensilsCrossed} />
-        </div>
-        <div className="card mt-4 max-w-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-gray-500">Fibres</p>
-            <p className="text-sm font-semibold text-gray-900">
-              {formatValue(fiberG)} / {dailyGoals.fiberG}g
-            </p>
-          </div>
-          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full ${progressColor((fiberG / dailyGoals.fiberG) * 100)}`}
-              style={{ width: `${Math.min((fiberG / dailyGoals.fiberG) * 100, 100)}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
       {foodLogs.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
           <UtensilsCrossed size={40} className="mx-auto mb-3 opacity-30" />
-          <p>Aucun repas enregistre. Utilisez le prompt IA pour ajouter votre alimentation.</p>
+          <p>Aucun repas enregistré. Utilisez le prompt IA pour ajouter votre alimentation.</p>
         </div>
       ) : (
-        <div className="space-y-6 max-w-5xl">
-          {Object.entries(groupedLogs).map(([date, logs]) => (
-            <section key={date}>
-              <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wide">
-                {format(new Date(date), 'dd MMM yyyy', { locale: fr })} ({logs.length})
-              </h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {logs.map((log) => {
-                  const mealType = log.mealType ?? 'SNACK'
-                  const details = Object.entries(log.nutritionDetails ?? {}).filter(([, value]) => value !== null && value !== '')
-                  const expanded = expandedIds.has(log.id)
+        <>
+          <div className="overflow-x-auto flex gap-2 mb-6">
+            {dates.map((date) => (
+              <button
+                key={date}
+                type="button"
+                onClick={() => setSelectedDate(date)}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+                  selectedDate === date
+                    ? 'bg-slate-800 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {dayLabel(date)}
+              </button>
+            ))}
+          </div>
 
-                  return (
-                    <div key={log.id} className="card">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-2">
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${mealColors[mealType] ?? mealColors.SNACK}`}>
-                              {mealLabels[mealType] ?? mealType}
-                            </span>
-                          </div>
+          <div className="mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <MacroCard label="Calories" value={calories} goal={dailyGoals.calories} unit="kcal" icon={Flame} />
+              <MacroCard label="Protéines" value={proteinG} goal={dailyGoals.proteinG} unit="g" icon={Dumbbell} />
+              <MacroCard label="Glucides" value={carbsG} goal={dailyGoals.carbsG} unit="g" icon={UtensilsCrossed} />
+              <MacroCard label="Lipides" value={fatG} goal={dailyGoals.fatG} unit="g" icon={UtensilsCrossed} />
+            </div>
 
-                          <p className="font-semibold text-gray-900">{log.foodItem}</p>
-                          {log.quantity && <p className="text-sm text-gray-500 mt-0.5">{log.quantity}</p>}
-                          {log.notes && <p className="text-sm text-gray-500 mt-2">{log.notes}</p>}
-
-                          <div className="flex flex-wrap gap-2 mt-3">
-                            <span className="text-xs bg-red-50 text-red-600 px-2 py-1 rounded-full">{log.calories ?? 0}cal</span>
-                            <span className="text-xs bg-green-50 text-green-700 px-2 py-1 rounded-full">{formatValue(log.proteinG ?? 0)} prot</span>
-                            <span className="text-xs bg-yellow-50 text-yellow-700 px-2 py-1 rounded-full">{formatValue(log.carbsG ?? 0)} gluc</span>
-                            <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">{formatValue(log.fatG ?? 0)} lip</span>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => deleteMutation.mutate(log.id)}
-                          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-
-                      {details.length > 0 && (
-                        <div className="mt-4 pt-3 border-t border-gray-100">
-                          <button
-                            onClick={() => toggleExpanded(log.id)}
-                            className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-                          >
-                            Details nutritionnels
-                            {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                          </button>
-
-                          {expanded && (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
-                              {details.map(([key, value]) => (
-                                <div key={key} className="bg-gray-50 text-gray-600 rounded-lg px-2 py-1.5">
-                                  <p className="text-xs font-medium capitalize">{key.replace(/_/g, ' ')}</p>
-                                  <p className="text-xs text-gray-400">{String(value)}</p>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
+            <div className="card mt-4 max-w-sm">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-medium text-gray-500">Fibres</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {formatValue(fiberG)} / {dailyGoals.fiberG}g
+                </p>
               </div>
-            </section>
-          ))}
-        </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${progressColor(fiberPercent)}`}
+                  style={{ width: `${Math.min(fiberPercent, 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="max-w-4xl">
+            {mealOrder.map((mealType) => {
+              const logs = selectedLogs.filter((log) => (log.mealType ?? 'SNACK') === mealType)
+              if (logs.length === 0) return null
+
+              const totalCalories = logs.reduce((sum, log) => sum + toNumber(log.calories), 0)
+
+              return (
+                <section key={mealType} className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${mealDots[mealType]}`} />
+                      {mealLabels[mealType]}
+                    </h3>
+                    <span className="text-xs text-gray-400">{Math.round(totalCalories)} kcal</span>
+                  </div>
+
+                  <div>
+                    {logs.map((log) => (
+                      <FoodLogRow
+                        key={log.id}
+                        log={log}
+                        onDelete={(id) => deleteMutation.mutate(id)}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
+        </>
       )}
     </div>
   )
