@@ -33,19 +33,21 @@ public class AuthService {
     private final AuditLogService auditLogService;
     private final OtpService otpService;
 
-    public AuthResponse register(RegisterRequest request, String ip) {
+    public Object register(RegisterRequest request, String ip) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email déjà utilisé");
+            throw new IllegalArgumentException("Email deja utilise");
         }
         var user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
+                .emailVerified(false)
                 .build();
         userRepository.save(user);
         auditLogService.log(user.getId(), "REGISTER", "USER", user.getId(), ip);
-        return authResponse(user);
+        otpService.generateAndSend(user);
+        return Map.of("step", "OTP_REQUIRED", "userId", user.getId());
     }
 
     public Object login(AuthRequest request, String ip) {
@@ -54,27 +56,24 @@ public class AuthService {
         );
         var user = userRepository.findByEmail(request.getEmail()).orElseThrow();
         auditLogService.log(user.getId(), "LOGIN", "USER", user.getId(), ip);
-
-        if (otpService.isEnabled()) {
-            otpService.generateAndSend(user);
-            return Map.of("step", "OTP_REQUIRED", "userId", user.getId());
-        }
         return authResponse(user);
     }
 
     public AuthResponse verifyOtp(Long userId, String code, String ip) {
         var user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouve"));
         otpService.verify(userId, code);
+        user.setEmailVerified(true);
+        userRepository.save(user);
         auditLogService.log(userId, "OTP_VERIFIED", "USER", userId, ip);
         return authResponse(user);
     }
 
     public Map<String, String> refresh(String refreshToken) {
         var token = refreshTokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new RuntimeException("Refresh token invalide ou expiré"));
+                .orElseThrow(() -> new RuntimeException("Refresh token invalide ou expire"));
         if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Refresh token invalide ou expiré");
+            throw new RuntimeException("Refresh token invalide ou expire");
         }
         return Map.of("accessToken", jwtService.generateToken(token.getUser()));
     }

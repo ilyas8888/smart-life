@@ -42,7 +42,7 @@ public class OtpService {
                 .expiresAt(LocalDateTime.now().plusMinutes(10))
                 .build());
 
-        if (otpEnabled && mailSender != null && !fromEmail.isBlank()) {
+        if (mailSender != null && !fromEmail.isBlank()) {
             try {
                 SimpleMailMessage msg = new SimpleMailMessage();
                 msg.setTo(user.getEmail());

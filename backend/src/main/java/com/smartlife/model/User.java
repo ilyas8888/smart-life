@@ -32,6 +32,14 @@ public class User implements UserDetails {
     private String firstName;
     private String lastName;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private String provider = "LOCAL";
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean emailVerified = false;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
