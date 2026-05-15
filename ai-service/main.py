@@ -24,6 +24,7 @@ client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 class PromptPayload(BaseModel):
     prompt: str
     user_id: int
+    cached_foods: list[dict] | None = None
 
 
 SYSTEM_PROMPT = """Tu es un assistant intelligent de gestion personnelle ET un expert en nutrition.
@@ -76,7 +77,18 @@ Règles nutrition:
 @app.post("/process")
 async def process_prompt(payload: PromptPayload):
     now = datetime.now().isoformat()
-    user_message = f"[Date actuelle: {now}]\n\nTexte de l'utilisateur:\n{payload.prompt}"
+    user_content = payload.prompt
+    if payload.cached_foods:
+        cache_lines = "\n".join(
+            f"- {food.get('name')}: {food.get('calories')}kcal, P:{food.get('protein_g')}g, G:{food.get('carbs_g')}g, L:{food.get('fat_g')}g, Fibres:{food.get('fiber_g')}g"
+            for food in payload.cached_foods
+        )
+        user_content = (
+            "[DONNÉES NUTRITIONNELLES DÉJÀ CONNUES — utilise ces valeurs exactes si l'aliment correspond, ne recalcule pas]\n"
+            f"{cache_lines}\n\n"
+            f"[PROMPT UTILISATEUR]\n{payload.prompt}"
+        )
+    user_message = f"[Date actuelle: {now}]\n\nTexte de l'utilisateur:\n{user_content}"
 
     try:
         message = client.messages.create(
@@ -88,6 +100,7 @@ async def process_prompt(payload: PromptPayload):
                 "cache_control": {"type": "ephemeral"},
             }],
             messages=[{"role": "user", "content": user_message}],
+            extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
         )
 
         raw_text = message.content[0].text.strip()
