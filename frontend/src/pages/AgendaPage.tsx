@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Bell, CalendarDays, Pin } from 'lucide-react'
+import { CalendarDays, ChevronDown, ChevronRight, Pin } from 'lucide-react'
 import { fetchTimeline, TimelineItem, TimelineResponse } from '../api/timeline'
 
 type Panel = 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food'
@@ -47,6 +48,18 @@ const typeLabels = {
   FOOD: 'REPAS',
 }
 
+const statusFr: Record<string, string> = {
+  TODO: 'À faire',
+  IN_PROGRESS: 'En cours',
+  DONE: 'Terminé',
+}
+
+const priorityFr: Record<string, string> = {
+  HIGH: 'Haute',
+  MEDIUM: 'Moyenne',
+  LOW: 'Basse',
+}
+
 function getString(value: unknown) {
   return typeof value === 'string' ? value : undefined
 }
@@ -82,18 +95,6 @@ function allItems(data?: TimelineResponse) {
   return sections.flatMap((section) => data[section.key] ?? [])
 }
 
-const statusFr: Record<string, string> = {
-  TODO: 'À faire',
-  IN_PROGRESS: 'En cours',
-  DONE: 'Terminé',
-}
-
-const priorityFr: Record<string, string> = {
-  HIGH: 'Haute',
-  MEDIUM: 'Moyenne',
-  LOW: 'Basse',
-}
-
 function metadataText(item: TimelineItem) {
   if (item.type === 'TASK') {
     const priority = getString(item.metadata.priority)
@@ -119,12 +120,6 @@ function taskPriorityClass(priority?: string) {
   return 'border-gray-300'
 }
 
-function taskStatusClass(status?: string) {
-  if (status === 'DONE') return 'bg-gray-100 text-gray-400'
-  if (status === 'IN_PROGRESS') return 'bg-blue-50 text-blue-600'
-  return 'bg-gray-50 text-gray-500'
-}
-
 function statLabel(count: number, singular: string, plural: string) {
   return `${count} ${count > 1 ? plural : singular}`
 }
@@ -140,73 +135,75 @@ function AgendaRow({ item, onNavigate }: { item: TimelineItem; onNavigate: (pane
     <button
       type="button"
       onClick={() => panel && onNavigate(panel)}
-      className="w-full flex items-start gap-3 px-2 py-2 text-left cursor-pointer hover:bg-gray-50 transition-colors"
+      className="w-full flex items-center gap-3 py-2 pl-8 text-left hover:bg-stone-100/60 transition-colors"
     >
-      <span className="w-14 text-right text-xs text-gray-400 font-mono shrink-0">
-        {item.time ?? '-'}
-      </span>
-      <span className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${dotClass}`} />
-      <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0 ${badgeClass}`}>
-        {label}
-      </span>
-      <span className="text-sm font-medium text-gray-900 truncate flex-1">{item.title}</span>
-      {meta && <span className="text-xs text-gray-400 shrink-0">{meta}</span>}
+      <span className="w-12 text-right text-xs text-stone-400 font-mono shrink-0">{item.time ?? '—'}</span>
+      <span className={`w-2 h-2 rounded-full shrink-0 ${dotClass}`} />
+      <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0 ${badgeClass}`}>{label}</span>
+      <span className="text-sm text-stone-800 truncate flex-1">{item.title}</span>
+      {meta && <span className="text-xs text-stone-400 shrink-0">{meta}</span>}
     </button>
   )
 }
 
-function LoadingRows() {
-  const widths = ['w-2/3', 'w-1/2', 'w-3/4', 'w-5/12', 'w-7/12']
-
+function JournalSection({
+  title,
+  children,
+  empty,
+}: {
+  title: string
+  children: React.ReactNode
+  empty?: string
+}) {
   return (
-    <div className="space-y-3 animate-pulse">
-      {widths.map((width) => (
-        <div key={width} className="flex items-center gap-3 px-2 py-2">
-          <div className="w-14 h-4 bg-gray-100 rounded" />
-          <div className="w-2 h-2 bg-gray-100 rounded-full" />
-          <div className="w-14 h-4 bg-gray-100 rounded" />
-          <div className={`h-4 bg-gray-100 rounded ${width}`} />
+    <div className="mb-6">
+      <h2
+        style={{ fontFamily: 'Caveat, cursive' }}
+        className="text-2xl font-semibold text-gray-700 border-b border-gray-200 pb-1 mb-3"
+      >
+        {title}
+      </h2>
+      {children || <p className="text-sm text-gray-400 italic pl-2">{empty}</p>}
+    </div>
+  )
+}
+
+function LoadingState() {
+  return (
+    <div className="max-w-2xl mx-auto px-6 py-8 bg-white min-h-full animate-pulse">
+      <div className="h-3 w-24 bg-gray-100 rounded mb-4" />
+      <div className="h-16 w-56 bg-gray-100 rounded mb-3" />
+      <div className="h-6 w-32 bg-gray-100 rounded mb-5" />
+      <div className="border-b-2 border-gray-200 mb-5" />
+      <div className="h-4 w-44 bg-gray-100 rounded mb-8" />
+      {[1, 2, 3, 4].map((item) => (
+        <div key={item} className="mb-6">
+          <div className="h-7 w-28 bg-gray-100 rounded mb-3" />
+          <div className="space-y-2">
+            <div className="h-4 w-full bg-gray-100 rounded" />
+            <div className="h-4 w-2/3 bg-gray-100 rounded" />
+          </div>
         </div>
       ))}
     </div>
   )
 }
 
-function WidgetShell({
-  title,
-  accentClass,
-  panel,
-  onNavigate,
-  children,
-}: {
-  title: string
-  accentClass: string
-  panel: Panel
-  onNavigate: (panel: Panel) => void
-  children: React.ReactNode
-}) {
-  return (
-    <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col gap-2 min-h-[190px]">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className={`text-xs font-bold uppercase tracking-widest ${accentClass}`}>{title}</h3>
-        <button
-          type="button"
-          onClick={() => onNavigate(panel)}
-          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          Voir tout
-        </button>
-      </div>
-      {children}
-    </section>
-  )
-}
-
 export default function AgendaPage({ onNavigate }: AgendaPageProps) {
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
+    new Set(['tomorrow', 'thisWeek', 'yesterday', 'past', 'noDate'])
+  )
   const { data, isLoading } = useQuery({
     queryKey: ['timeline'],
     queryFn: fetchTimeline,
   })
+
+  const toggleSection = (key: string) =>
+    setCollapsedSections((prev) => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
 
   const today = data?.today ?? []
   const tomorrow = data?.tomorrow ?? []
@@ -227,175 +224,162 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
   const visibleSections = sections
     .map((section) => ({ ...section, items: data?.[section.key] ?? [] }))
     .filter((section) => section.items.length > 0)
+  const allCollapsed = collapsedSections.size === visibleSections.length
 
   if (isLoading) {
-    return (
-      <div>
-        <div className="rounded-2xl bg-gradient-to-r from-slate-800 to-slate-700 p-6 text-white">
-          <div className="h-4 w-24 rounded bg-white/10 mb-3 animate-pulse" />
-          <div className="h-8 w-56 rounded bg-white/10 animate-pulse" />
-        </div>
-        <div className="grid grid-cols-2 gap-4 my-6">
-          {[1, 2, 3, 4].map((item) => (
-            <div key={item} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 min-h-[190px] animate-pulse">
-              <div className="h-4 w-24 rounded bg-gray-100 mb-5" />
-              <LoadingRows />
-            </div>
-          ))}
-        </div>
-      </div>
-    )
+    return <LoadingState />
   }
 
   return (
-    <div>
-      <header className="rounded-2xl bg-gradient-to-r from-slate-800 to-slate-700 p-6 text-white">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm opacity-70">{capitalize(formatDatePart('weekday'))}</p>
-            <h2 className="text-2xl font-bold">{formatDatePart('date')}</h2>
-          </div>
-          {stats.length > 0 && (
-            <div className="flex flex-wrap justify-end gap-2">
-              {stats.map((stat) => (
-                <span key={stat} className="rounded-full bg-white/10 px-3 py-1 text-sm">
-                  {stat}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      </header>
+    <div className="max-w-2xl mx-auto px-6 py-8 bg-white min-h-full">
+      <div className="mb-6">
+        <p className="text-xs uppercase tracking-widest text-gray-400 mb-2">SmartLife</p>
+        <h1
+          style={{ fontFamily: 'Caveat, cursive' }}
+          className="text-7xl font-bold text-gray-900 leading-none"
+        >
+          {capitalize(formatDatePart('weekday'))}
+        </h1>
+        <p className="text-gray-500 mt-1 text-lg">{formatDatePart('date')}</p>
+      </div>
+      <div className="border-b-2 border-gray-900 mb-5" />
+      {stats.length > 0 && (
+        <p className="text-sm text-gray-400 italic mb-6">{stats.join(' · ')}</p>
+      )}
 
-      <div className="grid grid-cols-2 gap-4 my-6">
-        <WidgetShell title="Tâches" accentClass="text-blue-600" panel="tasks" onNavigate={onNavigate}>
-          {tasks.length === 0 ? (
-            <p className="text-sm text-gray-400 italic">Aucune tâche aujourd'hui</p>
-          ) : (
-            tasks.slice(0, 4).map((item) => {
-              const status = getString(item.metadata.status)
-              return (
-                <div key={`task-${item.id}`} className="flex items-start gap-2 min-w-0">
-                  <span className={`w-3 h-3 rounded-sm border-2 shrink-0 mt-1 ${taskPriorityClass(getString(item.metadata.priority))}`} />
-                  <span className={`text-sm truncate flex-1 ${status === 'DONE' ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                    {item.title}
-                  </span>
-                  {status && (
-                    <span className={`text-xs px-1 rounded shrink-0 ${taskStatusClass(status)}`}>
-                      {statusFr[status] ?? status}
-                    </span>
-                  )}
-                </div>
-              )
-            })
-          )}
-        </WidgetShell>
+      <JournalSection title="Tâches" empty="Aucune tâche">
+        {tasks.length > 0 && tasks.slice(0, 5).map((item) => {
+          const status = getString(item.metadata.status)
+          const priority = getString(item.metadata.priority)
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onNavigate('tasks')}
+              className="w-full flex items-start gap-3 py-1 text-left hover:bg-gray-50 rounded transition-colors"
+            >
+              <span className={`mt-1.5 w-3 h-3 border-2 rounded-sm shrink-0 ${taskPriorityClass(priority)}`} />
+              <span className={`text-sm flex-1 ${status === 'DONE' ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                {item.title}
+              </span>
+              <span className="text-xs text-gray-400 shrink-0">{statusFr[status ?? ''] ?? ''}</span>
+            </button>
+          )
+        })}
+      </JournalSection>
 
-        <WidgetShell title="Rappels" accentClass="text-orange-500" panel="reminders" onNavigate={onNavigate}>
-          {reminders.length === 0 ? (
-            <p className="text-sm text-gray-400 italic">Aucun rappel à venir</p>
-          ) : (
-            reminders.slice(0, 4).map((item) => {
-              const isDone = getBoolean(item.metadata.isDone) === true
-              return (
-                <div key={`reminder-${item.id}`} className="flex items-center gap-2 min-w-0">
-                  <Bell size={14} className="text-orange-400 shrink-0" />
-                  <span className="text-xs text-gray-400 w-10 shrink-0 font-mono">{item.time ?? '-'}</span>
-                  <span className={`text-sm truncate ${isDone ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                    {item.title}
-                  </span>
-                </div>
-              )
-            })
-          )}
-        </WidgetShell>
+      <JournalSection title="Rappels" empty="Aucun rappel">
+        {reminders.length > 0 && reminders.slice(0, 4).map((item) => {
+          const isDone = getBoolean(item.metadata.isDone) === true
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => onNavigate('reminders')}
+              className="w-full flex items-center gap-3 py-1 text-left hover:bg-gray-50 rounded transition-colors"
+            >
+              <span className="text-gray-400 shrink-0">•</span>
+              <span className="text-xs font-mono text-gray-400 w-12 shrink-0">{item.time ?? '—'}</span>
+              <span className={`text-sm ${isDone ? 'line-through text-gray-400' : 'text-gray-800'}`}>{item.title}</span>
+            </button>
+          )
+        })}
+      </JournalSection>
 
-        <WidgetShell title="Notes" accentClass="text-violet-600" panel="notes" onNavigate={onNavigate}>
-          {notes.length === 0 ? (
-            <p className="text-sm text-gray-400 italic">Aucune note</p>
-          ) : (
-            notes.slice(0, 3).map((item) => {
-              const isPinned = getBoolean(item.metadata.isPinned) === true
-              return (
-                <div key={`note-${item.id}`} className="min-w-0">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    {isPinned && <Pin size={12} className="text-violet-500 shrink-0" />}
-                    <p className="text-sm font-medium text-gray-800 truncate">{item.title}</p>
-                  </div>
-                  {item.description && (
-                    <p className="text-xs text-gray-400 line-clamp-1">{item.description}</p>
-                  )}
-                </div>
-              )
-            })
-          )}
-        </WidgetShell>
+      <JournalSection title={foodItems.length > 0 ? `Repas — ${calories} kcal` : 'Repas'} empty="Aucun repas enregistré">
+        {foodItems.length > 0 && foodItems.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onNavigate('food')}
+            className="w-full flex items-center gap-3 py-1 text-left hover:bg-gray-50 rounded transition-colors"
+          >
+            <span className="text-gray-400 shrink-0">•</span>
+            <span className="text-sm text-gray-800 flex-1 truncate">{item.title}</span>
+            <span className="text-xs text-gray-400 shrink-0">{getNumber(item.metadata.calories) ?? 0} kcal</span>
+          </button>
+        ))}
+      </JournalSection>
 
-        <WidgetShell title="Alimentation" accentClass="text-green-600" panel="food" onNavigate={onNavigate}>
-          {foodItems.length === 0 ? (
-            <p className="text-sm text-gray-400 italic">Aucun repas enregistré</p>
-          ) : (
-            <>
-              <div>
-                <p className="text-3xl font-bold text-gray-900">{calories}</p>
-                <p className="text-sm text-gray-400">kcal aujourd'hui</p>
-              </div>
-              <div className="space-y-1">
-                {foodItems.slice(0, 3).map((item) => (
-                  <div key={`food-${item.id}`} className="flex items-center justify-between gap-2 min-w-0">
-                    <span className="text-sm text-gray-700 truncate">{item.title}</span>
-                    <span className="text-xs text-gray-400 shrink-0">{getNumber(item.metadata.calories) ?? 0} kcal</span>
-                  </div>
-                ))}
-                {foodItems.length > 3 && (
-                  <p className="text-xs text-gray-400">et {foodItems.length - 3} autres</p>
-                )}
-              </div>
-            </>
-          )}
-        </WidgetShell>
+      <JournalSection title="Notes" empty="Aucune note">
+        {notes.length > 0 && notes.slice(0, 3).map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => onNavigate('notes')}
+            className="w-full flex items-start gap-3 py-1 text-left hover:bg-gray-50 rounded transition-colors"
+          >
+            {getBoolean(item.metadata.isPinned) && <Pin size={12} className="text-violet-400 mt-1 shrink-0" />}
+            {!getBoolean(item.metadata.isPinned) && <span className="text-gray-400 shrink-0">•</span>}
+            <span className="text-sm text-gray-800 truncate flex-1">{item.title}</span>
+          </button>
+        ))}
+      </JournalSection>
+
+      <div className="border-t-4 border-double border-gray-900 my-8" />
+
+      <div className="flex items-center justify-between mb-4">
+        <h2
+          style={{ fontFamily: 'Caveat, cursive' }}
+          className="text-4xl font-bold text-gray-700"
+        >
+          Semaine
+        </h2>
+        <button
+          type="button"
+          onClick={() =>
+            setCollapsedSections(
+              allCollapsed
+                ? new Set()
+                : new Set(visibleSections.map((s) => s.key))
+            )
+          }
+          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          {allCollapsed ? 'Tout développer' : 'Tout réduire'}
+        </button>
       </div>
 
-      <section>
-        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4 mt-2">
-          Toute la semaine
-        </h3>
-
-        {visibleSections.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <CalendarDays size={40} className="mx-auto mb-3 opacity-30" />
-            <p>Aucun élément planifié.</p>
-          </div>
-        ) : (
-          <div>
-            {visibleSections.map(({ key, label, items }) => (
-              <section key={key}>
-                <div className="flex items-center gap-3 mb-1 mt-6 first:mt-0">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
-                    {label}
+      {visibleSections.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
+          <CalendarDays size={40} className="mx-auto mb-3 opacity-30" />
+          <p>Aucun élément planifié.</p>
+        </div>
+      ) : (
+        <div>
+          {visibleSections.map(({ key, label, items }, sectionIndex) => (
+            <section key={key}>
+              <div
+                onClick={() => toggleSection(key)}
+                className="flex items-center gap-3 py-2 cursor-pointer select-none group"
+              >
+                <span className="w-5 h-5 rounded-full bg-stone-700 text-amber-50 text-xs flex items-center justify-center font-bold shrink-0">
+                  {sectionIndex + 1}
+                </span>
+                <span className="text-sm font-bold text-stone-700 uppercase tracking-wide">{label}</span>
+                {key === 'today' && (
+                  <span className="text-xs text-stone-400">
+                    {capitalize(formatDatePart('weekday'))} {formatDatePart('date')}
                   </span>
-                  {key === 'today' && (
-                    <span className="text-xs text-gray-400">
-                      {capitalize(formatDatePart('weekday'))} {formatDatePart('date')}
-                    </span>
-                  )}
-                  <div className="flex-1 h-px bg-gray-100" />
-                  <span className="text-xs text-gray-400 font-medium">{items.length}</span>
-                </div>
+                )}
+                <div className="flex-1 border-b border-dashed border-stone-300" />
+                <span className="text-xs text-stone-400 font-mono">{items.length}</span>
+                {collapsedSections.has(key)
+                  ? <ChevronRight size={14} className="text-stone-400" />
+                  : <ChevronDown size={14} className="text-stone-400" />}
+              </div>
 
+              {!collapsedSections.has(key) && (
                 <div>
-                  {items.map((item, index) => (
-                    <div key={`${item.type}-${item.id}`}>
-                      {index > 0 && <div className="border-t border-gray-50" />}
-                      <AgendaRow item={item} onNavigate={onNavigate} />
-                    </div>
+                  {items.map((item) => (
+                    <AgendaRow key={`${item.type}-${item.id}`} item={item} onNavigate={onNavigate} />
                   ))}
                 </div>
-              </section>
-            ))}
-          </div>
-        )}
-      </section>
+              )}
+            </section>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
