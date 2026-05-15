@@ -1,10 +1,11 @@
 import os
 import json
 from datetime import datetime
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import anthropic
+import secrets
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -13,12 +14,13 @@ app = FastAPI(title="SmartLife AI Service")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["http://localhost:8080"],
+    allow_methods=["POST"],
+    allow_headers=["Content-Type", "X-Internal-Key"],
 )
 
 client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+INTERNAL_SECRET = os.getenv("AI_INTERNAL_SECRET", "")
 
 
 class PromptPayload(BaseModel):
@@ -91,7 +93,9 @@ Règles nutrition:
 
 
 @app.post("/process")
-async def process_prompt(payload: PromptPayload):
+async def process_prompt(payload: PromptPayload, x_internal_key: str = Header(default="")):
+    if not INTERNAL_SECRET or not secrets.compare_digest(x_internal_key, INTERNAL_SECRET):
+        raise HTTPException(status_code=403, detail="Forbidden")
     now = datetime.now().isoformat()
     user_content = payload.prompt
     if payload.cached_foods:
