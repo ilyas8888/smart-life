@@ -26,9 +26,11 @@ public class OtpCode {
     @Column(nullable = false)
     private LocalDateTime expiresAt;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean used = false;
 
+    @Builder.Default
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 }

@@ -32,6 +32,7 @@ public class AuditLog {
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
+    @Builder.Default
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 }
