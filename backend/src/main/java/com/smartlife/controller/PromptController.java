@@ -4,6 +4,7 @@ import com.smartlife.dto.PromptRequest;
 import com.smartlife.dto.PromptResponse;
 import com.smartlife.model.User;
 import com.smartlife.service.AiService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,8 @@ public class PromptController {
     @PostMapping
     public ResponseEntity<PromptResponse> processPrompt(
             @Valid @RequestBody PromptRequest request,
-            @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(aiService.processPrompt(request.getPrompt(), user));
+            @AuthenticationPrincipal User user,
+            HttpServletRequest http) {
+        return ResponseEntity.ok(aiService.processPrompt(request.getPrompt(), user, http.getRemoteAddr()));
     }
 }

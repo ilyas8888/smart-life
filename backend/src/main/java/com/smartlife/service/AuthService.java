@@ -3,7 +3,11 @@ package com.smartlife.service;
 import com.smartlife.dto.AuthRequest;
 import com.smartlife.dto.AuthResponse;
 import com.smartlife.dto.RegisterRequest;
+import com.smartlife.model.RefreshToken;
+import com.smartlife.model.RevokedToken;
 import com.smartlife.model.User;
+import com.smartlife.repository.RefreshTokenRepository;
+import com.smartlife.repository.RevokedTokenRepository;
 import com.smartlife.repository.UserRepository;
 import com.smartlife.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +15,10 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -20,10 +28,14 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final RevokedTokenRepository revokedTokenRepository;
+    private final AuditLogService auditLogService;
+    private final OtpService otpService;
 
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse register(RegisterRequest request, String ip) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already in use");
+            throw new IllegalArgumentException("Email déjà utilisé");
         }
         var user = User.builder()
                 .email(request.getEmail())
@@ -32,14 +44,60 @@ public class AuthService {
                 .lastName(request.getLastName())
                 .build();
         userRepository.save(user);
-        return new AuthResponse(jwtService.generateToken(user), user.getEmail(), user.getFirstName(), user.getLastName());
+        auditLogService.log(user.getId(), "REGISTER", "USER", user.getId(), ip);
+        return authResponse(user);
     }
 
-    public AuthResponse login(AuthRequest request) {
+    public Object login(AuthRequest request, String ip) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
         var user = userRepository.findByEmail(request.getEmail()).orElseThrow();
-        return new AuthResponse(jwtService.generateToken(user), user.getEmail(), user.getFirstName(), user.getLastName());
+        auditLogService.log(user.getId(), "LOGIN", "USER", user.getId(), ip);
+
+        if (otpService.isEnabled()) {
+            otpService.generateAndSend(user);
+            return Map.of("step", "OTP_REQUIRED", "userId", user.getId());
+        }
+        return authResponse(user);
+    }
+
+    public AuthResponse verifyOtp(Long userId, String code, String ip) {
+        var user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+        otpService.verify(userId, code);
+        auditLogService.log(userId, "OTP_VERIFIED", "USER", userId, ip);
+        return authResponse(user);
+    }
+
+    public Map<String, String> refresh(String refreshToken) {
+        var token = refreshTokenRepository.findByToken(refreshToken)
+                .orElseThrow(() -> new RuntimeException("Refresh token invalide ou expiré"));
+        if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Refresh token invalide ou expiré");
+        }
+        return Map.of("accessToken", jwtService.generateToken(token.getUser()));
+    }
+
+    @Transactional
+    public void logout(String accessToken, Long userId, String ip) {
+        if (accessToken != null && !accessToken.isBlank()) {
+            revokedTokenRepository.save(RevokedToken.builder()
+                    .tokenHash(jwtService.hashToken(accessToken))
+                    .build());
+        }
+        refreshTokenRepository.deleteByUserId(userId);
+        auditLogService.log(userId, "LOGOUT", "USER", userId, ip);
+    }
+
+    private AuthResponse authResponse(User user) {
+        var accessToken = jwtService.generateToken(user);
+        var refreshToken = jwtService.generateRefreshToken();
+        refreshTokenRepository.save(RefreshToken.builder()
+                .user(user)
+                .token(refreshToken)
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .build());
+        return new AuthResponse(accessToken, refreshToken, user.getEmail(), user.getFirstName(), user.getLastName());
     }
 }

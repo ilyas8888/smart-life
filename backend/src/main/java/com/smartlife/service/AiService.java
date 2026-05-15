@@ -28,17 +28,28 @@ public class AiService {
     private final FoodLogRepository foodLogRepository;
     private final DiaryEntryRepository diaryEntryRepository;
     private final PromptHistoryRepository promptHistoryRepository;
+    private final FoodCacheService foodCacheService;
+    private final AuditLogService auditLogService;
 
     @Value("${ai.service.url}")
     private String aiServiceUrl;
 
+    @Value("${ai.internal.secret}")
+    private String aiInternalSecret;
+
     @SuppressWarnings("unchecked")
-    public PromptResponse processPrompt(String rawPrompt, User user) {
+    public PromptResponse processPrompt(String rawPrompt, User user, String ip) {
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("prompt", rawPrompt);
+        requestBody.put("user_id", user.getId());
+        requestBody.put("cached_foods", foodCacheService.getTopCachedFoods());
+
         // Call Python AI service
         Map<String, Object> aiResult = webClientBuilder.build()
                 .post()
                 .uri(aiServiceUrl + "/process")
-                .bodyValue(Map.of("prompt", rawPrompt, "user_id", user.getId()))
+                .header("X-Internal-Key", aiInternalSecret)
+                .bodyValue(requestBody)
                 .retrieve()
                 .bodyToMono(Map.class)
                 .block();
@@ -129,6 +140,7 @@ public class AiService {
                     .notes((String) f.getOrDefault("notes", null))
                     .build();
             foodLogRepository.save(foodLog);
+            foodCacheService.upsert(foodLog);
             foodLogsCreated.add(Map.of("id", foodLog.getId(), "foodItem", foodLog.getFoodItem()));
         }
 
@@ -151,6 +163,7 @@ public class AiService {
                 ))
                 .build();
         promptHistoryRepository.save(history);
+        auditLogService.log(user.getId(), "PROMPT_PROCESSED", "PROMPT_HISTORY", history.getId(), ip);
 
         return response;
     }

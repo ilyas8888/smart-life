@@ -5,16 +5,25 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import com.smartlife.repository.RevokedTokenRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Service
+@RequiredArgsConstructor
 public class JwtService {
+
+    private final RevokedTokenRepository revokedTokenRepository;
 
     @Value("${jwt.secret}")
     private String secretKey;
@@ -31,8 +40,28 @@ public class JwtService {
                 .compact();
     }
 
+    public String generateRefreshToken() {
+        return UUID.randomUUID().toString();
+    }
+
     public boolean isTokenValid(String token, UserDetails userDetails) {
         return extractUsername(token).equals(userDetails.getUsername()) && !isTokenExpired(token);
+    }
+
+    public boolean isTokenRevoked(String token) {
+        return revokedTokenRepository.existsByTokenHash(hashToken(token));
+    }
+
+    public String hashToken(String token) {
+        try {
+            var digest = MessageDigest.getInstance("SHA-256");
+            var hash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            var sb = new StringBuilder();
+            for (byte b : hash) sb.append(String.format("%02x", b));
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public String extractUsername(String token) {

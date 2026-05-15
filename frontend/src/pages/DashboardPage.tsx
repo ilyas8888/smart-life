@@ -53,6 +53,14 @@ export default function DashboardPage() {
     promptMutation.mutate(prompt)
   }
 
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout')
+    } finally {
+      logout()
+    }
+  }
+
   return (
     <div className="min-h-screen flex">
       <aside className="w-64 bg-slate-900 text-white flex flex-col border-r border-slate-700">
@@ -102,7 +110,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
           >
             <LogOut size={16} />

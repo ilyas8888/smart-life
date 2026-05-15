@@ -3,11 +3,16 @@ package com.smartlife.controller;
 import com.smartlife.dto.AuthRequest;
 import com.smartlife.dto.AuthResponse;
 import com.smartlife.dto.RegisterRequest;
+import com.smartlife.model.User;
 import com.smartlife.service.AuthService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -17,12 +22,34 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest http) {
+        return ResponseEntity.ok(authService.register(request, http.getRemoteAddr()));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<Object> login(@Valid @RequestBody AuthRequest request, HttpServletRequest http) {
+        return ResponseEntity.ok(authService.login(request, http.getRemoteAddr()));
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<AuthResponse> verifyOtp(@RequestBody Map<String, Object> body, HttpServletRequest http) {
+        Long userId = Long.valueOf(body.get("userId").toString());
+        String code = (String) body.get("code");
+        return ResponseEntity.ok(authService.verifyOtp(userId, code, http.getRemoteAddr()));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refresh(@RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(authService.refresh(body.get("refreshToken")));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest http, @AuthenticationPrincipal User user) {
+        String authHeader = http.getHeader("Authorization");
+        String token = authHeader != null && authHeader.startsWith("Bearer ") ? authHeader.substring(7) : null;
+        if (user != null) {
+            authService.logout(token, user.getId(), http.getRemoteAddr());
+        }
+        return ResponseEntity.ok(Map.of("message", "Déconnecté"));
     }
 }

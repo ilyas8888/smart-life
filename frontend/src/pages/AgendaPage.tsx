@@ -36,10 +36,10 @@ const dotStyles = {
 }
 
 const badgeStyles = {
-  TASK: 'bg-blue-50 text-blue-700',
-  REMINDER: 'bg-orange-50 text-orange-700',
-  NOTE: 'bg-violet-50 text-violet-700',
-  FOOD: 'bg-green-50 text-green-700',
+  TASK: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  REMINDER: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  NOTE: 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
+  FOOD: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
 }
 
 const typeLabels = {
@@ -78,10 +78,10 @@ const mealEmojis: Record<string, string> = {
 }
 
 const mealBg: Record<string, string> = {
-  BREAKFAST: 'bg-yellow-50 text-yellow-800',
-  LUNCH: 'bg-green-50 text-green-800',
-  DINNER: 'bg-blue-50 text-blue-800',
-  SNACK: 'bg-gray-50 text-gray-700',
+  BREAKFAST: 'bg-yellow-50 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+  LUNCH: 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  DINNER: 'bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  SNACK: 'bg-gray-50 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
 }
 
 function getString(value: unknown) {
@@ -159,13 +159,13 @@ function AgendaRow({ item, onNavigate }: { item: TimelineItem; onNavigate: (pane
     <button
       type="button"
       onClick={() => panel && onNavigate(panel)}
-      className="w-full flex items-center gap-3 py-2 pl-8 text-left hover:bg-stone-100/60 transition-colors"
+      className="w-full flex items-center gap-3 py-2 pl-8 text-left hover:bg-stone-100/60 dark:hover:bg-gray-800 transition-colors"
     >
-      <span className="w-12 text-right text-xs text-stone-400 font-mono shrink-0">{item.time ?? '—'}</span>
+      <span className="w-12 text-right text-xs text-stone-400 dark:text-stone-500 font-mono shrink-0">{item.time ?? '—'}</span>
       <span className={`w-2 h-2 rounded-full shrink-0 ${dotClass}`} />
       <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0 ${badgeClass}`}>{label}</span>
-      <span className="text-sm text-stone-800 truncate flex-1">{item.title}</span>
-      {meta && <span className="text-xs text-stone-400 shrink-0">{meta}</span>}
+      <span className="text-sm text-stone-800 dark:text-stone-300 truncate flex-1">{item.title}</span>
+      {meta && <span className="text-xs text-stone-400 dark:text-stone-500 shrink-0">{meta}</span>}
     </button>
   )
 }
@@ -185,18 +185,18 @@ function JournalSection({
     <div className={`mb-6 pl-3 border-l-2 ${accent}`}>
       <h2
         style={{ fontFamily: 'Caveat, cursive' }}
-        className="text-2xl font-semibold text-gray-700 border-b border-gray-100 pb-1 mb-3"
+        className="text-2xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 pb-1 mb-3"
       >
         {title}
       </h2>
-      {children ?? <p className="text-sm text-gray-400 italic">{empty}</p>}
+      {children ?? <p className="text-sm text-gray-400 dark:text-gray-500 italic">{empty}</p>}
     </div>
   )
 }
 
 function LoadingState() {
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8 bg-white min-h-full animate-pulse">
+    <div className="max-w-2xl mx-auto px-6 py-8 bg-white dark:bg-gray-900 min-h-full animate-pulse">
       <div className="h-3 w-24 bg-gray-100 rounded mb-4" />
       <div className="h-16 w-56 bg-gray-100 rounded mb-3" />
       <div className="h-6 w-32 bg-gray-100 rounded mb-5" />
@@ -284,22 +284,22 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
 
   return (
     <div
-      className="max-w-2xl mx-auto px-6 py-8 bg-white min-h-full"
+      className="max-w-2xl mx-auto px-6 py-8 bg-white dark:bg-gray-900 min-h-full"
       onClick={() => setOpenMenu(null)}
     >
       <div className="mb-6">
-        <p className="text-xs uppercase tracking-widest text-gray-400 mb-2">SmartLife</p>
+        <p className="text-xs uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">SmartLife</p>
         <h1
           style={{ fontFamily: 'Caveat, cursive' }}
-          className="text-7xl font-bold text-gray-900 leading-none"
+          className="text-7xl font-bold text-gray-900 dark:text-gray-100 leading-none"
         >
           {capitalize(formatDatePart('weekday'))}
         </h1>
-        <p className="text-gray-500 mt-1 text-lg">{formatDatePart('date')}</p>
+        <p className="text-gray-500 dark:text-gray-400 mt-1 text-lg">{formatDatePart('date')}</p>
       </div>
-      <div className="border-b-2 border-gray-900 mb-5" />
+      <div className="border-b-2 border-gray-900 dark:border-gray-100 mb-5" />
       {stats.length > 0 && (
-        <p className="text-sm text-gray-400 italic mb-6">{stats.join(' · ')}</p>
+        <p className="text-sm text-gray-400 dark:text-gray-500 italic mb-6">{stats.join(' · ')}</p>
       )}
 
       <JournalSection title="Tâches" empty="Aucune tâche" accent="border-blue-400">
@@ -311,7 +311,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
               const isDone = status === 'DONE'
 
               return (
-                <div key={item.id} className="relative flex items-center gap-1.5 bg-blue-50 rounded-full pl-2 pr-1 py-1">
+                <div key={item.id} className="relative flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-full pl-2 pr-1 py-1">
                   <button
                     type="button"
                     onClick={(event) => {
@@ -329,7 +329,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
                     )}
                   </button>
 
-                  <span className={`text-xs max-w-[160px] truncate ${isDone ? 'line-through text-gray-400' : 'text-blue-800'}`}>
+                  <span className={`text-xs max-w-[160px] truncate ${isDone ? 'line-through text-gray-400 dark:text-gray-500' : 'text-blue-800 dark:text-blue-300'}`}>
                     {item.title}
                   </span>
 
@@ -341,10 +341,10 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
                     }}
                     className={`text-xs px-1.5 py-0.5 rounded-full font-medium cursor-pointer ml-1 ${
                       isDone
-                        ? 'bg-gray-200 text-gray-500'
+                        ? 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                         : status === 'IN_PROGRESS'
-                          ? 'bg-blue-200 text-blue-700'
-                          : 'bg-gray-100 text-gray-500'
+                          ? 'bg-blue-200 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                          : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                     }`}
                   >
                     {statusFr[status ?? ''] ?? status} ▾
@@ -352,7 +352,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
 
                   {openMenu === item.id && (
                     <div
-                      className="absolute left-0 top-8 bg-white border border-gray-200 rounded-lg shadow-xl z-20 overflow-hidden min-w-[120px]"
+                      className="absolute left-0 top-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl z-20 overflow-hidden min-w-[120px]"
                       onClick={(event) => event.stopPropagation()}
                     >
                       {(['TODO', 'IN_PROGRESS', 'DONE'] as const).map((s) => (
@@ -360,8 +360,8 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
                           key={s}
                           type="button"
                           onClick={() => statusMutation.mutate({ id: item.id, status: s })}
-                          className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                            s === status ? 'font-semibold text-gray-900' : 'text-gray-600'
+                          className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
+                            s === status ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-300'
                           }`}
                         >
                           {statusFr[s]}
@@ -387,7 +387,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
                   type="button"
                   onClick={() => onNavigate('reminders')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-opacity hover:opacity-80 ${
-                    isDone ? 'bg-gray-100 text-gray-400 line-through' : 'bg-orange-50 text-orange-800'
+                    isDone ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-400 line-through' : 'bg-orange-50 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
                   }`}
                 >
                   <span className="font-mono opacity-70">{item.time ?? '—'}</span>
@@ -417,10 +417,10 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
               <div key={type} className="mb-3">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-base">{mealEmojis[type] ?? '️'}</span>
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                     {mealLabels[type]}
                   </span>
-                  <span className="text-xs text-gray-400">· {subtotal} kcal</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">· {subtotal} kcal</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {items.map((food) => (
@@ -453,7 +453,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
                   key={item.id}
                   type="button"
                   onClick={() => onNavigate('notes')}
-                  className="flex items-center gap-1.5 bg-violet-50 text-violet-800 px-3 py-1.5 rounded-full text-xs font-medium hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-1.5 bg-violet-50 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300 px-3 py-1.5 rounded-full text-xs font-medium hover:opacity-80 transition-opacity"
                 >
                   {isPinned && <Pin size={11} className="shrink-0" />}
                   <span className="truncate max-w-[180px]">{item.title}</span>
@@ -464,12 +464,12 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
         )}
       </JournalSection>
 
-      <div className="border-t-4 border-double border-gray-900 my-8" />
+      <div className="border-t-4 border-double border-gray-900 dark:border-gray-100 my-8" />
 
       <div className="flex items-center justify-between mb-4">
         <h2
           style={{ fontFamily: 'Caveat, cursive' }}
-          className="text-4xl font-bold text-gray-700"
+          className="text-4xl font-bold text-gray-700 dark:text-gray-300"
         >
           Semaine
         </h2>
@@ -483,14 +483,14 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
                 : new Set(visibleSections.map((s) => s.key))
             )
           }}
-          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+          className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
           {allCollapsed ? 'Tout développer' : 'Tout réduire'}
         </button>
       </div>
 
       {visibleSections.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
           <CalendarDays size={40} className="mx-auto mb-3 opacity-30" />
           <p>Aucun élément planifié.</p>
         </div>
@@ -508,14 +508,14 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
                 <span className="w-5 h-5 rounded-full bg-stone-700 text-amber-50 text-xs flex items-center justify-center font-bold shrink-0">
                   {sectionIndex + 1}
                 </span>
-                <span className="text-sm font-bold text-stone-700 uppercase tracking-wide">{label}</span>
+                <span className="text-sm font-bold text-stone-700 dark:text-stone-300 uppercase tracking-wide">{label}</span>
                 {key === 'today' && (
-                  <span className="text-xs text-stone-400">
+                  <span className="text-xs text-stone-400 dark:text-stone-500">
                     {capitalize(formatDatePart('weekday'))} {formatDatePart('date')}
                   </span>
                 )}
-                <div className="flex-1 border-b border-dashed border-stone-300" />
-                <span className="text-xs text-stone-400 font-mono">{items.length}</span>
+                <div className="flex-1 border-b border-dashed border-stone-300 dark:border-stone-600" />
+                <span className="text-xs text-stone-400 dark:text-stone-500 font-mono">{items.length}</span>
                 {collapsedSections.has(key)
                   ? <ChevronRight size={14} className="text-stone-400" />
                   : <ChevronDown size={14} className="text-stone-400" />}

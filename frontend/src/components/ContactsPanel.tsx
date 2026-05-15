@@ -27,17 +27,17 @@ export default function ContactsPanel() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['contacts'] }); toast.success('Contact supprimé') },
   })
 
-  if (isLoading) return <div className="text-center py-12 text-gray-400">Chargement...</div>
+  if (isLoading) return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement...</div>
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <Users className="text-primary-600" />
           Contacts ({contacts.length})
         </h2>
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
           <input
             className="input pl-9 w-56"
             placeholder="Rechercher..."
@@ -48,7 +48,7 @@ export default function ContactsPanel() {
       </div>
 
       {contacts.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
           <Users size={40} className="mx-auto mb-3 opacity-30" />
           <p>Aucun contact.</p>
         </div>
@@ -57,31 +57,31 @@ export default function ContactsPanel() {
           {contacts.map((c) => (
             <div key={c.id} className="card">
               <div className="flex items-start justify-between">
-                <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-lg mr-3">
+                <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 dark:bg-primary-700 dark:text-primary-50 flex items-center justify-center font-bold text-lg mr-3">
                   {c.name[0].toUpperCase()}
                 </div>
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-900">{c.name}</p>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">{c.name}</p>
                   {c.phone && (
-                    <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
                       <Phone size={12} /> {c.phone}
                     </p>
                   )}
                   {c.email && (
-                    <p className="text-sm text-gray-500 flex items-center gap-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                       <Mail size={12} /> {c.email}
                     </p>
                   )}
                   {c.address && (
-                    <p className="text-sm text-gray-500 flex items-center gap-1">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
                       <MapPin size={12} /> {c.address}
                     </p>
                   )}
-                  {c.notes && <p className="text-xs text-gray-400 mt-2 italic">{c.notes}</p>}
+                  {c.notes && <p className="text-xs text-gray-400 dark:text-gray-500 mt-2 italic">{c.notes}</p>}
                 </div>
                 <button
                   onClick={() => deleteMutation.mutate(c.id)}
-                  className="p-1 text-gray-300 hover:text-red-400 transition-colors ml-2"
+                  className="p-1 text-gray-300 dark:text-gray-500 hover:text-red-400 transition-colors ml-2"
                 >
                   <Trash2 size={15} />
                 </button>
