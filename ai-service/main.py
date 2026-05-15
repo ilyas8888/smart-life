@@ -68,7 +68,23 @@ Règles nutrition:
 - Estime les valeurs nutritionnelles moyennes pour des quantités typiques
 - Un œuf moyen = 70 kcal, 6g protéines, 0.5g glucides, 5g lipides
 - Un sandwich standard = 350 kcal, 15g protéines, 40g glucides, 12g lipides
-- Des pâtes (portion) = 350 kcal, 12g protéines, 65g glucides, 3g lipides
+- Des pâtes (portion 200g cuit) = 350 kcal, 12g protéines, 65g glucides, 3g lipides
+- Du riz blanc (portion 150g cuit) = 175 kcal, 3.6g protéines, 38g glucides, 0.3g lipides
+- Du poulet grillé (150g) = 248 kcal, 46g protéines, 0g glucides, 5.5g lipides
+- Du saumon (150g) = 280 kcal, 40g protéines, 0g glucides, 13g lipides
+- Une banane moyenne = 90 kcal, 1.1g protéines, 23g glucides, 0.3g lipides
+- Un yaourt nature (125g) = 75 kcal, 5g protéines, 8g glucides, 2.5g lipides
+- Du pain complet (tranche 30g) = 75 kcal, 3g protéines, 13g glucides, 1g lipides
+- Une pomme moyenne = 80 kcal, 0.4g protéines, 21g glucides, 0.2g lipides
+- Du fromage (30g) = 120 kcal, 7g protéines, 0.5g glucides, 10g lipides
+- Du lait entier (250ml) = 155 kcal, 8g protéines, 12g glucides, 8g lipides
+- Des lentilles cuites (200g) = 230 kcal, 18g protéines, 40g glucides, 0.8g lipides
+- Du thon en boite (100g) = 116 kcal, 26g protéines, 0g glucides, 1g lipides
+- Une pizza (portion 150g) = 370 kcal, 15g protéines, 45g glucides, 14g lipides
+- Des amandes (30g) = 173 kcal, 6g protéines, 6g glucides, 15g lipides
+- Pour les plats composés, décompose et additionne les ingrédients principaux
+- Si la quantité n'est pas précisée, utilise une portion standard adulte
+- Les macros doivent être cohérentes : calories ≈ (protéines×4) + (glucides×4) + (lipides×9)
 - Inclure les vitamines et minéraux les plus pertinents pour l'aliment
 - Les champs vides ou absents doivent être des listes vides []
 - Retourne UNIQUEMENT le JSON, rien d'autre"""
@@ -102,6 +118,7 @@ async def process_prompt(payload: PromptPayload):
             messages=[{"role": "user", "content": user_message}],
             extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
         )
+        print(f"Cache: {message.usage}")
 
         raw_text = message.content[0].text.strip()
 
