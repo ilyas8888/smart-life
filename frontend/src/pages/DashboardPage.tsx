@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Brain, CheckSquare, Bell, FileText, Users, LogOut,
-  Send, Sparkles, ChevronRight, Loader2, UtensilsCrossed, CalendarDays
+  Send, Sparkles, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
+import { useThemeStore } from '../store/themeStore'
 import api from '../api/axios'
 import TasksPanel from '../components/TasksPanel'
 import RemindersPanel from '../components/RemindersPanel'
@@ -18,6 +19,8 @@ type Panel = 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' 
 
 export default function DashboardPage() {
   const { firstName, lastName, email, logout } = useAuthStore()
+  const isDark = useThemeStore((s) => s.isDark)
+  const toggle = useThemeStore((s) => s.toggle)
   const [activePanel, setActivePanel] = useState<Panel>('agenda')
   const [prompt, setPrompt] = useState('')
   const queryClient = useQueryClient()
@@ -79,6 +82,16 @@ export default function DashboardPage() {
           ))}
         </nav>
 
+        <div className="px-4 pb-2">
+          <button
+            onClick={toggle}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-slate-800 hover:text-white transition-colors"
+          >
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
+            {isDark ? 'Mode clair' : 'Mode sombre'}
+          </button>
+        </div>
+
         <div className="p-4 border-t border-gray-700">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-sm font-bold">
@@ -99,37 +112,37 @@ export default function DashboardPage() {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="shadow-none border-b border-gray-100 bg-white/80 backdrop-blur-sm px-6 py-4">
-          <div className="flex items-center gap-2 text-sm text-gray-500">
+        <header className="shadow-none border-b border-gray-100 bg-white/80 backdrop-blur-sm px-6 py-4 dark:bg-gray-900/80 dark:border-gray-700">
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
             <span>SmartLife</span>
             <ChevronRight size={14} />
-            <span className="text-gray-900 font-medium">
+            <span className="text-gray-900 font-medium dark:text-gray-100">
               {navItems.find((n) => n.id === activePanel)?.label}
             </span>
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-6 dark:bg-gray-900">
           {activePanel === 'agenda' && <AgendaPage onNavigate={setActivePanel} />}
 
           {activePanel === 'prompt' && (
             <div className="max-w-2xl mx-auto">
               <div className="text-center mb-8">
-                <div className="inline-flex items-center gap-2 bg-primary-50 text-primary-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+                <div className="inline-flex items-center gap-2 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 px-4 py-2 rounded-full text-sm font-medium mb-4">
                   <Sparkles size={16} />
                   Powered by Claude Sonnet 4.6
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                   Qu'est-ce que vous avez aujourd'hui ?
                 </h2>
-                <p className="text-gray-500">
+                <p className="text-gray-500 dark:text-gray-400">
                   Décrivez votre journée, vos tâches, vos contacts, vos repas... l'IA structure tout automatiquement.
                 </p>
               </div>
 
               <form onSubmit={handleSend} className="card">
                 <textarea
-                  className="w-full resize-none border-0 outline-none text-gray-900 placeholder-gray-400 text-base leading-relaxed min-h-[180px]"
+                  className="w-full resize-none border-0 outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-transparent text-base leading-relaxed min-h-[180px]"
                   placeholder={`Exemples:\n- "J'ai une réunion avec Ahmed demain à 14h, son numéro c'est le 0555123456"\n- "Rappelle-moi d'appeler le médecin jeudi matin"\n- "J'ai mangé une pizza à midi, j'ai couru 5km ce soir"\n- "Je dois finir le rapport avant vendredi, priorité haute"`}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
