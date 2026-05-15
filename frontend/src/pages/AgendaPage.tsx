@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarDays, ChevronDown, ChevronRight, Pin } from 'lucide-react'
+import api from '../api/axios'
 import { fetchTimeline, TimelineItem, TimelineResponse } from '../api/timeline'
 
 type Panel = 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food'
@@ -58,6 +59,29 @@ const priorityFr: Record<string, string> = {
   HIGH: 'Haute',
   MEDIUM: 'Moyenne',
   LOW: 'Basse',
+}
+
+const mealOrder = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK']
+
+const mealLabels: Record<string, string> = {
+  BREAKFAST: 'Petit-déjeuner',
+  LUNCH: 'Déjeuner',
+  DINNER: 'Dîner',
+  SNACK: 'Snack',
+}
+
+const mealEmojis: Record<string, string> = {
+  BREAKFAST: '',
+  LUNCH: '☀️',
+  DINNER: '',
+  SNACK: '',
+}
+
+const mealBg: Record<string, string> = {
+  BREAKFAST: 'bg-yellow-50 text-yellow-800',
+  LUNCH: 'bg-green-50 text-green-800',
+  DINNER: 'bg-blue-50 text-blue-800',
+  SNACK: 'bg-gray-50 text-gray-700',
 }
 
 function getString(value: unknown) {
@@ -150,20 +174,22 @@ function JournalSection({
   title,
   children,
   empty,
+  accent = 'border-gray-300',
 }: {
   title: string
-  children: React.ReactNode
+  children?: React.ReactNode
   empty?: string
+  accent?: string
 }) {
   return (
-    <div className="mb-6">
+    <div className={`mb-6 pl-3 border-l-2 ${accent}`}>
       <h2
         style={{ fontFamily: 'Caveat, cursive' }}
-        className="text-2xl font-semibold text-gray-700 border-b border-gray-200 pb-1 mb-3"
+        className="text-2xl font-semibold text-gray-700 border-b border-gray-100 pb-1 mb-3"
       >
         {title}
       </h2>
-      {children || <p className="text-sm text-gray-400 italic pl-2">{empty}</p>}
+      {children ?? <p className="text-sm text-gray-400 italic">{empty}</p>}
     </div>
   )
 }
@@ -190,18 +216,38 @@ function LoadingState() {
 }
 
 export default function AgendaPage({ onNavigate }: AgendaPageProps) {
+  const qc = useQueryClient()
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     new Set(['tomorrow', 'thisWeek', 'yesterday', 'past', 'noDate'])
   )
+  const [openMenu, setOpenMenu] = useState<number | null>(null)
+  const [selectedTasks, setSelectedTasks] = useState<Set<number>>(new Set())
   const { data, isLoading } = useQuery({
     queryKey: ['timeline'],
     queryFn: fetchTimeline,
+  })
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: string }) =>
+      api.patch(`/tasks/${id}/status?status=${status}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] })
+      qc.invalidateQueries({ queryKey: ['timeline'] })
+      setOpenMenu(null)
+    },
   })
 
   const toggleSection = (key: string) =>
     setCollapsedSections((prev) => {
       const next = new Set(prev)
       next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+
+  const toggleSelect = (id: number) =>
+    setSelectedTasks((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
 
@@ -212,7 +258,13 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
   const notes = allItems(data)
     .filter((item) => item.type === 'NOTE')
     .sort((a, b) => Number(getBoolean(b.metadata.isPinned) === true) - Number(getBoolean(a.metadata.isPinned) === true))
-  const foodItems = today.filter((item) => item.type === 'FOOD')
+  const foodItems = today
+    .filter((item) => item.type === 'FOOD')
+    .sort((a, b) => {
+      const ai = mealOrder.indexOf(getString(a.metadata.mealType) ?? '')
+      const bi = mealOrder.indexOf(getString(b.metadata.mealType) ?? '')
+      return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+    })
   const calories = foodItems.reduce((total, item) => total + (getNumber(item.metadata.calories) ?? 0), 0)
   const stats = [
     tasks.length ? statLabel(tasks.length, 'tâche', 'tâches') : '',
@@ -231,7 +283,10 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8 bg-white min-h-full">
+    <div
+      className="max-w-2xl mx-auto px-6 py-8 bg-white min-h-full"
+      onClick={() => setOpenMenu(null)}
+    >
       <div className="mb-6">
         <p className="text-xs uppercase tracking-widest text-gray-400 mb-2">SmartLife</p>
         <h1
@@ -247,73 +302,166 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
         <p className="text-sm text-gray-400 italic mb-6">{stats.join(' · ')}</p>
       )}
 
-      <JournalSection title="Tâches" empty="Aucune tâche">
-        {tasks.length > 0 && tasks.slice(0, 5).map((item) => {
-          const status = getString(item.metadata.status)
-          const priority = getString(item.metadata.priority)
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onNavigate('tasks')}
-              className="w-full flex items-start gap-3 py-1 text-left hover:bg-gray-50 rounded transition-colors"
-            >
-              <span className={`mt-1.5 w-3 h-3 border-2 rounded-sm shrink-0 ${taskPriorityClass(priority)}`} />
-              <span className={`text-sm flex-1 ${status === 'DONE' ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-                {item.title}
-              </span>
-              <span className="text-xs text-gray-400 shrink-0">{statusFr[status ?? ''] ?? ''}</span>
-            </button>
-          )
-        })}
+      <JournalSection title="Tâches" empty="Aucune tâche" accent="border-blue-400">
+        {tasks.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {tasks.slice(0, 6).map((item) => {
+              const status = getString(item.metadata.status)
+              const priority = getString(item.metadata.priority)
+              const isDone = status === 'DONE'
+
+              return (
+                <div key={item.id} className="relative flex items-center gap-1.5 bg-blue-50 rounded-full pl-2 pr-1 py-1">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      toggleSelect(item.id)
+                    }}
+                    className={`w-4 h-4 rounded-sm border-2 shrink-0 flex items-center justify-center cursor-pointer transition-colors ${
+                      selectedTasks.has(item.id)
+                        ? 'bg-gray-700 border-gray-700'
+                        : taskPriorityClass(priority)
+                    }`}
+                  >
+                    {selectedTasks.has(item.id) && (
+                      <span className="text-white text-[9px] leading-none font-bold">✓</span>
+                    )}
+                  </button>
+
+                  <span className={`text-xs max-w-[160px] truncate ${isDone ? 'line-through text-gray-400' : 'text-blue-800'}`}>
+                    {item.title}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setOpenMenu(openMenu === item.id ? null : item.id)
+                    }}
+                    className={`text-xs px-1.5 py-0.5 rounded-full font-medium cursor-pointer ml-1 ${
+                      isDone
+                        ? 'bg-gray-200 text-gray-500'
+                        : status === 'IN_PROGRESS'
+                          ? 'bg-blue-200 text-blue-700'
+                          : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    {statusFr[status ?? ''] ?? status} ▾
+                  </button>
+
+                  {openMenu === item.id && (
+                    <div
+                      className="absolute left-0 top-8 bg-white border border-gray-200 rounded-lg shadow-xl z-20 overflow-hidden min-w-[120px]"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {(['TODO', 'IN_PROGRESS', 'DONE'] as const).map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => statusMutation.mutate({ id: item.id, status: s })}
+                          className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                            s === status ? 'font-semibold text-gray-900' : 'text-gray-600'
+                          }`}
+                        >
+                          {statusFr[s]}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </JournalSection>
 
-      <JournalSection title="Rappels" empty="Aucun rappel">
-        {reminders.length > 0 && reminders.slice(0, 4).map((item) => {
-          const isDone = getBoolean(item.metadata.isDone) === true
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onNavigate('reminders')}
-              className="w-full flex items-center gap-3 py-1 text-left hover:bg-gray-50 rounded transition-colors"
-            >
-              <span className="text-gray-400 shrink-0">•</span>
-              <span className="text-xs font-mono text-gray-400 w-12 shrink-0">{item.time ?? '—'}</span>
-              <span className={`text-sm ${isDone ? 'line-through text-gray-400' : 'text-gray-800'}`}>{item.title}</span>
-            </button>
-          )
-        })}
+      <JournalSection title="Rappels" empty="Aucun rappel" accent="border-orange-400">
+        {reminders.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {reminders.slice(0, 4).map((item) => {
+              const isDone = getBoolean(item.metadata.isDone) === true
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onNavigate('reminders')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-opacity hover:opacity-80 ${
+                    isDone ? 'bg-gray-100 text-gray-400 line-through' : 'bg-orange-50 text-orange-800'
+                  }`}
+                >
+                  <span className="font-mono opacity-70">{item.time ?? '—'}</span>
+                  <span className="truncate max-w-[160px]">{item.title}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </JournalSection>
 
-      <JournalSection title={foodItems.length > 0 ? `Repas — ${calories} kcal` : 'Repas'} empty="Aucun repas enregistré">
-        {foodItems.length > 0 && foodItems.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onNavigate('food')}
-            className="w-full flex items-center gap-3 py-1 text-left hover:bg-gray-50 rounded transition-colors"
-          >
-            <span className="text-gray-400 shrink-0">•</span>
-            <span className="text-sm text-gray-800 flex-1 truncate">{item.title}</span>
-            <span className="text-xs text-gray-400 shrink-0">{getNumber(item.metadata.calories) ?? 0} kcal</span>
-          </button>
-        ))}
+      <JournalSection
+        title={foodItems.length > 0 ? `Repas — ${calories} kcal` : 'Repas'}
+        empty="Aucun repas enregistré"
+        accent="border-green-400"
+      >
+        {foodItems.length > 0 && (() => {
+          const grouped = mealOrder.reduce<Record<string, typeof foodItems>>((acc, type) => {
+            const items = foodItems.filter((food) => (getString(food.metadata.mealType) ?? 'SNACK') === type)
+            if (items.length > 0) acc[type] = items
+            return acc
+          }, {})
+
+          return Object.entries(grouped).map(([type, items]) => {
+            const subtotal = items.reduce((sum, food) => sum + (getNumber(food.metadata.calories) ?? 0), 0)
+            return (
+              <div key={type} className="mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-base">{mealEmojis[type] ?? '️'}</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    {mealLabels[type]}
+                  </span>
+                  <span className="text-xs text-gray-400">· {subtotal} kcal</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {items.map((food) => (
+                    <button
+                      key={food.id}
+                      type="button"
+                      onClick={() => onNavigate('food')}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-opacity hover:opacity-80 ${
+                        mealBg[type] ?? mealBg.SNACK
+                      }`}
+                    >
+                      <span className="truncate max-w-[160px]">{food.title}</span>
+                      <span className="opacity-60 shrink-0">{getNumber(food.metadata.calories) ?? 0} kcal</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          })
+        })()}
       </JournalSection>
 
-      <JournalSection title="Notes" empty="Aucune note">
-        {notes.length > 0 && notes.slice(0, 3).map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => onNavigate('notes')}
-            className="w-full flex items-start gap-3 py-1 text-left hover:bg-gray-50 rounded transition-colors"
-          >
-            {getBoolean(item.metadata.isPinned) && <Pin size={12} className="text-violet-400 mt-1 shrink-0" />}
-            {!getBoolean(item.metadata.isPinned) && <span className="text-gray-400 shrink-0">•</span>}
-            <span className="text-sm text-gray-800 truncate flex-1">{item.title}</span>
-          </button>
-        ))}
+      <JournalSection title="Notes" empty="Aucune note" accent="border-violet-400">
+        {notes.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {notes.slice(0, 4).map((item) => {
+              const isPinned = getBoolean(item.metadata.isPinned) === true
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onNavigate('notes')}
+                  className="flex items-center gap-1.5 bg-violet-50 text-violet-800 px-3 py-1.5 rounded-full text-xs font-medium hover:opacity-80 transition-opacity"
+                >
+                  {isPinned && <Pin size={11} className="shrink-0" />}
+                  <span className="truncate max-w-[180px]">{item.title}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </JournalSection>
 
       <div className="border-t-4 border-double border-gray-900 my-8" />
@@ -327,13 +475,14 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
         </h2>
         <button
           type="button"
-          onClick={() =>
+          onClick={(event) => {
+            event.stopPropagation()
             setCollapsedSections(
               allCollapsed
                 ? new Set()
                 : new Set(visibleSections.map((s) => s.key))
             )
-          }
+          }}
           className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
         >
           {allCollapsed ? 'Tout développer' : 'Tout réduire'}
@@ -350,7 +499,10 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
           {visibleSections.map(({ key, label, items }, sectionIndex) => (
             <section key={key}>
               <div
-                onClick={() => toggleSection(key)}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  toggleSection(key)
+                }}
                 className="flex items-center gap-3 py-2 cursor-pointer select-none group"
               >
                 <span className="w-5 h-5 rounded-full bg-stone-700 text-amber-50 text-xs flex items-center justify-center font-bold shrink-0">
