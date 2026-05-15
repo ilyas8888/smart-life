@@ -46,6 +46,13 @@ const mealDots: Record<string, string> = {
   SNACK: 'bg-gray-400',
 }
 
+const headerBg: Record<string, string> = {
+  BREAKFAST: 'bg-yellow-50',
+  LUNCH: 'bg-green-50',
+  DINNER: 'bg-blue-50',
+  SNACK: 'bg-gray-50',
+}
+
 const toNumber = (value: number | string | null | undefined) => {
   if (value === null || value === undefined) return 0
   const parsed = Number(value)
@@ -133,46 +140,57 @@ function FoodLogRow({
   const details = detailsEntries(log.nutritionDetails)
 
   return (
-    <div className="py-2.5 border-b border-gray-50 last:border-0">
+    <div className="py-3 border-b border-gray-50 last:border-0">
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-900 truncate">{log.foodItem}</p>
+          <p className="text-sm font-semibold text-gray-900 truncate">{log.foodItem}</p>
           {log.quantity && <p className="text-xs text-gray-400 mt-0.5">{log.quantity}</p>}
-          {log.notes && <p className="text-xs text-gray-400 mt-1 truncate">{log.notes}</p>}
+          {log.notes && <p className="text-xs text-gray-400 mt-1 line-clamp-1">{log.notes}</p>}
+
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            <span className="text-xs bg-green-50 text-green-700 px-1.5 py-0.5 rounded font-medium">
+              P {formatValue(toNumber(log.proteinG))}
+            </span>
+            <span className="text-xs bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded font-medium">
+              G {formatValue(toNumber(log.carbsG))}
+            </span>
+            <span className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-medium">
+              L {formatValue(toNumber(log.fatG))}
+            </span>
+          </div>
+
           {hasDetails(log.nutritionDetails) && (
             <button
               type="button"
               onClick={() => setIsExpanded((current) => !current)}
-              className="mt-2 flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+              className="mt-2 flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 transition-colors"
             >
-              Détails
-              {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              Détails nutritionnels
+              {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
             </button>
           )}
         </div>
 
-        <div className="shrink-0 text-right">
-          <p className="text-sm font-semibold text-gray-700">{Math.round(toNumber(log.calories))} kcal</p>
-          <p className="text-xs text-gray-400">
-            P: {formatValue(toNumber(log.proteinG))} · G: {formatValue(toNumber(log.carbsG))} · L: {formatValue(toNumber(log.fatG))}
+        <div className="shrink-0 flex items-start gap-2">
+          <p className="text-base font-bold text-gray-800">
+            {Math.round(toNumber(log.calories))} <span className="text-xs font-normal text-gray-400">kcal</span>
           </p>
+          <button
+            type="button"
+            onClick={() => onDelete(log.id)}
+            className="p-1 text-gray-300 hover:text-red-400 transition-colors mt-0.5"
+          >
+            <Trash2 size={14} />
+          </button>
         </div>
-
-        <button
-          type="button"
-          onClick={() => onDelete(log.id)}
-          className="shrink-0 p-1 text-gray-300 hover:text-red-400 transition-colors"
-        >
-          <Trash2 size={14} />
-        </button>
       </div>
 
       {isExpanded && details.length > 0 && (
-        <div className="grid grid-cols-2 gap-1 mt-2 pt-2 border-t border-gray-50">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-gray-50">
           {details.map(([key, value]) => (
-            <div key={key} className="text-xs text-gray-500">
-              <span className="font-medium text-gray-600">{key.replace(/_/g, ' ')}</span>
-              <span className="text-gray-400"> : {String(value)}</span>
+            <div key={key} className="bg-gray-50 rounded-lg px-2 py-1.5 text-xs">
+              <p className="font-medium text-gray-600 capitalize">{key.replace(/_/g, ' ')}</p>
+              <p className="text-gray-400">{String(value)}</p>
             </div>
           ))}
         </div>
@@ -287,16 +305,17 @@ export default function FoodLogsPanel() {
               const totalCalories = logs.reduce((sum, log) => sum + toNumber(log.calories), 0)
 
               return (
-                <section key={mealType} className="mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${mealDots[mealType]}`} />
+                <section key={mealType} className="mb-4 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className={`flex items-center justify-between px-4 py-3 border-b border-gray-50 ${headerBg[mealType]}`}>
+                    <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${mealDots[mealType]}`} />
                       {mealLabels[mealType]}
+                      <span className="text-xs font-normal text-gray-400">{logs.length} repas</span>
                     </h3>
-                    <span className="text-xs text-gray-400">{Math.round(totalCalories)} kcal</span>
+                    <span className="text-sm font-semibold text-gray-600">{Math.round(totalCalories)} kcal</span>
                   </div>
 
-                  <div>
+                  <div className="px-4">
                     {logs.map((log) => (
                       <FoodLogRow
                         key={log.id}
