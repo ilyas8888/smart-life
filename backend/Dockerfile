@@ -9,4 +9,4 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 EXPOSE 7860
-ENTRYPOINT ["sh", "-c", "java -Xmx400m -XX:+UseContainerSupport -jar app.jar --server.port=${PORT:-8080}"]
+ENTRYPOINT ["java", "-Xmx400m", "-XX:+UseContainerSupport", "-jar", "app.jar", "--server.port=7860"]
