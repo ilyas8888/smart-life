@@ -1,6 +1,5 @@
 ---
 title: SmartLife Backend
-emoji: 
 colorFrom: blue
 colorTo: indigo
 sdk: docker
