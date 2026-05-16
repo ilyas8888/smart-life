@@ -1,5 +1,6 @@
+import { useState, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckSquare, Trash2, Clock } from 'lucide-react'
+import { CheckSquare, Trash2, Clock, Plus } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
@@ -25,9 +26,33 @@ const priorityFr = { LOW: 'Basse', MEDIUM: 'Moyenne', HIGH: 'Haute' }
 
 export default function TasksPanel() {
   const qc = useQueryClient()
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM')
+  const [dueDate, setDueDate] = useState('')
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
     queryKey: ['tasks'],
     queryFn: () => api.get('/tasks').then((r) => r.data),
+  })
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      api.post('/tasks', {
+        title,
+        description,
+        priority,
+        status: 'TODO',
+        dueDate: dueDate || null,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] })
+      setTitle('')
+      setDescription('')
+      setPriority('MEDIUM')
+      setDueDate('')
+      toast.success('Tâche créée')
+    },
+    onError: () => toast.error('Erreur lors de la création'),
   })
 
   const statusMutation = useMutation({
@@ -46,6 +71,12 @@ export default function TasksPanel() {
   const todo = tasks.filter((t) => t.status === 'TODO')
   const inProgress = tasks.filter((t) => t.status === 'IN_PROGRESS')
   const done = tasks.filter((t) => t.status === 'DONE')
+
+  const handleCreate = (e: FormEvent) => {
+    e.preventDefault()
+    if (!title.trim()) return
+    createMutation.mutate()
+  }
 
   const TaskCard = ({ task }: { task: Task }) => (
     <div className="card mb-3">
@@ -95,10 +126,51 @@ export default function TasksPanel() {
         Tâches ({tasks.length})
       </h2>
 
+      <form onSubmit={handleCreate} className="card mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+          <input
+            className="input lg:col-span-2"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Titre de la tâche"
+            required
+          />
+          <input
+            className="input lg:col-span-2"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description (optionnel)"
+          />
+          <select
+            className="input"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as 'LOW' | 'MEDIUM' | 'HIGH')}
+          >
+            <option value="LOW">Basse</option>
+            <option value="MEDIUM">Moyenne</option>
+            <option value="HIGH">Haute</option>
+          </select>
+          <input
+            className="input md:col-span-2 lg:col-span-2"
+            type="datetime-local"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+          />
+          <button
+            type="submit"
+            className="btn-primary md:col-span-2 lg:col-span-1 flex items-center justify-center gap-2"
+            disabled={!title.trim() || createMutation.isPending}
+          >
+            <Plus size={16} />
+            Ajouter
+          </button>
+        </div>
+      </form>
+
       {tasks.length === 0 ? (
         <div className="text-center py-16 text-gray-400 dark:text-gray-500">
           <CheckSquare size={40} className="mx-auto mb-3 opacity-30" />
-          <p>Aucune tâche. Utilisez le prompt IA pour en créer !</p>
+          <p>Aucune tâche. Créez votre première tâche ci-dessus ou via le Prompt IA.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

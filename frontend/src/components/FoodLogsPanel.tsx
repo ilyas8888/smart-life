@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronRight, ChevronUp, Dumbbell, Flame, Trash2, UtensilsCrossed } from 'lucide-react'
+import { ChevronDown, ChevronRight, ChevronUp, Dumbbell, Flame, Plus, Trash2, UtensilsCrossed, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
@@ -203,10 +203,49 @@ export default function FoodLogsPanel() {
   const qc = useQueryClient()
   const [selectedDate, setSelectedDate] = useState(todayString())
   const [collapsedMeals, setCollapsedMeals] = useState<Set<string>>(new Set())
+  const [showForm, setShowForm] = useState(false)
+  const [foodItem, setFoodItem] = useState('')
+  const [mealType, setMealType] = useState<'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK'>('LUNCH')
+  const [calories, setCalories] = useState('')
+  const [proteinG, setProteinG] = useState('')
+  const [carbsG, setCarbsG] = useState('')
+  const [fatG, setFatG] = useState('')
+  const [quantity, setQuantity] = useState('')
 
   const { data: foodLogs = [], isLoading } = useQuery<FoodLog[]>({
     queryKey: ['food-logs'],
     queryFn: () => api.get('/food-logs').then((r) => r.data),
+  })
+
+  const resetForm = () => {
+    setFoodItem('')
+    setMealType('LUNCH')
+    setCalories('')
+    setProteinG('')
+    setCarbsG('')
+    setFatG('')
+    setQuantity('')
+  }
+
+  const createMutation = useMutation({
+    mutationFn: () =>
+      api.post('/food-logs', {
+        foodItem,
+        mealType,
+        calories: calories ? Number(calories) : null,
+        proteinG: proteinG ? Number(proteinG) : null,
+        carbsG: carbsG ? Number(carbsG) : null,
+        fatG: fatG ? Number(fatG) : null,
+        quantity: quantity || null,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['food-logs'] })
+      qc.invalidateQueries({ queryKey: ['timeline'] })
+      resetForm()
+      setShowForm(false)
+      toast.success('Repas ajouté')
+    },
+    onError: () => toast.error('Erreur lors de l\'ajout'),
   })
 
   const deleteMutation = useMutation({
@@ -239,16 +278,17 @@ export default function FoodLogsPanel() {
     return foodLogs.filter((log) => log.logDate === selectedDate)
   }, [foodLogs, selectedDate])
 
-  const calories = selectedLogs.reduce((sum, log) => sum + toNumber(log.calories), 0)
-  const proteinG = selectedLogs.reduce((sum, log) => sum + toNumber(log.proteinG), 0)
-  const carbsG = selectedLogs.reduce((sum, log) => sum + toNumber(log.carbsG), 0)
-  const fatG = selectedLogs.reduce((sum, log) => sum + toNumber(log.fatG), 0)
+  const caloriesTotal = selectedLogs.reduce((sum, log) => sum + toNumber(log.calories), 0)
+  const proteinTotal = selectedLogs.reduce((sum, log) => sum + toNumber(log.proteinG), 0)
+  const carbsTotal = selectedLogs.reduce((sum, log) => sum + toNumber(log.carbsG), 0)
+  const fatTotal = selectedLogs.reduce((sum, log) => sum + toNumber(log.fatG), 0)
   const fiberG = selectedLogs.reduce((sum, log) => sum + toNumber(log.fiberG), 0)
   const fiberPercent = dailyGoals.fiberG > 0 ? (fiberG / dailyGoals.fiberG) * 100 : 0
   const visibleMealTypes = mealOrder.filter((mealType) =>
     selectedLogs.some((log) => (log.mealType ?? 'SNACK') === mealType)
   )
   const allVisibleMealsCollapsed = visibleMealTypes.every((mealType) => collapsedMeals.has(mealType))
+  const shouldShowForm = showForm || foodLogs.length === 0
 
   if (isLoading) {
     return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement...</div>
@@ -259,6 +299,14 @@ export default function FoodLogsPanel() {
       <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
         <UtensilsCrossed className="text-primary-600" />
         Alimentation ({foodLogs.length})
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className="btn-primary ml-2 flex items-center gap-2 text-sm font-medium"
+        >
+          <Plus size={16} />
+          Ajouter
+        </button>
         <button
           type="button"
           onClick={() =>
@@ -274,12 +322,108 @@ export default function FoodLogsPanel() {
         </button>
       </h2>
 
-      {foodLogs.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-          <UtensilsCrossed size={40} className="mx-auto mb-3 opacity-30" />
-          <p>Aucun repas enregistré. Utilisez le prompt IA pour ajouter votre alimentation.</p>
-        </div>
-      ) : (
+      {foodLogs.length === 0 && (
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          Utilisez le prompt IA ou ajoutez manuellement.
+        </p>
+      )}
+
+      {shouldShowForm && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!foodItem.trim()) return
+            createMutation.mutate()
+          }}
+          className="card mb-6 max-w-4xl"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input
+              className="input"
+              value={foodItem}
+              onChange={(e) => setFoodItem(e.target.value)}
+              placeholder="Aliment (ex: Poulet grillé)"
+              required
+            />
+            <select
+              className="input"
+              value={mealType}
+              onChange={(e) => setMealType(e.target.value as 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK')}
+            >
+              <option value="BREAKFAST">Petit-déjeuner</option>
+              <option value="LUNCH">Déjeuner</option>
+              <option value="DINNER">Dîner</option>
+              <option value="SNACK">Snack</option>
+            </select>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:col-span-2">
+              <input
+                className="input"
+                type="number"
+                min={0}
+                step={0.1}
+                value={calories}
+                onChange={(e) => setCalories(e.target.value)}
+                placeholder="Kcal"
+              />
+              <input
+                className="input"
+                type="number"
+                min={0}
+                step={0.1}
+                value={proteinG}
+                onChange={(e) => setProteinG(e.target.value)}
+                placeholder="Protéines g"
+              />
+              <input
+                className="input"
+                type="number"
+                min={0}
+                step={0.1}
+                value={carbsG}
+                onChange={(e) => setCarbsG(e.target.value)}
+                placeholder="Glucides g"
+              />
+              <input
+                className="input"
+                type="number"
+                min={0}
+                step={0.1}
+                value={fatG}
+                onChange={(e) => setFatG(e.target.value)}
+                placeholder="Lipides g"
+              />
+            </div>
+            <input
+              className="input md:col-span-2"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              placeholder="Quantité (ex: 200g)"
+            />
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              type="button"
+              onClick={() => {
+                resetForm()
+                setShowForm(false)
+              }}
+              className="btn-secondary flex items-center justify-center gap-2"
+            >
+              <X size={16} />
+              Annuler
+            </button>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={!foodItem.trim() || createMutation.isPending}
+            >
+              Enregistrer
+            </button>
+          </div>
+        </form>
+      )}
+
+      {foodLogs.length > 0 && (
         <>
           <div className="overflow-x-auto flex gap-2 mb-6">
             {dates.map((date) => (
@@ -300,10 +444,10 @@ export default function FoodLogsPanel() {
 
           <div className="mb-8">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-              <MacroCard label="Calories" value={calories} goal={dailyGoals.calories} unit="kcal" icon={Flame} />
-              <MacroCard label="Protéines" value={proteinG} goal={dailyGoals.proteinG} unit="g" icon={Dumbbell} />
-              <MacroCard label="Glucides" value={carbsG} goal={dailyGoals.carbsG} unit="g" icon={UtensilsCrossed} />
-              <MacroCard label="Lipides" value={fatG} goal={dailyGoals.fatG} unit="g" icon={UtensilsCrossed} />
+              <MacroCard label="Calories" value={caloriesTotal} goal={dailyGoals.calories} unit="kcal" icon={Flame} />
+              <MacroCard label="Protéines" value={proteinTotal} goal={dailyGoals.proteinG} unit="g" icon={Dumbbell} />
+              <MacroCard label="Glucides" value={carbsTotal} goal={dailyGoals.carbsG} unit="g" icon={UtensilsCrossed} />
+              <MacroCard label="Lipides" value={fatTotal} goal={dailyGoals.fatG} unit="g" icon={UtensilsCrossed} />
             </div>
 
             <div className="card mt-4 max-w-sm">

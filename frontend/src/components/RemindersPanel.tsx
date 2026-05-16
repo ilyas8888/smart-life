@@ -1,5 +1,6 @@
+import { useState, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Bell, Check, Trash2 } from 'lucide-react'
+import { Bell, Check, Trash2, Plus } from 'lucide-react'
 import { format, isPast } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
@@ -15,9 +16,24 @@ interface Reminder {
 
 export default function RemindersPanel() {
   const qc = useQueryClient()
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [remindAt, setRemindAt] = useState('')
   const { data: reminders = [], isLoading } = useQuery<Reminder[]>({
     queryKey: ['reminders'],
     queryFn: () => api.get('/reminders').then((r) => r.data),
+  })
+
+  const createMutation = useMutation({
+    mutationFn: () => api.post('/reminders', { title, description, remindAt }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reminders'] })
+      setTitle('')
+      setDescription('')
+      setRemindAt('')
+      toast.success('Rappel créé')
+    },
+    onError: () => toast.error('Erreur lors de la création'),
   })
 
   const doneMutation = useMutation({
@@ -32,6 +48,12 @@ export default function RemindersPanel() {
 
   if (isLoading) return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement...</div>
 
+  const handleCreate = (e: FormEvent) => {
+    e.preventDefault()
+    if (!title.trim() || !remindAt) return
+    createMutation.mutate()
+  }
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
@@ -39,10 +61,43 @@ export default function RemindersPanel() {
         Rappels ({reminders.length})
       </h2>
 
+      <form onSubmit={handleCreate} className="card mb-6 max-w-2xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <input
+            className="input"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Titre du rappel"
+            required
+          />
+          <input
+            className="input"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description (optionnel)"
+          />
+          <input
+            className="input"
+            type="datetime-local"
+            value={remindAt}
+            onChange={(e) => setRemindAt(e.target.value)}
+            required
+          />
+          <button
+            type="submit"
+            className="btn-primary flex items-center justify-center gap-2"
+            disabled={!title.trim() || !remindAt || createMutation.isPending}
+          >
+            <Plus size={16} />
+            Ajouter
+          </button>
+        </div>
+      </form>
+
       {reminders.length === 0 ? (
         <div className="text-center py-16 text-gray-400 dark:text-gray-500">
           <Bell size={40} className="mx-auto mb-3 opacity-30" />
-          <p>Aucun rappel actif.</p>
+          <p>Créez votre premier rappel ci-dessus ou via le Prompt IA.</p>
         </div>
       ) : (
         <div className="space-y-3 max-w-2xl">
