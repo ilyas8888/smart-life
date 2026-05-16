@@ -1,0 +1,29 @@
+name: Deploy Backend to Hugging Face Spaces
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add Hugging Face Spaces remote
+        run: git remote add hf-space https://ilyas8888:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/ilyas8888/smartlife-backend
+
+      - name: Deploy backend subtree
+        run: git subtree push --prefix backend hf-space main
