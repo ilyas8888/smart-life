@@ -1,9 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
   plugins: [react()],
-  base: process.env.NODE_ENV === 'production' ? '/smart-life/' : '/',
+  base: command === 'build' ? '/smart-life/' : '/',
   server: {
     port: 5173,
     proxy: {
@@ -13,4 +13,4 @@ export default defineConfig({
       },
     },
   },
-})
+}))
