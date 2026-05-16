@@ -9,6 +9,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/contacts")
@@ -25,6 +26,20 @@ public class ContactController {
             return contactRepository.findByUserIdAndNameContainingIgnoreCase(user.getId(), search);
         }
         return contactRepository.findByUserIdOrderByNameAsc(user.getId());
+    }
+
+    @PostMapping
+    public ResponseEntity<Contact> createContact(@RequestBody Map<String, Object> body,
+                                                 @AuthenticationPrincipal User user) {
+        Contact contact = Contact.builder()
+                .user(user)
+                .name((String) body.get("name"))
+                .phone((String) body.get("phone"))
+                .email((String) body.get("email"))
+                .address((String) body.get("address"))
+                .notes((String) body.get("notes"))
+                .build();
+        return ResponseEntity.ok(contactRepository.save(contact));
     }
 
     @DeleteMapping("/{id}")

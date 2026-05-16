@@ -9,6 +9,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/notes")
@@ -20,6 +21,18 @@ public class NoteController {
     @GetMapping
     public List<Note> getNotes(@AuthenticationPrincipal User user) {
         return noteRepository.findByUserIdOrderByIsPinnedDescCreatedAtDesc(user.getId());
+    }
+
+    @PostMapping
+    public ResponseEntity<Note> createNote(@RequestBody Map<String, Object> body,
+                                           @AuthenticationPrincipal User user) {
+        Note note = Note.builder()
+                .user(user)
+                .title((String) body.get("title"))
+                .content((String) body.get("content"))
+                .isPinned(Boolean.TRUE.equals(body.get("isPinned")))
+                .build();
+        return ResponseEntity.ok(noteRepository.save(note));
     }
 
     @PatchMapping("/{id}/pin")

@@ -8,7 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/tasks")
@@ -20,6 +22,20 @@ public class TaskController {
     @GetMapping
     public List<Task> getTasks(@AuthenticationPrincipal User user) {
         return taskRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+    }
+
+    @PostMapping
+    public ResponseEntity<Task> createTask(@RequestBody Map<String, Object> body,
+                                           @AuthenticationPrincipal User user) {
+        Task task = Task.builder()
+                .user(user)
+                .title((String) body.get("title"))
+                .description((String) body.getOrDefault("description", ""))
+                .status(Task.TaskStatus.valueOf((String) body.getOrDefault("status", "TODO")))
+                .priority(Task.Priority.valueOf((String) body.getOrDefault("priority", "MEDIUM")))
+                .dueDate(body.get("dueDate") != null ? LocalDateTime.parse((String) body.get("dueDate")) : null)
+                .build();
+        return ResponseEntity.ok(taskRepository.save(task));
     }
 
     @PatchMapping("/{id}/status")

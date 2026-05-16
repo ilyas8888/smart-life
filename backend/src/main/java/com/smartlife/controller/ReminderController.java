@@ -8,7 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/reminders")
@@ -20,6 +22,19 @@ public class ReminderController {
     @GetMapping
     public List<Reminder> getReminders(@AuthenticationPrincipal User user) {
         return reminderRepository.findByUserIdAndIsDoneFalseOrderByRemindAtAsc(user.getId());
+    }
+
+    @PostMapping
+    public ResponseEntity<Reminder> createReminder(@RequestBody Map<String, Object> body,
+                                                   @AuthenticationPrincipal User user) {
+        Reminder reminder = Reminder.builder()
+                .user(user)
+                .title((String) body.get("title"))
+                .description((String) body.getOrDefault("description", ""))
+                .remindAt(LocalDateTime.parse((String) body.get("remindAt")))
+                .isDone(false)
+                .build();
+        return ResponseEntity.ok(reminderRepository.save(reminder));
     }
 
     @PatchMapping("/{id}/done")

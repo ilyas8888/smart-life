@@ -26,6 +26,23 @@ public class FoodLogController {
         return foodLogRepository.findByUserIdOrderByLogDateDescLoggedAtDesc(user.getId());
     }
 
+    @PostMapping
+    public ResponseEntity<FoodLog> createFoodLog(@RequestBody Map<String, Object> body,
+                                                 @AuthenticationPrincipal User user) {
+        FoodLog log = FoodLog.builder()
+                .user(user)
+                .foodItem((String) body.get("foodItem"))
+                .mealType((String) body.getOrDefault("mealType", "SNACK"))
+                .quantity((String) body.get("quantity"))
+                .calories(body.get("calories") != null ? ((Number) body.get("calories")).intValue() : null)
+                .proteinG(body.get("proteinG") != null ? BigDecimal.valueOf(((Number) body.get("proteinG")).doubleValue()) : null)
+                .carbsG(body.get("carbsG") != null ? BigDecimal.valueOf(((Number) body.get("carbsG")).doubleValue()) : null)
+                .fatG(body.get("fatG") != null ? BigDecimal.valueOf(((Number) body.get("fatG")).doubleValue()) : null)
+                .logDate(LocalDate.now())
+                .build();
+        return ResponseEntity.ok(foodLogRepository.save(log));
+    }
+
     @GetMapping("/today")
     public List<FoodLog> getTodayFoodLogs(@AuthenticationPrincipal User user) {
         return foodLogRepository.findByUserIdAndLogDate(user.getId(), LocalDate.now());
