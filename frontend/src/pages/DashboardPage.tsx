@@ -58,6 +58,8 @@ export default function DashboardPage() {
   const handleLogout = async () => {
     try {
       await api.post('/auth/logout')
+    } catch {
+      // ignore API error — logout locally regardless
     } finally {
       logout()
     }
