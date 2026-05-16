@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>SmartLife</title>
+    <script>
+      // SPA redirect workaround for GitHub Pages
+      // Saves the full path to sessionStorage then redirects to index.html
+      var path = window.location.pathname.replace('/smart-life', '') || '/';
+      var search = window.location.search;
+      var hash = window.location.hash;
+      sessionStorage.setItem('spa_redirect', path + search + hash);
+      window.location.replace('/smart-life/');
+    </script>
+  </head>
+  <body></body>
+</html>
