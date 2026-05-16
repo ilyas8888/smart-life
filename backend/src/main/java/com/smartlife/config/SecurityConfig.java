@@ -4,6 +4,7 @@ import com.smartlife.security.CustomUserDetailsService;
 import com.smartlife.security.JwtAuthFilter;
 import com.smartlife.security.OAuth2SuccessHandler;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,7 +32,8 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final CustomUserDetailsService userDetailsService;
-    private final OAuth2SuccessHandler oauth2SuccessHandler;
+    @Autowired(required = false)
+    private OAuth2SuccessHandler oauth2SuccessHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -46,7 +48,11 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                .oauth2Login(oauth2 -> oauth2.successHandler(oauth2SuccessHandler))
+                .oauth2Login(oauth2 -> {
+                    if (oauth2SuccessHandler != null) {
+                        oauth2.successHandler(oauth2SuccessHandler);
+                    }
+                })
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
@@ -54,12 +60,15 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        var config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        CorsConfiguration config = new CorsConfiguration();
+        List<String> origins = new java.util.ArrayList<>(List.of("http://localhost:5173", "http://localhost:3000"));
+        String prodOrigin = System.getenv("FRONTEND_URL");
+        if (prodOrigin != null && !prodOrigin.isBlank()) origins.add(prodOrigin);
+        config.setAllowedOrigins(origins);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
-        var source = new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }
