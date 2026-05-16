@@ -1,7 +1,9 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/authStore'
 
-const api = axios.create({ baseURL: '/api' })
+const api = axios.create({
+  baseURL: `${import.meta.env.VITE_API_URL ?? ''}/api`
+})
 
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token
@@ -18,18 +20,18 @@ api.interceptors.response.use(
       const { refreshToken, setToken, logout } = useAuthStore.getState()
       if (!refreshToken) {
         logout()
-        window.location.href = '/login'
+        window.location.href = import.meta.env.BASE_URL + 'login'
         return Promise.reject(error)
       }
 
       try {
-        const { data } = await axios.post('/api/auth/refresh', { refreshToken })
+        const { data } = await axios.post(`${import.meta.env.VITE_API_URL ?? ''}/api/auth/refresh`, { refreshToken })
         setToken(data.accessToken)
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
         return api(originalRequest)
       } catch {
         logout()
-        window.location.href = '/login'
+        window.location.href = import.meta.env.BASE_URL + 'login'
       }
     }
     return Promise.reject(error)
