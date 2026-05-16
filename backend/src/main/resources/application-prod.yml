@@ -1,0 +1,11 @@
+spring:
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration
+
+server:
+  port: ${PORT:8080}
+
+logging:
+  level:
+    com.smartlife: INFO
+    org.springframework.security: WARN
