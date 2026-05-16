@@ -1,4 +1,4 @@
-CREATE TABLE diary_entries (
+CREATE TABLE IF NOT EXISTS diary_entries (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     content TEXT NOT NULL,
