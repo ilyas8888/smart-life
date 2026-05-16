@@ -69,20 +69,20 @@ export default function RegisterPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Prénom</label>
-                  <input className="input" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
+                  <input className="input" autoComplete="given-name" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Nom</label>
-                  <input className="input" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
+                  <input className="input" autoComplete="family-name" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Email</label>
-                <input className="input" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+                <input className="input" type="email" autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Mot de passe (min. 6 caractères)</label>
-                <input className="input" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} />
+                <input className="input" type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={6} />
               </div>
               <button type="submit" className="btn-primary w-full" disabled={loading}>
                 {loading ? 'Création...' : 'Créer mon compte'}
