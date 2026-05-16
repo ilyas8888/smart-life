@@ -1,166 +1,102 @@
-# SmartLife
+# SmartLife — Plateforme de gestion personnelle intelligente
 
-## Description / Description
+Application web full-stack permettant de gérer sa vie quotidienne via un prompt en langage naturel analysé par Claude (Anthropic).
 
-**FR**  
-SmartLife est une plateforme intelligente de gestion personnelle. L'utilisateur saisit une demande en langage naturel, puis Claude AI (Sonnet 4.6) analyse le texte et le transforme en donnees structurees : taches, rappels, contacts, notes, journal alimentaire et historique des interactions IA.
+**Live demo** : [https://ilyas8888.github.io/smart-life/](https://ilyas8888.github.io/smart-life/)
 
-**EN**  
-SmartLife is an intelligent personal management platform. The user writes a free-text prompt, then Claude AI (Sonnet 4.6) analyzes it and converts it into structured data: tasks, reminders, contacts, notes, food diary entries, and AI interaction history.
+---
 
-## Tech Stack / Technologies
+## Fonctionnalités
 
-**Backend**
-- Java 17
-- Spring Boot 3.2
-- Spring Security with JWT authentication
-- Flyway database migrations
+- **Prompt IA** : décrivez votre journée en texte libre — l'IA extrait et crée automatiquement tâches, rappels, notes, contacts et entrées alimentaires
+- **Tâches** : Kanban board (À faire / En cours / Terminé)
+- **Rappels** : avec date/heure et statut
+- **Notes** : prise de notes rapide
+- **Contacts** : carnet d'adresses personnel
+- **Alimentation** : journal alimentaire avec macros (calories, protéines, glucides, lipides)
+- **Agenda** : vue bullet-journal de la semaine
+- **Journal personnel** : entrées quotidiennes avec sélecteur d'humeur
+- **Dark / Light mode**
+- **Auth sécurisée** : JWT (access 15 min + refresh 7 jours), logout réel, OTP email à l'inscription
 
-**Frontend**
-- React 18
-- TypeScript
-- Vite
-- TailwindCSS
+---
 
-**AI Service**
-- Python 3.13
-- FastAPI
-- Claude API
+## Stack technique
 
-**Infrastructure**
-- PostgreSQL 15
-- Docker
-- Docker Compose
+| Couche | Technologie |
+|---|---|
+| Frontend | React 18 + TypeScript + Vite + TailwindCSS + TanStack Query |
+| Backend | Java 17 / Spring Boot 3.2.5 + Spring Security + JPA + Flyway |
+| IA | Python 3.13 / FastAPI + SDK Anthropic (Claude Sonnet 4.6) |
+| Base de données | PostgreSQL 15 (Neon en production) |
+| Auth | JWT custom + OTP email (Spring Mail) |
 
-## Architecture / Architecture
+---
 
-```text
-+------------------+      +----------------------+      +----------------------+
-| React Frontend   | ---> | Spring Boot Backend  | ---> | Python/FastAPI AI   |
-| Vite + Tailwind  |      | REST API + JWT       |      | Claude integration  |
-+------------------+      +----------------------+      +----------+-----------+
-          |                         |                              |
-          |                         v                              v
-          |              +----------------------+        +----------------------+
-          +------------> | PostgreSQL 15        |        | Claude API           |
-                         | Data persistence     |        | Sonnet 4.6           |
-                         +----------------------+        +----------------------+
+## Architecture
+
+```
+smart-life/
+├── frontend/          React/Vite — GitHub Pages
+├── backend/           Spring Boot — Hugging Face Spaces (Docker)
+├── ai-service/        FastAPI — Hugging Face Spaces (Docker)
+└── .github/workflows/ CI/CD GitHub Actions
 ```
 
-## Features / Fonctionnalites
+Le frontend appelle le backend Spring Boot (`/api/*`). Le backend délègue l'analyse du prompt au service Python via un header d'authentification interne (`X-Internal-Key`). Le service Python appelle l'API Claude avec prompt caching pour réduire les coûts.
 
-**FR**
-- Traitement de prompts en langage naturel avec Claude AI
-- Creation automatique de taches, rappels, contacts, notes et entrees de journal alimentaire
-- Tableau Kanban pour la gestion des taches
-- Rappels avec dates d'echeance
-- Gestion des contacts
-- Notes avec option d'epinglage
-- Historique des prompts et reponses IA
-- Authentification securisee avec JWT
+---
 
-**EN**
-- Natural language prompt processing with Claude AI
-- Automatic creation of tasks, reminders, contacts, notes, and food diary entries
-- Kanban task board
-- Reminders with due dates
-- Contact management
-- Notes with pin support
-- AI prompt and response history
-- Secure JWT authentication
+## Déploiement
 
-## Getting Started / Demarrage
+| Service | Plateforme | URL |
+|---|---|---|
+| Frontend | GitHub Pages | https://ilyas8888.github.io/smart-life/ |
+| Backend | Hugging Face Spaces (Docker) | https://ilyas8888-smartlife-backend.hf.space |
+| AI Service | Hugging Face Spaces (Docker) | https://ilyas8888-smartlife-ai-service.hf.space |
+| Database | Neon PostgreSQL | — |
 
-### Prerequisites / Prerequis
+Le déploiement est automatisé via GitHub Actions (`deploy-frontend.yml`, `deploy-backend.yml`, `deploy-ai-service.yml`).
 
-- Java 17
-- Maven
-- Node.js and npm
-- Python 3.13
-- Docker and Docker Compose
-- Anthropic API key
+---
 
-### Environment Setup / Configuration `.env`
+## Sécurité
 
-Create a `.env` file at the project root:
+- Refresh tokens en base avec révocation explicite (logout réel)
+- Tokens d'accès révoqués par hash SHA-256 (blacklist DB)
+- Rate limiting : 10 req/min par utilisateur sur le endpoint IA (Bucket4j)
+- OTP email obligatoire à l'inscription (vérification d'adresse)
+- Audit logs : chaque action de connexion tracée avec IP
+- Service IA non exposé publiquement (port interne uniquement)
+- Validation `@Valid` sur tous les DTOs entrants
 
-```env
-ANTHROPIC_API_KEY=your_anthropic_api_key
-POSTGRES_DB=smartlife
-POSTGRES_USER=smartlife
-POSTGRES_PASSWORD=smartlife
-JWT_SECRET=your_jwt_secret
-```
+---
 
-### Docker Compose
+## Lancer en local
 
-Run the full stack:
+**Prérequis** : Java 17, Node 20, Python 3.13, PostgreSQL 15, Maven
 
 ```bash
-docker compose up --build
-```
-
-Stop the stack:
-
-```bash
-docker compose down
-```
-
-### Local Development / Developpement local
-
-Backend Spring Boot:
-
-```bash
+# Backend
 cd backend
-mvn spring-boot:run
-```
+mvn spring-boot:run "-Dspring-boot.run.profiles=local"
 
-AI service FastAPI:
-
-```bash
-cd ai-service
-py -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-py -m uvicorn main:app --reload
-```
-
-Frontend React:
-
-```bash
+# Frontend
 cd frontend
 npm install
 npm run dev
+
+# AI Service
+cd ai-service
+pip install -r requirements.txt
+uvicorn main:app --port 8001
 ```
 
-Build frontend:
+Variables d'environnement requises (backend) : `MAIL_USERNAME`, `MAIL_PASSWORD`, `JWT_SECRET`, `AI_INTERNAL_SECRET`.  
+Variable requise (AI service) : `ANTHROPIC_API_KEY`.
 
-```bash
-cd frontend
-npm run build
-```
+---
 
-Run backend checks:
+## Auteur
 
-```bash
-cd backend
-mvn -q -DskipTests compile
-```
-
-## Screenshots / Captures d'ecran
-
-Screenshots will be added here.
-
-| Dashboard | AI Prompt Processing | Kanban Board |
-| --- | --- | --- |
-| Placeholder | Placeholder | Placeholder |
-
-## Author / Auteur
-
-Junior developer - Computer Engineering student, final year.
-
-Developpeur junior - Etudiant en derniere annee de genie informatique.
-
-## License / Licence
-
-MIT License.
+Étudiant en dernière année de génie informatique.

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Brain, CheckSquare, Bell, FileText, Users, LogOut,
-  Send, Sparkles, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon
+  Send, Sparkles, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon, BookOpen
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
@@ -14,8 +14,9 @@ import NotesPanel from '../components/NotesPanel'
 import ContactsPanel from '../components/ContactsPanel'
 import FoodLogsPanel from '../components/FoodLogsPanel'
 import AgendaPage from './AgendaPage'
+import DiaryPanel from '../components/DiaryPanel'
 
-type Panel = 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food'
+type Panel = 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary'
 
 export default function DashboardPage() {
   const { firstName, lastName, email, logout } = useAuthStore()
@@ -45,6 +46,7 @@ export default function DashboardPage() {
     { id: 'notes' as Panel, label: 'Notes', icon: FileText },
     { id: 'contacts' as Panel, label: 'Contacts', icon: Users },
     { id: 'food' as Panel, label: 'Alimentation', icon: UtensilsCrossed },
+    { id: 'diary' as Panel, label: 'Journal', icon: BookOpen },
   ]
 
   const handleSend = (e: React.FormEvent) => {
@@ -208,6 +210,7 @@ export default function DashboardPage() {
           {activePanel === 'notes' && <NotesPanel />}
           {activePanel === 'contacts' && <ContactsPanel />}
           {activePanel === 'food' && <FoodLogsPanel />}
+          {activePanel === 'diary' && <DiaryPanel />}
         </div>
       </main>
     </div>
