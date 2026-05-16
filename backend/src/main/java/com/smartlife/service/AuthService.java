@@ -46,8 +46,11 @@ public class AuthService {
                 .build();
         userRepository.save(user);
         auditLogService.log(user.getId(), "REGISTER", "USER", user.getId(), ip);
-        otpService.generateAndSend(user);
-        return Map.of("step", "OTP_REQUIRED", "userId", user.getId());
+        if (otpService.isEnabled()) {
+            otpService.generateAndSend(user);
+            return Map.of("step", "OTP_REQUIRED", "userId", user.getId());
+        }
+        return authResponse(user);
     }
 
     public Object login(AuthRequest request, String ip) {
