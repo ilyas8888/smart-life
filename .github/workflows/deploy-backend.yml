@@ -26,4 +26,7 @@ jobs:
         run: git remote add hf-space https://ilyas8888:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/ilyas8888/smartlife-backend
 
       - name: Deploy backend subtree
-        run: git subtree push --prefix backend hf-space main
+        run: |
+          git subtree split --prefix backend -b hf-deploy
+          git push hf-space hf-deploy:main --force
+          git branch -D hf-deploy
