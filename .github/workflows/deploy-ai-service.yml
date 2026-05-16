@@ -1,0 +1,33 @@
+name: Deploy AI Service to Hugging Face Spaces
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "ai-service/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add Hugging Face Spaces remote
+        run: git remote add hf-ai https://ilyas8888:${{ secrets.HF_TOKEN }}@huggingface.co/spaces/ilyas8888/smartlife-ai-service
+
+      - name: Deploy AI service subtree
+        run: |
+          git subtree split --prefix ai-service -b hf-deploy-ai
+          git push hf-ai hf-deploy-ai:main --force
+          git branch -D hf-deploy-ai
