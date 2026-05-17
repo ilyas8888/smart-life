@@ -27,6 +27,7 @@ public class AiService {
     private final ContactRepository contactRepository;
     private final FoodLogRepository foodLogRepository;
     private final DiaryEntryRepository diaryEntryRepository;
+    private final WorkoutSessionRepository workoutSessionRepository;
     private final PromptHistoryRepository promptHistoryRepository;
     private final FoodCacheService foodCacheService;
     private final AuditLogService auditLogService;
@@ -67,6 +68,8 @@ public class AiService {
         List<Map<String, Object>> notesCreated = new ArrayList<>();
         List<Map<String, Object>> contactsCreated = new ArrayList<>();
         List<Map<String, Object>> foodLogsCreated = new ArrayList<>();
+        List<Map<String, Object>> diaryEntriesCreated = new ArrayList<>();
+        List<Map<String, Object>> workoutsCreated = new ArrayList<>();
 
         // Persist tasks
         var tasks = (List<Map<String, Object>>) aiResult.getOrDefault("tasks", List.of());
@@ -141,13 +144,61 @@ public class AiService {
                     .build();
             foodLogRepository.save(foodLog);
             foodCacheService.upsert(foodLog);
-            foodLogsCreated.add(Map.of("id", foodLog.getId(), "foodItem", foodLog.getFoodItem()));
+            foodLogsCreated.add(Map.of("id", foodLog.getId(), "title", foodLog.getFoodItem()));
+        }
+
+        // Persist diary entries
+        var diaryEntries = (List<Map<String, Object>>) aiResult.getOrDefault("diary", List.of());
+        for (var d : diaryEntries) {
+            var content = (String) d.get("content");
+            if (content == null || content.isBlank()) continue;
+            var diaryEntry = DiaryEntry.builder()
+                    .user(user)
+                    .content(content)
+                    .mood(normalizeMood((String) d.getOrDefault("mood", null)))
+                    .tags(parseStringArray(d.get("tags")))
+                    .entryDate(LocalDate.now())
+                    .build();
+            diaryEntryRepository.save(diaryEntry);
+            diaryEntriesCreated.add(Map.of("id", diaryEntry.getId(), "title", "Journal"));
+        }
+
+        // Persist workouts
+        var workouts = (List<Map<String, Object>>) aiResult.getOrDefault("workouts", List.of());
+        for (var w : workouts) {
+            var title = (String) w.get("title");
+            if (title == null || title.isBlank()) continue;
+            var session = WorkoutSession.builder()
+                    .user(user)
+                    .title(title)
+                    .durationMinutes(parseInteger(w.get("duration_minutes")))
+                    .caloriesBurned(parseInteger(w.get("calories_burned")))
+                    .notes((String) w.getOrDefault("notes", null))
+                    .build();
+            var exercises = (List<Map<String, Object>>) w.getOrDefault("exercises", List.of());
+            for (var ex : exercises) {
+                var exName = (String) ex.getOrDefault("name", "Exercice");
+                if (exName == null || exName.isBlank()) continue;
+                session.getExercises().add(WorkoutExercise.builder()
+                        .session(session)
+                        .name(exName)
+                        .sets(parseInteger(ex.get("sets")))
+                        .reps(parseInteger(ex.get("reps")))
+                        .weightKg(parseBigDecimal(ex.get("weight_kg")))
+                        .durationSeconds(parseInteger(ex.get("duration_seconds")))
+                        .build());
+            }
+            workoutSessionRepository.save(session);
+            workoutsCreated.add(Map.of("id", session.getId(), "title", session.getTitle()));
         }
 
         response.setTasksCreated(tasksCreated);
         response.setRemindersCreated(remindersCreated);
         response.setNotesCreated(notesCreated);
         response.setContactsCreated(contactsCreated);
+        response.setFoodLogsCreated(foodLogsCreated);
+        response.setDiaryEntriesCreated(diaryEntriesCreated);
+        response.setWorkoutsCreated(workoutsCreated);
 
         // Save prompt history
         var history = PromptHistory.builder()
@@ -159,7 +210,9 @@ public class AiService {
                         "reminders", remindersCreated.size(),
                         "notes", notesCreated.size(),
                         "contacts", contactsCreated.size(),
-                        "food_logs", foodLogsCreated.size()
+                        "food_logs", foodLogsCreated.size(),
+                        "diary", diaryEntriesCreated.size(),
+                        "workouts", workoutsCreated.size()
                 ))
                 .build();
         promptHistoryRepository.save(history);
@@ -191,5 +244,28 @@ public class AiService {
         if (value instanceof Number number) return BigDecimal.valueOf(number.doubleValue());
         try { return new BigDecimal(value.toString()); }
         catch (Exception e) { return null; }
+    }
+
+    private String normalizeMood(String mood) {
+        if (mood == null || mood.isBlank()) return null;
+        return switch (mood.trim().toUpperCase()) {
+            case "GREAT" -> "great";
+            case "GOOD" -> "good";
+            case "NEUTRAL" -> "neutral";
+            case "BAD" -> "bad";
+            case "TERRIBLE", "AWFUL" -> "awful";
+            default -> mood.trim().toLowerCase();
+        };
+    }
+
+    private String[] parseStringArray(Object value) {
+        if (value instanceof List<?> list) {
+            return list.stream()
+                    .filter(Objects::nonNull)
+                    .map(Object::toString)
+                    .filter(tag -> !tag.isBlank())
+                    .toArray(String[]::new);
+        }
+        return null;
     }
 }

@@ -4,7 +4,7 @@ import { CalendarDays, ChevronDown, ChevronRight, Pin } from 'lucide-react'
 import api from '../api/axios'
 import { fetchTimeline, TimelineItem, TimelineResponse } from '../api/timeline'
 
-type Panel = 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food'
+type Panel = 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout'
 
 type AgendaPageProps = {
   onNavigate: (panel: Panel) => void
@@ -17,6 +17,8 @@ const typeToPanel: Record<string, Panel> = {
   REMINDER: 'reminders',
   NOTE: 'notes',
   FOOD: 'food',
+  DIARY: 'diary',
+  WORKOUT: 'workout',
 }
 
 const sections: { key: SectionKey; label: string }[] = [
@@ -33,6 +35,8 @@ const dotStyles = {
   REMINDER: 'bg-orange-500',
   NOTE: 'bg-violet-500',
   FOOD: 'bg-green-500',
+  DIARY: 'bg-rose-500',
+  WORKOUT: 'bg-amber-500',
 }
 
 const badgeStyles = {
@@ -40,6 +44,8 @@ const badgeStyles = {
   REMINDER: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
   NOTE: 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
   FOOD: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  DIARY: 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
+  WORKOUT: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
 }
 
 const typeLabels = {
@@ -47,6 +53,8 @@ const typeLabels = {
   REMINDER: 'RAPPEL',
   NOTE: 'NOTE',
   FOOD: 'REPAS',
+  DIARY: 'JOURNAL',
+  WORKOUT: 'SPORT',
 }
 
 const statusFr: Record<string, string> = {
@@ -265,12 +273,17 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
       const bi = mealOrder.indexOf(getString(b.metadata.mealType) ?? '')
       return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
     })
+  const diaryItems = today.filter((item) => item.type === 'DIARY')
+  const workoutItems = today.filter((item) => item.type === 'WORKOUT')
   const calories = foodItems.reduce((total, item) => total + (getNumber(item.metadata.calories) ?? 0), 0)
+  const caloriesBurned = workoutItems.reduce((total, item) => total + (getNumber(item.metadata.caloriesBurned) ?? 0), 0)
   const stats = [
     tasks.length ? statLabel(tasks.length, 'tâche', 'tâches') : '',
     reminders.length ? statLabel(reminders.length, 'rappel', 'rappels') : '',
     notes.length ? statLabel(notes.length, 'note', 'notes') : '',
     foodItems.length ? statLabel(foodItems.length, 'repas', 'repas') : '',
+    workoutItems.length ? statLabel(workoutItems.length, 'séance sport', 'séances sport') : '',
+    diaryItems.length ? statLabel(diaryItems.length, 'entrée journal', 'entrées journal') : '',
   ].filter(Boolean)
 
   const visibleSections = sections
@@ -400,7 +413,13 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
       </JournalSection>
 
       <JournalSection
-        title={foodItems.length > 0 ? `Repas — ${calories} kcal` : 'Repas'}
+        title={
+          foodItems.length > 0
+            ? caloriesBurned > 0
+              ? `Repas — ${calories} kcal consommées · ${caloriesBurned} brûlées · net ${calories - caloriesBurned} kcal`
+              : `Repas — ${calories} kcal`
+            : 'Repas'
+        }
         empty="Aucun repas enregistré"
         accent="border-green-400"
       >
@@ -460,6 +479,49 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
                 </button>
               )
             })}
+          </div>
+        )}
+      </JournalSection>
+
+      <JournalSection title="Journal" empty="Aucune entrée" accent="border-rose-400">
+        {diaryItems.length > 0 && (
+          <div className="space-y-2">
+            {diaryItems.slice(0, 2).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onNavigate('diary')}
+                className="block w-full text-left bg-rose-50 text-rose-900 dark:bg-rose-900/30 dark:text-rose-200 px-3 py-2 rounded-lg text-xs hover:opacity-80 transition-opacity"
+              >
+                <span className="line-clamp-2">{item.description}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </JournalSection>
+
+      <JournalSection title="Sport" empty="Aucune séance" accent="border-amber-400">
+        {workoutItems.length > 0 && (
+          <div className="space-y-2">
+            {workoutItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onNavigate('workout')}
+                className="block w-full text-left bg-amber-50 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200 px-3 py-2 rounded-lg text-xs hover:opacity-80 transition-opacity"
+              >
+                <span className="font-medium">{item.title}</span>
+                {(getNumber(item.metadata.durationMinutes) || getNumber(item.metadata.caloriesBurned)) && (
+                  <span className="ml-2 text-amber-600 dark:text-amber-400">
+                    {getNumber(item.metadata.durationMinutes) ? `${item.metadata.durationMinutes}min` : ''}
+                    {getNumber(item.metadata.caloriesBurned) ? ` · ${item.metadata.caloriesBurned} kcal` : ''}
+                    {caloriesBurned > 0 && workoutItems.indexOf(item) === workoutItems.length - 1 && calories > 0
+                      ? ` (net: ${calories - caloriesBurned} kcal)`
+                      : ''}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         )}
       </JournalSection>

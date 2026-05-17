@@ -2,12 +2,16 @@ package com.smartlife.service;
 
 import com.smartlife.dto.TimelineItemDto;
 import com.smartlife.model.FoodLog;
+import com.smartlife.model.DiaryEntry;
 import com.smartlife.model.Note;
+import com.smartlife.model.WorkoutSession;
 import com.smartlife.model.Reminder;
 import com.smartlife.model.Task;
 import com.smartlife.model.User;
 import com.smartlife.repository.FoodLogRepository;
+import com.smartlife.repository.DiaryEntryRepository;
 import com.smartlife.repository.NoteRepository;
+import com.smartlife.repository.WorkoutSessionRepository;
 import com.smartlife.repository.ReminderRepository;
 import com.smartlife.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +38,8 @@ public class TimelineService {
     private final ReminderRepository reminderRepository;
     private final NoteRepository noteRepository;
     private final FoodLogRepository foodLogRepository;
+    private final DiaryEntryRepository diaryEntryRepository;
+    private final WorkoutSessionRepository workoutSessionRepository;
 
     @Transactional(readOnly = true)
     public Map<String, List<TimelineItemDto>> getTimeline(User user) {
@@ -56,6 +62,12 @@ public class TimelineService {
 
         foodLogRepository.findByUserIdOrderByLogDateDescLoggedAtDesc(user.getId())
                 .forEach(foodLog -> addItem(timeline, fromFoodLog(foodLog)));
+
+        diaryEntryRepository.findByUserIdOrderByEntryDateDesc(user.getId())
+                .forEach(diaryEntry -> addItem(timeline, fromDiaryEntry(diaryEntry)));
+
+        workoutSessionRepository.findByUserIdOrderBySessionDateDescCreatedAtDesc(user.getId())
+                .forEach(session -> addItem(timeline, fromWorkoutSession(session)));
 
         timeline.values().forEach(items -> items.sort(
                 Comparator.comparing(TimelineItemDto::time, Comparator.nullsLast(String::compareTo))
@@ -142,6 +154,39 @@ public class TimelineService {
                 foodLog.getFoodItem(),
                 foodLog.getNotes(),
                 foodLog.getLogDate(),
+                null,
+                metadata
+        );
+    }
+
+    private TimelineItemDto fromDiaryEntry(DiaryEntry diaryEntry) {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("mood", diaryEntry.getMood());
+        metadata.put("tags", diaryEntry.getTags());
+
+        return new TimelineItemDto(
+                diaryEntry.getId(),
+                "DIARY",
+                "Journal",
+                diaryEntry.getContent(),
+                diaryEntry.getEntryDate(),
+                null,
+                metadata
+        );
+    }
+
+    private TimelineItemDto fromWorkoutSession(WorkoutSession session) {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("durationMinutes", session.getDurationMinutes());
+        metadata.put("caloriesBurned", session.getCaloriesBurned());
+        metadata.put("exerciseCount", session.getExercises().size());
+
+        return new TimelineItemDto(
+                session.getId(),
+                "WORKOUT",
+                session.getTitle(),
+                session.getNotes(),
+                session.getSessionDate(),
                 null,
                 metadata
         );

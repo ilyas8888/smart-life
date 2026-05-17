@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Brain, CheckSquare, Bell, FileText, Users, LogOut,
-  Send, Sparkles, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon, BookOpen
+  Send, Sparkles, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon, BookOpen, Dumbbell, Menu, X
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
@@ -15,14 +15,17 @@ import ContactsPanel from '../components/ContactsPanel'
 import FoodLogsPanel from '../components/FoodLogsPanel'
 import AgendaPage from './AgendaPage'
 import DiaryPanel from '../components/DiaryPanel'
+import WorkoutPanel from '../components/WorkoutPanel'
+import HomePanel from '../components/HomePanel'
 
-type Panel = 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary'
+type Panel = 'home' | 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout'
 
 export default function DashboardPage() {
   const { firstName, lastName, email, logout } = useAuthStore()
   const isDark = useThemeStore((s) => s.isDark)
   const toggle = useThemeStore((s) => s.toggle)
-  const [activePanel, setActivePanel] = useState<Panel>('agenda')
+  const [activePanel, setActivePanel] = useState<Panel>('home')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [prompt, setPrompt] = useState('')
   const queryClient = useQueryClient()
 
@@ -36,9 +39,10 @@ export default function DashboardPage() {
     onError: () => toast.error('Erreur lors du traitement du prompt'),
   })
 
-  const displayName = firstName ? `${firstName} ${lastName ?? ''}`.trim() : email
+  const displayName = firstName ? `${firstName} ${lastName ?? ''}`.trim() : (email ?? 'Utilisateur')
 
   const navItems = [
+    { id: 'home' as Panel, label: 'Accueil', icon: Sparkles },
     { id: 'agenda' as Panel, label: 'Agenda', icon: CalendarDays },
     { id: 'prompt' as Panel, label: 'Prompt IA', icon: Brain },
     { id: 'tasks' as Panel, label: 'Tâches', icon: CheckSquare },
@@ -47,6 +51,7 @@ export default function DashboardPage() {
     { id: 'contacts' as Panel, label: 'Contacts', icon: Users },
     { id: 'food' as Panel, label: 'Alimentation', icon: UtensilsCrossed },
     { id: 'diary' as Panel, label: 'Journal', icon: BookOpen },
+    { id: 'workout' as Panel, label: 'Sport', icon: Dumbbell },
   ]
 
   const handleSend = (e: React.FormEvent) => {
@@ -65,23 +70,46 @@ export default function DashboardPage() {
     }
   }
 
+  const handleNavClick = (id: Panel) => {
+    setActivePanel(id)
+    setSidebarOpen(false)
+  }
+
   return (
     <div className="min-h-screen flex">
-      <aside className="w-64 bg-slate-900 text-white flex flex-col border-r border-slate-700">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-20 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <aside className={`
+        fixed md:static inset-y-0 left-0 z-30 w-64 bg-slate-900 text-white flex flex-col border-r border-slate-700
+        transform transition-transform duration-200
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
         <div className="p-5 border-b border-gray-700">
           <div className="flex items-center gap-3">
             <div className="p-1.5 bg-gradient-to-br from-blue-500 to-violet-600 rounded-lg">
               <Brain size={20} />
             </div>
             <span className="font-bold text-lg">SmartLife</span>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="ml-auto p-1 text-gray-400 hover:text-white md:hidden"
+            >
+              <X size={18} />
+            </button>
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
-              onClick={() => setActivePanel(id)}
+              onClick={() => handleNavClick(id)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 activePanel === id
                   ? 'bg-slate-700 text-white'
@@ -123,9 +151,15 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="shadow-none border-b border-gray-100 bg-white/80 backdrop-blur-sm px-6 py-4 dark:bg-gray-900/80 dark:border-gray-700">
-          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+        <header className="shadow-none border-b border-gray-100 bg-white/80 backdrop-blur-sm px-4 md:px-6 py-4 dark:bg-gray-900/80 dark:border-gray-700">
+          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-1 -ml-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 md:hidden"
+            >
+              <Menu size={20} />
+            </button>
             <span>SmartLife</span>
             <ChevronRight size={14} />
             <span className="text-gray-900 font-medium dark:text-gray-100">
@@ -135,6 +169,7 @@ export default function DashboardPage() {
         </header>
 
         <div className="flex-1 overflow-auto p-6 dark:bg-gray-900">
+          {activePanel === 'home' && <HomePanel onNavigate={setActivePanel} displayName={displayName} />}
           {activePanel === 'agenda' && <AgendaPage onNavigate={setActivePanel} />}
 
           {activePanel === 'prompt' && (
@@ -155,7 +190,7 @@ export default function DashboardPage() {
               <form onSubmit={handleSend} className="card">
                 <textarea
                   className="w-full resize-none border-0 outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-transparent text-base leading-relaxed min-h-[180px]"
-                  placeholder={`Exemples:\n- "J'ai une réunion avec Ahmed demain à 14h, son numéro c'est le 0555123456"\n- "Rappelle-moi d'appeler le médecin jeudi matin"\n- "J'ai mangé une pizza à midi, j'ai couru 5km ce soir"\n- "Je dois finir le rapport avant vendredi, priorité haute"`}
+                  placeholder={`Exemples:\n- "Réunion avec Ahmed demain 14h, tel: 0555123456"\n- "Rappelle-moi d'appeler le médecin jeudi matin"\n- "Pizza à midi, puis 45min de muscu (squat 80kg × 4 séries, développé couché 60kg × 3 séries)"\n- "Je me sens bien aujourd'hui, j'ai terminé le rapport — priorité haute pour vendredi"\n- "Couru 8km ce soir en 42 minutes"`}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   disabled={promptMutation.isPending}
@@ -189,6 +224,9 @@ export default function DashboardPage() {
                       { label: 'Rappels', items: promptMutation.data.remindersCreated },
                       { label: 'Notes', items: promptMutation.data.notesCreated },
                       { label: 'Contacts', items: promptMutation.data.contactsCreated },
+                      { label: 'Repas', items: promptMutation.data.foodLogsCreated },
+                      { label: 'Journal', items: promptMutation.data.diaryEntriesCreated },
+                      { label: 'Sport', items: promptMutation.data.workoutsCreated },
                     ].map(({ label, items }) =>
                       items?.length ? (
                         <div key={label} className="bg-white rounded-lg p-2 border border-green-100">
@@ -213,6 +251,7 @@ export default function DashboardPage() {
           {activePanel === 'contacts' && <ContactsPanel />}
           {activePanel === 'food' && <FoodLogsPanel />}
           {activePanel === 'diary' && <DiaryPanel />}
+          {activePanel === 'workout' && <WorkoutPanel />}
         </div>
       </main>
     </div>

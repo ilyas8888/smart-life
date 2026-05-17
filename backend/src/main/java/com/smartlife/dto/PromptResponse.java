@@ -12,6 +12,8 @@ public class PromptResponse {
     private List<Map<String, Object>> remindersCreated;
     private List<Map<String, Object>> notesCreated;
     private List<Map<String, Object>> contactsCreated;
+    private List<Map<String, Object>> foodLogsCreated;
     private List<Map<String, Object>> diaryEntriesCreated;
+    private List<Map<String, Object>> workoutsCreated;
     private String rawAiResponse;
 }

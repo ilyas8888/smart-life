@@ -40,6 +40,18 @@ Tu dois retourner UNIQUEMENT un JSON valide avec la structure suivante (sans mar
   "notes": [{"title": "...", "content": "..."}],
   "contacts": [{"name": "...", "phone": "...", "email": "...", "address": "...", "notes": "..."}],
   "diary": [{"content": "...", "mood": "GREAT|GOOD|NEUTRAL|BAD|TERRIBLE", "tags": ["..."]}],
+  "workouts": [
+    {
+      "title": "Nom de la séance (ex: Muscu jambes, Course à pied, Yoga)",
+      "duration_minutes": 60,
+      "calories_burned": 400,
+      "notes": "...",
+      "exercises": [
+        {"name": "Squat", "sets": 4, "reps": 12, "weight_kg": 80.0, "duration_seconds": null},
+        {"name": "Course", "sets": null, "reps": null, "weight_kg": null, "duration_seconds": 1800}
+      ]
+    }
+  ],
   "food_logs": [
     {
       "meal_type": "BREAKFAST|LUNCH|DINNER|SNACK",
@@ -89,6 +101,8 @@ Règles nutrition:
 - Les macros doivent être cohérentes : calories ≈ (protéines×4) + (glucides×4) + (lipides×9)
 - Inclure les vitamines et minéraux les plus pertinents pour l'aliment
 - Les champs vides ou absents doivent être des listes vides []
+- Pour les workouts: extraire si l'utilisateur mentionne sport, gym, musculation, course, yoga, natation, vélo, marche sportive, etc.
+- Estimer calories_burned selon l'activité et la durée si non précisée (course 10km/h = ~600kcal/h, muscu = ~300kcal/h, yoga = ~200kcal/h)
 - Retourne UNIQUEMENT le JSON, rien d'autre"""
 
 
