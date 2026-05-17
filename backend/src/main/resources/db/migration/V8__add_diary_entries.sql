@@ -4,5 +4,10 @@ CREATE TABLE IF NOT EXISTS diary_entries (
     content TEXT NOT NULL,
     mood VARCHAR(50),
     entry_date DATE NOT NULL DEFAULT CURRENT_DATE,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    tags TEXT[],
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP
 );
+
+ALTER TABLE diary_entries ADD COLUMN IF NOT EXISTS tags TEXT[];
+ALTER TABLE diary_entries ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;

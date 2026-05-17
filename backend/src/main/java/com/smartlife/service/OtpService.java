@@ -35,6 +35,7 @@ public class OtpService {
     }
 
     public void generateAndSend(User user) {
+        if (!otpEnabled) return;
         String code = String.format("%06d", new Random().nextInt(1_000_000));
         otpRepository.save(OtpCode.builder()
                 .userId(user.getId())
