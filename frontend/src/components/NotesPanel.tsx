@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useRef, useEffect, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { FileText, Pin, Trash2, Plus } from 'lucide-react'
+import { FileText, Pin, Trash2, Plus, Palette } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
@@ -18,12 +18,12 @@ interface Note {
 }
 
 const NOTE_COLORS: { value: string; label: string; bg: string; dark: string }[] = [
-  { value: 'default', label: 'Défaut',  bg: '',                                           dark: '' },
-  { value: 'yellow',  label: 'Jaune',   bg: 'bg-yellow-100 border-yellow-300',            dark: 'dark:bg-yellow-800/40 dark:border-yellow-600' },
-  { value: 'pink',    label: 'Rose',    bg: 'bg-pink-100 border-pink-300',                dark: 'dark:bg-pink-800/40 dark:border-pink-600' },
-  { value: 'green',   label: 'Vert',    bg: 'bg-green-100 border-green-300',              dark: 'dark:bg-green-800/40 dark:border-green-600' },
-  { value: 'blue',    label: 'Bleu',    bg: 'bg-blue-100 border-blue-300',                dark: 'dark:bg-blue-800/40 dark:border-blue-600' },
-  { value: 'purple',  label: 'Violet',  bg: 'bg-purple-100 border-purple-300',            dark: 'dark:bg-purple-800/40 dark:border-purple-600' },
+  { value: 'default', label: 'Défaut',  bg: '',                                        dark: '' },
+  { value: 'yellow',  label: 'Jaune',   bg: 'bg-yellow-100 border-yellow-300',         dark: 'dark:bg-yellow-800/40 dark:border-yellow-600' },
+  { value: 'pink',    label: 'Rose',    bg: 'bg-pink-100 border-pink-300',             dark: 'dark:bg-pink-800/40 dark:border-pink-600' },
+  { value: 'green',   label: 'Vert',    bg: 'bg-green-100 border-green-300',           dark: 'dark:bg-green-800/40 dark:border-green-600' },
+  { value: 'blue',    label: 'Bleu',    bg: 'bg-blue-100 border-blue-300',             dark: 'dark:bg-blue-800/40 dark:border-blue-600' },
+  { value: 'purple',  label: 'Violet',  bg: 'bg-purple-100 border-purple-300',         dark: 'dark:bg-purple-800/40 dark:border-purple-600' },
 ]
 
 const COLOR_DOT: Record<string, string> = {
@@ -36,10 +36,54 @@ const COLOR_DOT: Record<string, string> = {
 }
 
 function noteCardClass(color: string, isPinned: boolean) {
-  if (isPinned && color === 'default') return 'border-yellow-200 bg-yellow-50 dark:border-yellow-900/50 dark:bg-yellow-900/20'
+  if (isPinned && color === 'default') return 'border-yellow-300 bg-yellow-100 dark:border-yellow-600 dark:bg-yellow-800/40'
   const c = NOTE_COLORS.find((nc) => nc.value === color)
   if (c && c.bg) return `${c.bg} ${c.dark}`
   return ''
+}
+
+function ColorPickerPopover({
+  currentColor, onSelect,
+}: { currentColor: string; onSelect: (c: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="p-1 text-gray-300 dark:text-gray-500 hover:text-violet-400 dark:hover:text-violet-400 transition-colors"
+        title="Couleur"
+      >
+        <Palette size={14} />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-7 z-20 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-100 dark:border-gray-600 p-2 flex gap-1.5">
+          {NOTE_COLORS.map((nc) => (
+            <button
+              key={nc.value}
+              type="button"
+              title={nc.label}
+              onClick={() => { onSelect(nc.value); setOpen(false) }}
+              className={`w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 ${COLOR_DOT[nc.value]} ${
+                currentColor === nc.value ? 'border-primary-500 scale-125' : 'border-transparent'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function NotesPanel() {
@@ -69,6 +113,12 @@ export default function NotesPanel() {
 
   const pinMutation = useMutation({
     mutationFn: (id: number) => api.patch(`/notes/${id}/pin`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['notes'] }),
+  })
+
+  const colorMutation = useMutation({
+    mutationFn: ({ id, color }: { id: number; color: string }) =>
+      api.patch(`/notes/${id}/color?color=${color}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notes'] }),
   })
 
@@ -157,6 +207,10 @@ export default function NotesPanel() {
               <div className="flex items-start justify-between gap-2 mb-2">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{n.title ?? 'Note'}</h3>
                 <div className="flex gap-1 shrink-0">
+                  <ColorPickerPopover
+                    currentColor={n.color ?? 'default'}
+                    onSelect={(c) => colorMutation.mutate({ id: n.id, color: c })}
+                  />
                   <button
                     onClick={() => pinMutation.mutate(n.id)}
                     className={`p-1 transition-colors ${n.isPinned ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-500 hover:text-yellow-400'}`}

@@ -31,6 +31,7 @@ public class NoteController {
                 .title((String) body.get("title"))
                 .content((String) body.get("content"))
                 .isPinned(Boolean.TRUE.equals(body.get("isPinned")))
+                .color(body.get("color") != null ? (String) body.get("color") : "default")
                 .build();
         return ResponseEntity.ok(noteRepository.save(note));
     }
@@ -40,6 +41,16 @@ public class NoteController {
         return noteRepository.findById(id)
                 .filter(n -> n.getUser().getId().equals(user.getId()))
                 .map(n -> { n.setPinned(!n.isPinned()); return ResponseEntity.ok(noteRepository.save(n)); })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PatchMapping("/{id}/color")
+    public ResponseEntity<Note> updateColor(@PathVariable Long id,
+                                            @RequestParam String color,
+                                            @AuthenticationPrincipal User user) {
+        return noteRepository.findById(id)
+                .filter(n -> n.getUser().getId().equals(user.getId()))
+                .map(n -> { n.setColor(color); return ResponseEntity.ok(noteRepository.save(n)); })
                 .orElse(ResponseEntity.notFound().build());
     }
 
