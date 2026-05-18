@@ -1,6 +1,8 @@
 spring:
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration
+  flyway:
+    validate-on-migrate: false
 
 server:
   port: 7860
