@@ -1,6 +1,6 @@
 # SmartLife — Plateforme de gestion personnelle intelligente
 
-Application web full-stack permettant de gérer sa vie quotidienne via un prompt en langage naturel analysé par Claude (Anthropic).
+Application web full-stack permettant de gérer sa vie quotidienne via un prompt en langage naturel analysé par Claude (Anthropic). 8 modules intégrés : tâches, rappels, notes, contacts, alimentation, agenda, journal personnel et sport.
 
 **Live demo** : [https://ilyas8888.github.io/smart-life/](https://ilyas8888.github.io/smart-life/)
 
@@ -16,6 +16,8 @@ Application web full-stack permettant de gérer sa vie quotidienne via un prompt
 - **Alimentation** : journal alimentaire avec macros (calories, protéines, glucides, lipides)
 - **Agenda** : vue bullet-journal de la semaine
 - **Journal personnel** : entrées quotidiennes avec sélecteur d'humeur
+- **Sport** : suivi des séances (exercices, séries, reps, poids, durée)
+- **Dashboard** : accueil avec stats en temps réel (tâches, rappels, calories, sport semaine, notes, journal)
 - **Dark / Light mode**
 - **Auth sécurisée** : JWT (access 15 min + refresh 7 jours), logout réel, OTP email à l'inscription
 
@@ -29,7 +31,7 @@ Application web full-stack permettant de gérer sa vie quotidienne via un prompt
 | Backend | Java 17 / Spring Boot 3.2.5 + Spring Security + JPA + Flyway |
 | IA | Python 3.13 / FastAPI + SDK Anthropic (Claude Sonnet 4.6) |
 | Base de données | PostgreSQL 15 (Neon en production) |
-| Auth | JWT custom + OTP email (Spring Mail) |
+| Auth | JWT custom + OTP email + OAuth2 Keycloak |
 
 ---
 
@@ -62,6 +64,7 @@ Le déploiement est automatisé via GitHub Actions (`deploy-frontend.yml`, `depl
 
 ## Sécurité
 
+- OAuth2 / OpenID Connect via Keycloak (SSO en parallèle du login local)
 - Refresh tokens en base avec révocation explicite (logout réel)
 - Tokens d'accès révoqués par hash SHA-256 (blacklist DB)
 - Rate limiting : 10 req/min par utilisateur sur le endpoint IA (Bucket4j)
