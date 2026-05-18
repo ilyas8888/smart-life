@@ -19,11 +19,11 @@ interface Note {
 
 const NOTE_COLORS: { value: string; label: string; bg: string; dark: string }[] = [
   { value: 'default', label: 'Défaut',  bg: '',                                           dark: '' },
-  { value: 'yellow',  label: 'Jaune',   bg: 'bg-yellow-50 border-yellow-200',             dark: 'dark:bg-yellow-900/20 dark:border-yellow-800' },
-  { value: 'pink',    label: 'Rose',    bg: 'bg-pink-50 border-pink-200',                 dark: 'dark:bg-pink-900/20 dark:border-pink-800' },
-  { value: 'green',   label: 'Vert',    bg: 'bg-green-50 border-green-200',               dark: 'dark:bg-green-900/20 dark:border-green-800' },
-  { value: 'blue',    label: 'Bleu',    bg: 'bg-blue-50 border-blue-200',                 dark: 'dark:bg-blue-900/20 dark:border-blue-800' },
-  { value: 'purple',  label: 'Violet',  bg: 'bg-purple-50 border-purple-200',             dark: 'dark:bg-purple-900/20 dark:border-purple-800' },
+  { value: 'yellow',  label: 'Jaune',   bg: 'bg-yellow-100 border-yellow-300',            dark: 'dark:bg-yellow-800/40 dark:border-yellow-600' },
+  { value: 'pink',    label: 'Rose',    bg: 'bg-pink-100 border-pink-300',                dark: 'dark:bg-pink-800/40 dark:border-pink-600' },
+  { value: 'green',   label: 'Vert',    bg: 'bg-green-100 border-green-300',              dark: 'dark:bg-green-800/40 dark:border-green-600' },
+  { value: 'blue',    label: 'Bleu',    bg: 'bg-blue-100 border-blue-300',                dark: 'dark:bg-blue-800/40 dark:border-blue-600' },
+  { value: 'purple',  label: 'Violet',  bg: 'bg-purple-100 border-purple-300',            dark: 'dark:bg-purple-800/40 dark:border-purple-600' },
 ]
 
 const COLOR_DOT: Record<string, string> = {
