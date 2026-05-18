@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface WorkoutSessionRepository extends JpaRepository<WorkoutSession, Long> {
     List<WorkoutSession> findByUserIdOrderBySessionDateDescCreatedAtDesc(Long userId);
+    long countByPlanDayIdIn(List<Long> planDayIds);
+    List<WorkoutSession> findByPlanDayIdIn(List<Long> planDayIds);
 }

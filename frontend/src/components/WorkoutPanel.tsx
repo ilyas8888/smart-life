@@ -1,15 +1,24 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Dumbbell, Plus, Trash2, ChevronDown, ChevronUp, Flame, Clock, X, MessageSquareText, Activity } from 'lucide-react'
+import {
+  Activity, CalendarDays, Check, ChevronDown, ChevronUp, Clock, Dumbbell,
+  Flame, MessageSquareText, Play, Plus, Trash2, X,
+} from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
 
+interface PlanExercise { name: string; sets: number | null; reps: number | null; weightKg: number | null; notes: string }
+interface PlanDay { id: number; dayNumber: number; label: string; exercises: PlanExercise[] }
+interface WorkoutPlan { id: number; name: string; goal: string; weeks: number; daysPerWeek: number; status: string; startDate: string; days: PlanDay[] }
+interface PlanProgress { totalSessions: number; doneSessions: number; percent: number; weeksElapsed: number; completedDayIds: number[] }
 interface WorkoutExercise { id: number; name: string; sets: number | null; reps: number | null; weightKg: number | null; durationSeconds: number | null }
-interface WorkoutSession { id: number; title: string; sessionDate: string; durationMinutes: number | null; caloriesBurned: number | null; notes: string | null; exercises: WorkoutExercise[] }
+interface WorkoutSession { id: number; title: string; sessionDate: string; durationMinutes: number | null; caloriesBurned: number | null; notes: string | null; exercises: WorkoutExercise[]; planDayId: number | null }
 interface ExerciseForm { name: string; sets: string; reps: string; weightKg: string; durationSeconds: string }
 type Mode = null | 'guided' | 'prompt'
+type GoalType = 'MUSCLE_GAIN' | 'FAT_LOSS' | 'ENDURANCE' | 'GENERAL'
+type TabType = 'sessions' | 'programs'
 
 const SPORT_PRESETS = [
   { label: 'Muscu', emoji: '', rate: 5 },
@@ -24,15 +33,110 @@ const SPORT_PRESETS = [
   { label: 'CrossFit', emoji: '️', rate: 11 },
 ]
 
-const emptyExercise = (): ExerciseForm => ({ name: '', sets: '', reps: '', weightKg: '', durationSeconds: '' })
-function formatDuration(seconds: number) { const m = Math.floor(seconds / 60); const s = seconds % 60; return m > 0 ? (s > 0 ? `${m}min ${s}s` : `${m}min`) : `${s}s` }
+const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+const DAY_SHORT = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 
-function todayString() { return new Date().toISOString().split('T')[0] }
-function yesterdayString() { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0] }
-function dayLabel(date: string) {
+const GOAL_LABELS: Record<GoalType, string> = {
+  MUSCLE_GAIN: 'Prise de masse',
+  FAT_LOSS: 'Perte de poids',
+  ENDURANCE: 'Endurance',
+  GENERAL: 'Général',
+}
+
+const GOAL_COLORS: Record<GoalType, string> = {
+  MUSCLE_GAIN: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  FAT_LOSS: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  ENDURANCE: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  GENERAL: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  ACTIVE: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  PAUSED: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  COMPLETED: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  ARCHIVED: 'bg-gray-100 text-gray-500',
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  ACTIVE: 'Actif', PAUSED: 'Pause', COMPLETED: 'Terminé', ARCHIVED: 'Archivé',
+}
+
+const EXERCISE_LIBRARY: Record<string, PlanExercise[]> = {
+  Push: [
+    { name: 'Développé couché', sets: 4, reps: 10, weightKg: 60, notes: '' },
+    { name: 'Développé militaire', sets: 4, reps: 8, weightKg: 40, notes: '' },
+    { name: 'Développé incliné', sets: 3, reps: 10, weightKg: 50, notes: '' },
+    { name: 'Écarté haltères', sets: 3, reps: 12, weightKg: 15, notes: '' },
+    { name: 'Dips', sets: 3, reps: 10, weightKg: null, notes: '' },
+    { name: 'Triceps poulie', sets: 3, reps: 12, weightKg: 25, notes: '' },
+    { name: 'Extension triceps', sets: 3, reps: 12, weightKg: 20, notes: '' },
+  ],
+  Pull: [
+    { name: 'Tractions', sets: 4, reps: 8, weightKg: null, notes: '' },
+    { name: 'Rowing barre', sets: 4, reps: 10, weightKg: 60, notes: '' },
+    { name: 'Rowing haltère', sets: 3, reps: 12, weightKg: 25, notes: '' },
+    { name: 'Tirage vertical', sets: 4, reps: 10, weightKg: 55, notes: '' },
+    { name: 'Face pull', sets: 3, reps: 15, weightKg: 20, notes: '' },
+    { name: 'Curl biceps barre', sets: 3, reps: 12, weightKg: 30, notes: '' },
+    { name: 'Curl haltères', sets: 3, reps: 12, weightKg: 12, notes: '' },
+    { name: 'Curl marteau', sets: 3, reps: 12, weightKg: 14, notes: '' },
+  ],
+  Legs: [
+    { name: 'Squat', sets: 4, reps: 8, weightKg: 80, notes: '' },
+    { name: 'Leg press', sets: 4, reps: 10, weightKg: 120, notes: '' },
+    { name: 'Fentes haltères', sets: 3, reps: 12, weightKg: 20, notes: '' },
+    { name: 'Soulevé de terre', sets: 4, reps: 6, weightKg: 100, notes: '' },
+    { name: 'Leg curl', sets: 3, reps: 12, weightKg: 40, notes: '' },
+    { name: 'Leg extension', sets: 3, reps: 12, weightKg: 40, notes: '' },
+    { name: 'Mollets debout', sets: 4, reps: 15, weightKg: 60, notes: '' },
+    { name: 'Hip thrust', sets: 4, reps: 10, weightKg: 80, notes: '' },
+  ],
+  'Full Body': [
+    { name: 'Deadlift', sets: 4, reps: 5, weightKg: 100, notes: '' },
+    { name: 'Squat', sets: 3, reps: 8, weightKg: 70, notes: '' },
+    { name: 'Développé couché', sets: 3, reps: 8, weightKg: 60, notes: '' },
+    { name: 'Tractions', sets: 3, reps: 8, weightKg: null, notes: '' },
+    { name: 'Pompes', sets: 3, reps: 15, weightKg: null, notes: '' },
+    { name: 'Gainage', sets: 3, reps: null, weightKg: null, notes: '60 secondes' },
+  ],
+  Cardio: [
+    { name: 'Course à pied', sets: null, reps: null, weightKg: null, notes: '30 min' },
+    { name: 'Vélo stationnaire', sets: null, reps: null, weightKg: null, notes: '45 min' },
+    { name: 'Corde à sauter', sets: 5, reps: null, weightKg: null, notes: '2 min/série' },
+    { name: 'Rameur', sets: null, reps: null, weightKg: null, notes: '20 min' },
+    { name: 'HIIT 20-40', sets: 8, reps: null, weightKg: null, notes: '20s effort / 40s repos' },
+  ],
+}
+
+const emptyExercise = (): ExerciseForm => ({ name: '', sets: '', reps: '', weightKg: '', durationSeconds: '' })
+const formatDuration = (seconds: number) => {
+  const m = Math.floor(seconds / 60); const s = seconds % 60
+  return m > 0 ? (s > 0 ? `${m}min ${s}s` : `${m}min`) : `${s}s`
+}
+const todayString = () => new Date().toISOString().split('T')[0]
+const yesterdayString = () => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0] }
+const dayLabel = (date: string) => {
   if (date === todayString()) return "Aujourd'hui"
   if (date === yesterdayString()) return 'Hier'
   return format(new Date(`${date}T00:00:00`), 'dd MMM', { locale: fr })
+}
+const goalLabel = (goal: string) => GOAL_LABELS[(goal as GoalType) in GOAL_LABELS ? goal as GoalType : 'GENERAL']
+const goalColor = (goal: string) => GOAL_COLORS[(goal as GoalType) in GOAL_COLORS ? goal as GoalType : 'GENERAL']
+const planExerciseWeight = (ex: PlanExercise) => ex.weightKg ?? (ex as unknown as { weight_kg?: number | null }).weight_kg ?? null
+
+function ProgressRing({ percent, size = 64 }: { percent: number; size?: number }) {
+  const r = (size - 8) / 2
+  const circumference = 2 * Math.PI * r
+  const offset = circumference - (percent / 100) * circumference
+  return (
+    <svg width={size} height={size} className="-rotate-90">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={5}
+        className="stroke-gray-100 dark:stroke-gray-700" />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" strokeWidth={5}
+        className="stroke-amber-500 transition-all duration-500"
+        strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" />
+    </svg>
+  )
 }
 
 function ExerciseLine({ ex }: { ex: WorkoutExercise }) {
@@ -51,16 +155,42 @@ function ExerciseLine({ ex }: { ex: WorkoutExercise }) {
   )
 }
 
-function AddWorkoutModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+function PlanExerciseLine({ ex }: { ex: PlanExercise }) {
+  const weight = planExerciseWeight(ex)
+  const parts = [
+    ex.sets ? `${ex.sets}s` : '',
+    ex.reps ? `${ex.reps} reps` : '',
+    weight ? `${weight}kg` : '',
+  ].filter(Boolean)
+  return (
+    <li className="flex items-center justify-between gap-3 text-sm py-1.5">
+      <span className="font-medium text-gray-800 dark:text-gray-200 truncate">{ex.name}</span>
+      <span className="text-xs text-gray-400 shrink-0">{parts.join(' · ')}{ex.notes ? ` · ${ex.notes}` : ''}</span>
+    </li>
+  )
+}
+
+function AddWorkoutModal({
+  onClose, onSuccess, prefillExercises, prefillTitle, prefillPlanDayId,
+}: {
+  onClose: () => void; onSuccess: () => void; prefillExercises?: PlanExercise[]; prefillTitle?: string; prefillPlanDayId?: number
+}) {
   const qc = useQueryClient()
-  const [mode, setMode] = useState<Mode>(null)
-  const [sportLabel, setSportLabel] = useState('')
+  const initialExercises = prefillExercises?.map(e => ({
+    name: e.name,
+    sets: String(e.sets ?? ''),
+    reps: String(e.reps ?? ''),
+    weightKg: String(planExerciseWeight(e) ?? ''),
+    durationSeconds: '',
+  })) ?? [emptyExercise()]
+  const [mode, setMode] = useState<Mode>(prefillExercises || prefillTitle ? 'guided' : null)
+  const [sportLabel, setSportLabel] = useState(prefillTitle?.split(' ')[0] || (prefillExercises ? 'Muscu' : ''))
   const [customSport, setCustomSport] = useState('')
   const [durationMinutes, setDurationMinutes] = useState('')
   const [caloriesOverride, setCaloriesOverride] = useState('')
   const [showCaloriesOverride, setShowCaloriesOverride] = useState(false)
-  const [exercises, setExercises] = useState<ExerciseForm[]>([emptyExercise()])
-  const [showExercises, setShowExercises] = useState(false)
+  const [exercises, setExercises] = useState<ExerciseForm[]>(initialExercises)
+  const [showExercises, setShowExercises] = useState(Boolean(prefillExercises?.length))
   const [promptText, setPromptText] = useState('')
   const [notes, setNotes] = useState('')
   const customInputRef = useRef<HTMLInputElement>(null)
@@ -73,12 +203,13 @@ function AddWorkoutModal({ onClose, onSuccess }: { onClose: () => void; onSucces
 
   const guidedMutation = useMutation({
     mutationFn: () => api.post('/workouts', {
-      title: `${activeSport}${durationMinutes ? ` — ${durationMinutes}min` : ''}`,
+      title: `${prefillTitle || activeSport}${durationMinutes ? ` — ${durationMinutes}min` : ''}`,
       durationMinutes: parseInt(durationMinutes) || null,
       caloriesBurned: caloriesDisplayed || null,
       notes: notes || null,
+      planDayId: prefillPlanDayId ?? null,
       exercises: exercises.filter(e => e.name.trim()).map(e => ({
-        name: e.name,
+        name: e.name.trim(),
         sets: e.sets ? parseInt(e.sets) : null,
         reps: e.reps ? parseInt(e.reps) : null,
         weightKg: e.weightKg ? parseFloat(e.weightKg) : null,
@@ -88,6 +219,7 @@ function AddWorkoutModal({ onClose, onSuccess }: { onClose: () => void; onSucces
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workouts'] })
       qc.invalidateQueries({ queryKey: ['timeline'] })
+      qc.invalidateQueries({ queryKey: ['workout-plans'] })
       toast.success('Séance enregistrée')
       onSuccess()
     },
@@ -106,12 +238,11 @@ function AddWorkoutModal({ onClose, onSuccess }: { onClose: () => void; onSucces
   })
 
   const isLoading = guidedMutation.isPending || promptMutation.isPending
-  const canSaveGuided = Boolean(activeSport) && Boolean(durationMinutes)
+  const canSaveGuided = Boolean(activeSport || prefillTitle) && Boolean(durationMinutes)
   const addExercise = () => setExercises(prev => [...prev, emptyExercise()])
   const removeExercise = (index: number) => setExercises(prev => prev.filter((_, i) => i !== index))
   const updateExercise = (index: number, field: keyof ExerciseForm, value: string) =>
     setExercises(prev => prev.map((exercise, i) => i === index ? { ...exercise, [field]: value } : exercise))
-
   const selectSport = (label: string) => {
     setSportLabel(label)
     if (label === 'Autre') setTimeout(() => customInputRef.current?.focus(), 0)
@@ -123,8 +254,7 @@ function AddWorkoutModal({ onClose, onSuccess }: { onClose: () => void; onSucces
       <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Dumbbell size={20} className="text-amber-500" />
-            Nouvelle séance
+            <Dumbbell size={20} className="text-amber-500" /> Nouvelle séance
           </h3>
           <button type="button" onClick={onClose} disabled={isLoading}
             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
@@ -164,11 +294,12 @@ function AddWorkoutModal({ onClose, onSuccess }: { onClose: () => void; onSucces
 
           {mode === 'guided' && (
             <div>
-              <button type="button" onClick={() => setMode(null)}
-                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4 flex items-center gap-1">
-                ← Retour
-              </button>
-
+              {!prefillTitle && (
+                <button type="button" onClick={() => setMode(null)}
+                  className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4 flex items-center gap-1">
+                  ← Retour
+                </button>
+              )}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type d'activité</label>
                 <div className="grid grid-cols-5 gap-2">
@@ -197,13 +328,11 @@ function AddWorkoutModal({ onClose, onSuccess }: { onClose: () => void; onSucces
                     onChange={e => setCustomSport(e.target.value)} placeholder="Nom de l'activité" />
                 )}
               </div>
-
               <div className="relative mb-4">
                 <Clock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input type="number" placeholder="Durée (min)" className="input pl-8" value={durationMinutes}
                   onChange={e => setDurationMinutes(e.target.value)} min="1" />
               </div>
-
               <div className="mb-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 px-3 py-2.5">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-medium text-amber-700 dark:text-amber-300 flex items-center gap-2">
@@ -219,13 +348,11 @@ function AddWorkoutModal({ onClose, onSuccess }: { onClose: () => void; onSucces
                     onChange={e => setCaloriesOverride(e.target.value)} min="0" placeholder="Calories brûlées" />
                 )}
               </div>
-
               <button type="button" onClick={() => setShowExercises(v => !v)}
                 className="w-full flex items-center justify-between rounded-xl border border-gray-100 dark:border-gray-700 px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Ajouter des exercices (facultatif)
                 {showExercises ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
-
               {showExercises && (
                 <div className="space-y-2 mb-4">
                   {exercises.map((exercise, i) => (
@@ -256,10 +383,8 @@ function AddWorkoutModal({ onClose, onSuccess }: { onClose: () => void; onSucces
                   </button>
                 </div>
               )}
-
               <textarea className="input resize-none min-h-[70px] mb-4 text-sm" value={notes}
                 onChange={e => setNotes(e.target.value)} placeholder="Notes (optionnel)" />
-
               <div className="flex justify-end gap-2">
                 <button type="button" onClick={onClose} disabled={isLoading} className="btn-secondary">Annuler</button>
                 <button type="button" onClick={() => guidedMutation.mutate()} disabled={!canSaveGuided || isLoading}
@@ -297,18 +422,339 @@ function AddWorkoutModal({ onClose, onSuccess }: { onClose: () => void; onSucces
   )
 }
 
-export default function WorkoutPanel() {
-  const qc = useQueryClient()
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
-  const [showModal, setShowModal] = useState(false)
-  const [expandedId, setExpandedId] = useState<number | null>(null)
+function PlanDetailModal({ plan, onClose, onStartSession }: { plan: WorkoutPlan; onClose: () => void; onStartSession: (day: PlanDay) => void }) {
+  const [progress, setProgress] = useState<PlanProgress | null>(null)
+  const jsDow = new Date().getDay()
+  const planDow = jsDow === 0 ? 7 : jsDow
+  const today = plan.days.find(day => day.dayNumber === planDow)
 
-  const { data: sessions = [], isLoading } = useQuery<WorkoutSession[]>({
-    queryKey: ['workouts'],
-    queryFn: () => api.get('/workouts').then((r) => r.data),
+  useEffect(() => {
+    api.get(`/workout-plans/${plan.id}/progress`).then(r => setProgress(r.data))
+  }, [plan.id])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-start justify-between gap-3 p-5 border-b border-gray-100 dark:border-gray-700">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{plan.name}</h3>
+            <span className={`inline-flex mt-2 rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_COLORS[plan.status] ?? STATUS_COLORS.ARCHIVED}`}>
+              {STATUS_LABELS[plan.status] ?? plan.status}
+            </span>
+          </div>
+          <button type="button" onClick={onClose}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-5">
+          <div className="mb-5">
+            <div className="flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <span>Semaine {progress?.weeksElapsed ?? 1}/{plan.weeks}</span>
+              <span>{progress?.percent ?? 0}%</span>
+            </div>
+            <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: `${progress?.percent ?? 0}%` }} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1.5 mb-5">
+            {DAY_SHORT.map((label, index) => {
+              const dayNumber = index + 1
+              const day = plan.days.find(d => d.dayNumber === dayNumber)
+              const isRest = !day || day.label.toLowerCase() === 'repos'
+              const completed = day ? progress?.completedDayIds.includes(day.id) : false
+              return (
+                <div key={label}
+                  className={`rounded-xl border p-2 text-center min-h-20 ${dayNumber === planDow ? 'border-amber-500' : 'border-gray-100 dark:border-gray-700'} ${isRest ? 'bg-gray-50 dark:bg-gray-700/50 text-gray-400' : 'bg-white dark:bg-gray-800'}`}>
+                  <p className="text-xs font-semibold">{label}</p>
+                  <p className="text-[11px] mt-1 truncate">{isRest ? 'Repos' : day.label}</p>
+                  <p className="text-lg mt-1">{isRest ? '—' : completed ? '✅' : '⬜'}</p>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="rounded-xl border border-gray-100 dark:border-gray-700 p-4">
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Séance du jour</h4>
+            {!today || today.label.toLowerCase() === 'repos' ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">Repos aujourd'hui</p>
+            ) : (
+              <>
+                <ul className="divide-y divide-gray-50 dark:divide-gray-700 mb-4">
+                  {today.exercises.map((ex, i) => <PlanExerciseLine key={`${ex.name}-${i}`} ex={ex} />)}
+                </ul>
+                <button type="button" onClick={() => onStartSession(today)}
+                  className="btn-primary inline-flex items-center gap-2">
+                  <Play size={16} /> Démarrer la séance
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const qc = useQueryClient()
+  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [name, setName] = useState('')
+  const [goal, setGoal] = useState<GoalType>('MUSCLE_GAIN')
+  const [weeks, setWeeks] = useState(8)
+  const [dayConfigs, setDayConfigs] = useState(
+    DAY_LABELS.map((_, i) => ({ dayNumber: i + 1, active: i < 5, label: i < 5 ? (i % 3 === 0 ? 'Push' : i % 3 === 1 ? 'Pull' : 'Legs') : 'Repos' }))
+  )
+  const [dayExercises, setDayExercises] = useState<Record<number, PlanExercise[]>>({})
+  const [currentDayIndex, setCurrentDayIndex] = useState(0)
+  const [customExercise, setCustomExercise] = useState({ name: '', sets: '', reps: '', weightKg: '' })
+  const activeDays = dayConfigs.filter(d => d.active)
+  const currentDay = activeDays[currentDayIndex] ?? activeDays[0]
+
+  const createMutation = useMutation({
+    mutationFn: () => api.post('/workout-plans', {
+      name, goal, weeks,
+      daysPerWeek: activeDays.length,
+      days: activeDays.map(d => ({
+        dayNumber: d.dayNumber,
+        label: d.label,
+        exercises: (dayExercises[d.dayNumber] ?? []).map(e => ({
+          name: e.name, sets: e.sets, reps: e.reps, weight_kg: planExerciseWeight(e), notes: e.notes,
+        })),
+      })),
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workout-plans'] })
+      toast.success('Programme créé !')
+      onSuccess()
+    },
+    onError: () => toast.error('Erreur lors de la création'),
   })
 
-  const deleteMutation = useMutation({
+  const updateDay = (dayNumber: number, patch: Partial<{ active: boolean; label: string }>) =>
+    setDayConfigs(prev => prev.map(day => day.dayNumber === dayNumber ? {
+      ...day,
+      ...patch,
+      label: patch.active === false ? 'Repos' : patch.label ?? day.label,
+    } : day))
+  const addExerciseToDay = (dayNumber: number, exercise: PlanExercise) =>
+    setDayExercises(prev => ({ ...prev, [dayNumber]: [...(prev[dayNumber] ?? []), { ...exercise }] }))
+  const removeExerciseFromDay = (dayNumber: number, index: number) =>
+    setDayExercises(prev => ({ ...prev, [dayNumber]: (prev[dayNumber] ?? []).filter((_, i) => i !== index) }))
+  const updateDayExercise = (dayNumber: number, index: number, field: keyof PlanExercise, value: string) =>
+    setDayExercises(prev => ({
+      ...prev,
+      [dayNumber]: (prev[dayNumber] ?? []).map((ex, i) => i === index ? {
+        ...ex,
+        [field]: field === 'name' || field === 'notes' ? value : value ? Number(value) : null,
+      } : ex),
+    }))
+  const addCustomExercise = () => {
+    if (!currentDay || !customExercise.name.trim()) return
+    addExerciseToDay(currentDay.dayNumber, {
+      name: customExercise.name.trim(),
+      sets: customExercise.sets ? Number(customExercise.sets) : null,
+      reps: customExercise.reps ? Number(customExercise.reps) : null,
+      weightKg: customExercise.weightKg ? Number(customExercise.weightKg) : null,
+      notes: '',
+    })
+    setCustomExercise({ name: '', sets: '', reps: '', weightKg: '' })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={createMutation.isPending ? undefined : onClose} />
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Créer un programme</h3>
+          <button type="button" onClick={onClose} disabled={createMutation.isPending}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-5">
+          {step === 1 && (
+            <div>
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Programme</h4>
+              <input className="input mb-4" value={name} onChange={e => setName(e.target.value)} placeholder="Nom du programme" />
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {(Object.keys(GOAL_LABELS) as GoalType[]).map(g => (
+                  <button key={g} type="button" onClick={() => setGoal(g)}
+                    className={`rounded-xl border-2 p-3 text-sm font-medium text-left ${goal === g ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20' : 'border-gray-100 dark:border-gray-700'}`}>
+                    {GOAL_LABELS[g]}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2 mb-5">
+                {[4, 6, 8, 10, 12].map(value => (
+                  <button key={value} type="button" onClick={() => setWeeks(value)}
+                    className={`rounded-full px-4 py-1.5 text-sm font-medium ${weeks === value ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                    {value} sem.
+                  </button>
+                ))}
+              </div>
+              <div className="flex justify-end">
+                <button type="button" onClick={() => setStep(2)} disabled={!name.trim()} className="btn-primary">Suivant →</button>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div>
+              <button type="button" onClick={() => setStep(1)}
+                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4">← Retour</button>
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Planning semainier</h4>
+              <div className="space-y-2 mb-4">
+                {dayConfigs.map(day => (
+                  <div key={day.dayNumber} className="flex items-center gap-3 rounded-xl border border-gray-100 dark:border-gray-700 p-3">
+                    <button type="button" onClick={() => updateDay(day.dayNumber, { active: !day.active })}
+                      className={`w-10 h-6 rounded-full p-0.5 transition-colors ${day.active ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                      <span className={`block w-5 h-5 rounded-full bg-white transition-transform ${day.active ? 'translate-x-4' : ''}`} />
+                    </button>
+                    <span className="w-20 text-sm font-medium text-gray-800 dark:text-gray-200">{DAY_LABELS[day.dayNumber - 1]}</span>
+                    {day.active ? (
+                      <select className="input flex-1" value={day.label} onChange={e => updateDay(day.dayNumber, { label: e.target.value })}>
+                        {['Push', 'Pull', 'Legs', 'Full Body', 'Cardio', 'Repos'].map(label => <option key={label} value={label}>{label}</option>)}
+                      </select>
+                    ) : (
+                      <span className="text-sm text-gray-400">Repos</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{activeDays.length} jours d'entraînement / semaine</p>
+              <div className="flex justify-end">
+                <button type="button" onClick={() => { setCurrentDayIndex(0); setStep(3) }} disabled={activeDays.length === 0} className="btn-primary">Suivant →</button>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && currentDay && (
+            <div>
+              <button type="button" onClick={() => setStep(2)}
+                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4">← Retour</button>
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-4">Exercices par jour</h4>
+              <div className="overflow-x-auto flex gap-2 mb-4">
+                {activeDays.map((day, index) => (
+                  <button key={day.dayNumber} type="button" onClick={() => setCurrentDayIndex(index)}
+                    className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap ${currentDayIndex === index ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
+                    {DAY_SHORT[day.dayNumber - 1]} · {day.label}
+                  </button>
+                ))}
+              </div>
+              {EXERCISE_LIBRARY[currentDay.label] && (
+                <div className="mb-4">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bibliothèque</p>
+                  <div className="flex flex-wrap gap-2">
+                    {EXERCISE_LIBRARY[currentDay.label].map(ex => (
+                      <button key={ex.name} type="button" onClick={() => addExerciseToDay(currentDay.dayNumber, ex)}
+                        className="rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-3 py-1.5 text-xs font-medium hover:bg-amber-100">
+                        + {ex.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="grid grid-cols-5 gap-2 mb-4">
+                <input className="input col-span-5 sm:col-span-1" value={customExercise.name} onChange={e => setCustomExercise(prev => ({ ...prev, name: e.target.value }))} placeholder="Exercice" />
+                <input className="input" type="number" value={customExercise.sets} onChange={e => setCustomExercise(prev => ({ ...prev, sets: e.target.value }))} placeholder="Séries" />
+                <input className="input" type="number" value={customExercise.reps} onChange={e => setCustomExercise(prev => ({ ...prev, reps: e.target.value }))} placeholder="Reps" />
+                <input className="input" type="number" value={customExercise.weightKg} onChange={e => setCustomExercise(prev => ({ ...prev, weightKg: e.target.value }))} placeholder="Poids" />
+                <button type="button" onClick={addCustomExercise} className="btn-secondary flex items-center justify-center gap-1"><Plus size={14} /></button>
+              </div>
+              <div className="space-y-2 mb-5">
+                {(dayExercises[currentDay.dayNumber] ?? []).map((ex, index) => (
+                  <div key={`${ex.name}-${index}`} className="rounded-xl border border-gray-100 dark:border-gray-700 p-3">
+                    <div className="flex gap-2 mb-2">
+                      <input className="input flex-1" value={ex.name} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'name', e.target.value)} />
+                      <button type="button" onClick={() => removeExerciseFromDay(currentDay.dayNumber, index)}
+                        className="p-2 text-gray-300 hover:text-red-400"><X size={14} /></button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <input className="input" type="number" value={ex.sets ?? ''} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'sets', e.target.value)} placeholder="Séries" />
+                      <input className="input" type="number" value={ex.reps ?? ''} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'reps', e.target.value)} placeholder="Reps" />
+                      <input className="input" type="number" value={planExerciseWeight(ex) ?? ''} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'weightKg', e.target.value)} placeholder="Poids" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end">
+                <button type="button" onClick={() => createMutation.mutate()} disabled={!name.trim() || activeDays.length === 0 || createMutation.isPending}
+                  className="btn-primary flex items-center gap-2">
+                  <Check size={16} /> Créer le programme
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProgramCard({ plan, onViewDetail, onDelete }: { plan: WorkoutPlan; onViewDetail: () => void; onDelete: () => void }) {
+  const { data: progress } = useQuery<PlanProgress>({
+    queryKey: ['plan-progress', plan.id],
+    queryFn: () => api.get(`/workout-plans/${plan.id}/progress`).then(r => r.data),
+  })
+  const percent = progress?.percent ?? 0
+  return (
+    <div className="card">
+      <div className="flex items-start gap-4">
+        <div className="relative shrink-0">
+          <ProgressRing percent={percent} />
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">{percent}%</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{plan.name}</p>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[plan.status] ?? STATUS_COLORS.ARCHIVED}`}>
+              {STATUS_LABELS[plan.status] ?? plan.status}
+            </span>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${goalColor(plan.goal)}`}>
+              {goalLabel(plan.goal)}
+            </span>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {progress?.doneSessions ?? 0}/{progress?.totalSessions ?? 0} séances · Semaine {progress?.weeksElapsed ?? 1}/{plan.weeks}
+          </p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+            {plan.daysPerWeek} jours/sem · {plan.weeks} semaines
+          </p>
+          <div className="flex gap-2 mt-4">
+            <button type="button" onClick={onViewDetail} className="btn-secondary text-sm">Voir le détail</button>
+            <button type="button" onClick={onDelete}
+              className="rounded-lg px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+              Supprimer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function WorkoutPanel() {
+  const qc = useQueryClient()
+  const [activeTab, setActiveTab] = useState<TabType>('sessions')
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [showCreatePlan, setShowCreatePlan] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<WorkoutPlan | null>(null)
+  const [startFromDay, setStartFromDay] = useState<PlanDay | null>(null)
+
+  const { data: sessions = [], isLoading: sessionsLoading } = useQuery<WorkoutSession[]>({
+    queryKey: ['workouts'],
+    queryFn: () => api.get('/workouts').then(r => r.data),
+  })
+  const { data: plans = [], isLoading: plansLoading } = useQuery<WorkoutPlan[]>({
+    queryKey: ['workout-plans'],
+    queryFn: () => api.get('/workout-plans').then(r => r.data),
+  })
+  const deleteSessionMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/workouts/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workouts'] })
@@ -316,153 +762,210 @@ export default function WorkoutPanel() {
       toast.success('Séance supprimée')
     },
   })
+  const deletePlanMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/workout-plans/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workout-plans'] })
+      toast.success('Programme supprimé')
+    },
+  })
 
   const dates = useMemo(() =>
     Array.from(new Set(sessions.map(s => s.sessionDate))).sort((a, b) => b.localeCompare(a)),
     [sessions]
   )
-
-  const weeklyStats = useMemo(() => {
-    const start = new Date()
-    start.setDate(start.getDate() - 6)
-    start.setHours(0, 0, 0, 0)
-    const recent = sessions.filter(session => new Date(`${session.sessionDate}T00:00:00`) >= start)
-    return {
-      totalSessions: recent.length,
-      totalMinutes: recent.reduce((sum, session) => sum + (session.durationMinutes ?? 0), 0),
-      totalCalories: recent.reduce((sum, session) => sum + (session.caloriesBurned ?? 0), 0),
-    }
-  }, [sessions])
-
   const sessionsToShow = useMemo(() =>
     selectedDate ? sessions.filter(s => s.sessionDate === selectedDate) : sessions,
     [selectedDate, sessions]
   )
+  const weekSessions = useMemo(() => {
+    const start = new Date()
+    start.setDate(start.getDate() - 6)
+    start.setHours(0, 0, 0, 0)
+    return sessions.filter(session => new Date(`${session.sessionDate}T00:00:00`) >= start)
+  }, [sessions])
+  const weekStats = useMemo(() => ({
+    count: weekSessions.length,
+    minutes: weekSessions.reduce((sum, session) => sum + (session.durationMinutes ?? 0), 0),
+    calories: weekSessions.reduce((sum, session) => sum + (session.caloriesBurned ?? 0), 0),
+  }), [weekSessions])
 
-  const handleSuccess = () => {
+  const handleStartFromPlan = (day: PlanDay) => {
+    setStartFromDay(day)
+    setSelectedPlan(null)
+    setShowAddModal(true)
+  }
+  const handleAddSuccess = () => {
     qc.invalidateQueries({ queryKey: ['workouts'] })
     qc.invalidateQueries({ queryKey: ['timeline'] })
-    setShowModal(false)
+    qc.invalidateQueries({ queryKey: ['plan-progress'] })
+    setShowAddModal(false)
+    setStartFromDay(null)
   }
 
-  if (isLoading) return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement…</div>
+  if (sessionsLoading || plansLoading) return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement…</div>
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-between gap-3 mb-6">
+    <div className="max-w-3xl mx-auto">
+      <div className="flex items-center justify-between gap-3 mb-5">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-          <Dumbbell className="text-amber-500" />
-          Sport & Entraînement ({sessions.length})
+          <Dumbbell className="text-amber-500" /> Sport & Entraînement
         </h2>
-        <button type="button" onClick={() => setShowModal(true)}
-          className="btn-primary flex items-center gap-2 text-sm">
-          <Plus size={16} />
-          Nouvelle séance
-        </button>
+        <div className="flex gap-2">
+          {activeTab === 'programs' && (
+            <button type="button" onClick={() => setShowCreatePlan(true)}
+              className="btn-secondary flex items-center gap-2 text-sm">
+              <Plus size={16} /> Programme
+            </button>
+          )}
+          <button type="button" onClick={() => setShowAddModal(true)}
+            className="btn-primary flex items-center gap-2 text-sm">
+            <Plus size={16} /> Nouvelle séance
+          </button>
+        </div>
       </div>
 
-      {sessions.length > 0 && (
-        <>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <span className="rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-3 py-1.5 text-sm font-medium">
-              {weeklyStats.totalSessions} séance{weeklyStats.totalSessions > 1 ? 's' : ''} cette semaine
-            </span>
-            <span className="rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 px-3 py-1.5 text-sm font-medium">
-              {Math.floor(weeklyStats.totalMinutes / 60)}h {weeklyStats.totalMinutes % 60}min
-            </span>
-            <span className="rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 px-3 py-1.5 text-sm font-medium">
-              {weeklyStats.totalCalories} kcal brûlées
-            </span>
-          </div>
+      <div className="flex gap-4 border-b border-gray-100 dark:border-gray-700 mb-6">
+        {[
+          ['sessions', 'Séances'],
+          ['programs', 'Programmes'],
+        ].map(([key, label]) => (
+          <button key={key} type="button" onClick={() => setActiveTab(key as TabType)}
+            className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === key ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
 
-          <div className="overflow-x-auto flex gap-2 mb-6">
-            <button type="button" onClick={() => setSelectedDate(null)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedDate === null
-                  ? 'bg-slate-800 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-              }`}>
-              Toutes
-            </button>
-            {dates.map(date => (
-              <button key={date} type="button" onClick={() => setSelectedDate(date)}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
-                  selectedDate === date
-                    ? 'bg-slate-800 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-                }`}>
-                {dayLabel(date)}
+      {activeTab === 'sessions' && (
+        <>
+          {weekSessions.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              <span className="rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-3 py-1.5 text-sm font-medium">
+                {weekStats.count} séance{weekStats.count > 1 ? 's' : ''} cette semaine
+              </span>
+              <span className="rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 px-3 py-1.5 text-sm font-medium">
+                {Math.floor(weekStats.minutes / 60)}h {weekStats.minutes % 60}min
+              </span>
+              <span className="rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 px-3 py-1.5 text-sm font-medium">
+                {weekStats.calories} kcal brûlées
+              </span>
+            </div>
+          )}
+
+          {sessions.length > 0 && (
+            <div className="overflow-x-auto flex gap-2 mb-6">
+              <button type="button" onClick={() => setSelectedDate(null)}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${selectedDate === null ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'}`}>
+                Toutes
               </button>
-            ))}
-          </div>
+              {dates.map(date => (
+                <button key={date} type="button" onClick={() => setSelectedDate(date)}
+                  className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${selectedDate === date ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'}`}>
+                  {dayLabel(date)}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {sessions.length === 0 ? (
+            <div className="text-center py-16">
+              <Dumbbell size={40} className="mx-auto text-gray-200 dark:text-gray-700 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400 mb-4">Aucune séance enregistrée.</p>
+              <button type="button" onClick={() => setShowAddModal(true)}
+                className="btn-primary inline-flex items-center gap-2">
+                <Plus size={16} /> Ajouter votre première séance
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {sessionsToShow.map(s => {
+                const isExpanded = expandedId === s.id
+                return (
+                  <div key={s.id} className="card">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{s.title}</p>
+                          {s.planDayId && <span className="text-xs rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-2 py-0.5">Programme</span>}
+                          {s.durationMinutes && <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"><Clock size={11} /> {s.durationMinutes}min</span>}
+                          {s.caloriesBurned && <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400"><Flame size={11} /> {s.caloriesBurned} kcal</span>}
+                        </div>
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                          {format(new Date(`${s.sessionDate}T00:00:00`), 'EEEE dd MMMM yyyy', { locale: fr })}
+                          {s.exercises.length > 0 && ` · ${s.exercises.length} exercice${s.exercises.length > 1 ? 's' : ''}`}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {s.exercises.length > 0 && (
+                          <button type="button" onClick={() => setExpandedId(isExpanded ? null : s.id)}
+                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          </button>
+                        )}
+                        <button type="button" onClick={() => deleteSessionMutation.mutate(s.id)}
+                          className="p-1 text-gray-300 dark:text-gray-500 hover:text-red-400 transition-colors">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                    {isExpanded && s.exercises.length > 0 && (
+                      <ul className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-1.5">
+                        {s.exercises.map(ex => <ExerciseLine key={ex.id} ex={ex} />)}
+                      </ul>
+                    )}
+                    {s.notes && <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">{s.notes}</p>}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </>
       )}
 
-      {sessions.length === 0 ? (
-        <div className="text-center py-16">
-          <Dumbbell size={40} className="mx-auto text-gray-200 dark:text-gray-700 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400 mb-4">Aucune séance enregistrée.</p>
-          <button type="button" onClick={() => setShowModal(true)}
-            className="btn-primary inline-flex items-center gap-2">
-            <Plus size={16} /> Ajouter votre première séance
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {sessionsToShow.map((s) => {
-            const isExpanded = expandedId === s.id
-            return (
-              <div key={s.id} className="card">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{s.title}</p>
-                      {s.durationMinutes && (
-                        <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                          <Clock size={11} /> {s.durationMinutes}min
-                        </span>
-                      )}
-                      {s.caloriesBurned && (
-                        <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                          <Flame size={11} /> {s.caloriesBurned} kcal
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                      {format(new Date(`${s.sessionDate}T00:00:00`), 'EEEE dd MMMM yyyy', { locale: fr })}
-                      {s.exercises.length > 0 && ` · ${s.exercises.length} exercice${s.exercises.length > 1 ? 's' : ''}`}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {s.exercises.length > 0 && (
-                      <button type="button" onClick={() => setExpandedId(isExpanded ? null : s.id)}
-                        className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                      </button>
-                    )}
-                    <button type="button" onClick={() => deleteMutation.mutate(s.id)}
-                      className="p-1 text-gray-300 dark:text-gray-500 hover:text-red-400 transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-
-                {isExpanded && s.exercises.length > 0 && (
-                  <ul className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-1.5">
-                    {s.exercises.map((ex) => <ExerciseLine key={ex.id} ex={ex} />)}
-                  </ul>
-                )}
-
-                {s.notes && (
-                  <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">{s.notes}</p>
-                )}
-              </div>
-            )
-          })}
-        </div>
+      {activeTab === 'programs' && (
+        plans.length === 0 ? (
+          <div className="text-center py-16">
+            <CalendarDays size={42} className="mx-auto text-gray-200 dark:text-gray-700 mb-4" />
+            <p className="text-gray-500 dark:text-gray-400 mb-4">Aucun programme créé.</p>
+            <button type="button" onClick={() => setShowCreatePlan(true)}
+              className="btn-primary inline-flex items-center gap-2">
+              <Plus size={16} /> Créer votre premier programme
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {plans.map(plan => (
+              <ProgramCard key={plan.id} plan={plan}
+                onViewDetail={() => setSelectedPlan(plan)}
+                onDelete={() => deletePlanMutation.mutate(plan.id)} />
+            ))}
+          </div>
+        )
       )}
 
-      {showModal && <AddWorkoutModal onClose={() => setShowModal(false)} onSuccess={handleSuccess} />}
+      {showAddModal && (
+        <AddWorkoutModal
+          onClose={() => { setShowAddModal(false); setStartFromDay(null) }}
+          onSuccess={handleAddSuccess}
+          prefillExercises={startFromDay?.exercises}
+          prefillTitle={startFromDay?.label}
+          prefillPlanDayId={startFromDay?.id}
+        />
+      )}
+      {showCreatePlan && (
+        <CreatePlanModal
+          onClose={() => setShowCreatePlan(false)}
+          onSuccess={() => { qc.invalidateQueries({ queryKey: ['workout-plans'] }); setShowCreatePlan(false) }}
+        />
+      )}
+      {selectedPlan && (
+        <PlanDetailModal
+          plan={selectedPlan}
+          onClose={() => setSelectedPlan(null)}
+          onStartSession={handleStartFromPlan}
+        />
+      )}
     </div>
   )
 }

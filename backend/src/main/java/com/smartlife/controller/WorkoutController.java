@@ -37,6 +37,7 @@ public class WorkoutController {
                 .durationMinutes(body.get("durationMinutes") != null ? ((Number) body.get("durationMinutes")).intValue() : null)
                 .caloriesBurned(body.get("caloriesBurned") != null ? ((Number) body.get("caloriesBurned")).intValue() : null)
                 .notes((String) body.get("notes"))
+                .planDayId(body.get("planDayId") != null ? ((Number) body.get("planDayId")).longValue() : null)
                 .build();
 
         List<Map<String, Object>> exercisesRaw = (List<Map<String, Object>>) body.getOrDefault("exercises", List.of());

@@ -33,6 +33,9 @@ public class WorkoutSession {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "plan_day_id")
+    private Long planDayId;
+
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
     private List<WorkoutExercise> exercises = new ArrayList<>();
