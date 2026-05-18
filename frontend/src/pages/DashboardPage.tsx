@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Brain, CheckSquare, Bell, FileText, Users, LogOut,
@@ -20,12 +20,25 @@ import HomePanel from '../components/HomePanel'
 
 type Panel = 'home' | 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout'
 
+const VALID_PANELS: Panel[] = ['home', 'agenda', 'prompt', 'tasks', 'reminders', 'notes', 'contacts', 'food', 'diary', 'workout']
+
+function panelFromHash(): Panel {
+  const h = window.location.hash.slice(1) as Panel
+  return VALID_PANELS.includes(h) ? h : 'home'
+}
+
 export default function DashboardPage() {
   const { firstName, lastName, email, logout } = useAuthStore()
   const isDark = useThemeStore((s) => s.isDark)
   const toggle = useThemeStore((s) => s.toggle)
-  const [activePanel, setActivePanel] = useState<Panel>('home')
+  const [activePanel, setActivePanel] = useState<Panel>(panelFromHash)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    const onHash = () => setActivePanel(panelFromHash())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
   const [prompt, setPrompt] = useState('')
   const queryClient = useQueryClient()
 
@@ -71,6 +84,7 @@ export default function DashboardPage() {
   }
 
   const handleNavClick = (id: Panel) => {
+    window.location.hash = id
     setActivePanel(id)
     setSidebarOpen(false)
   }
@@ -169,8 +183,8 @@ export default function DashboardPage() {
         </header>
 
         <div className="flex-1 overflow-auto p-6 dark:bg-gray-900">
-          {activePanel === 'home' && <HomePanel onNavigate={setActivePanel} displayName={displayName} />}
-          {activePanel === 'agenda' && <AgendaPage onNavigate={setActivePanel} />}
+          {activePanel === 'home' && <HomePanel onNavigate={handleNavClick} displayName={displayName} />}
+          {activePanel === 'agenda' && <AgendaPage onNavigate={handleNavClick} />}
 
           {activePanel === 'prompt' && (
             <div className="max-w-2xl mx-auto">
