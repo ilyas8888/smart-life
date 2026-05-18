@@ -132,6 +132,47 @@ function sportBadge(title: string): string | null {
   return null
 }
 
+const SPORT_CARD_STYLES: [RegExp, string][] = [
+  [/muscu|gym|musculation|bench|squat|deadlift|push|pull|legs/i, 'border-l-[3px] border-amber-400'],
+  [/course|running|run|jogging/i,                                'border-l-[3px] border-green-500'],
+  [/vélo|velo|cycling|bike/i,                                    'border-l-[3px] border-blue-500'],
+  [/natation|swimming|swim/i,                                    'border-l-[3px] border-cyan-500'],
+  [/yoga|pilates/i,                                              'border-l-[3px] border-purple-500'],
+  [/marche|walk/i,                                               'border-l-[3px] border-teal-500'],
+  [/football|foot|soccer/i,                                      'border-l-[3px] border-emerald-500'],
+  [/tennis/i,                                                    'border-l-[3px] border-lime-500'],
+  [/boxe|boxing|mma/i,                                           'border-l-[3px] border-red-500'],
+  [/crossfit|cross.?fit/i,                                       'border-l-[3px] border-orange-500'],
+  [/hiit/i,                                                      'border-l-[3px] border-yellow-500'],
+]
+
+function sessionCardBorder(title: string): string {
+  for (const [pattern, cls] of SPORT_CARD_STYLES) {
+    if (pattern.test(title)) return cls
+  }
+  return ''
+}
+
+const SPORT_CATEGORIES: { label: string; pattern: RegExp; color: string }[] = [
+  { label: 'Musculation', pattern: /muscu|gym|musculation|bench|squat|deadlift|push|pull|legs/i, color: '#f59e0b' },
+  { label: 'Course',      pattern: /course|running|run|jogging/i,                                 color: '#22c55e' },
+  { label: 'Vélo',        pattern: /vélo|velo|cycling|bike/i,                                     color: '#3b82f6' },
+  { label: 'Natation',    pattern: /natation|swimming|swim/i,                                     color: '#06b6d4' },
+  { label: 'Yoga',        pattern: /yoga|pilates/i,                                               color: '#a855f7' },
+  { label: 'Boxe/MMA',    pattern: /boxe|boxing|mma/i,                                            color: '#ef4444' },
+  { label: 'CrossFit',    pattern: /crossfit|cross.?fit/i,                                        color: '#f97316' },
+  { label: 'HIIT',        pattern: /hiit/i,                                                       color: '#eab308' },
+  { label: 'Football',    pattern: /football|foot|soccer/i,                                       color: '#10b981' },
+  { label: 'Tennis',      pattern: /tennis/i,                                                     color: '#84cc16' },
+]
+
+function getSportCategory(title: string): string {
+  for (const cat of SPORT_CATEGORIES) {
+    if (cat.pattern.test(title)) return cat.label
+  }
+  return 'Autre'
+}
+
 function ActivityHeatmap({ sessions }: { sessions: WorkoutSession[] }) {
   const WEEKS = 12
   const today = new Date()
@@ -183,6 +224,261 @@ function ActivityHeatmap({ sessions }: { sessions: WorkoutSession[] }) {
         ))}
         <span>Plus</span>
       </div>
+    </div>
+  )
+}
+
+function GlobalStats({ sessions }: { sessions: WorkoutSession[] }) {
+  const totalCalories = sessions.reduce((s, w) => s + (w.caloriesBurned ?? 0), 0)
+  const totalMinutes = sessions.reduce((s, w) => s + (w.durationMinutes ?? 0), 0)
+  const totalVolume = sessions.reduce((sum, w) =>
+    sum + w.exercises.reduce((es, ex) => es + (ex.sets ?? 0) * (ex.reps ?? 0) * (ex.weightKg ?? 0), 0), 0)
+  const totalHours = Math.floor(totalMinutes / 60)
+
+  const stats = [
+    { label: 'Séances',       value: String(sessions.length),                                          icon: '🏋️', bg: 'bg-amber-50 dark:bg-amber-900/20',  text: 'text-amber-700 dark:text-amber-300' },
+    { label: 'kcal brûlées',  value: totalCalories > 0 ? totalCalories.toLocaleString('fr') : '—',    icon: '🔥', bg: 'bg-red-50 dark:bg-red-900/20',      text: 'text-red-700 dark:text-red-300' },
+    { label: 'heures totales', value: totalHours > 0 ? `${totalHours}h` : '—',                        icon: '⏱️', bg: 'bg-blue-50 dark:bg-blue-900/20',    text: 'text-blue-700 dark:text-blue-300' },
+    { label: 'kg soulevés',   value: totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}t` : totalVolume > 0 ? `${Math.round(totalVolume)}kg` : '—', icon: '⚖️', bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-300' },
+  ]
+
+  return (
+    <div className="grid grid-cols-4 gap-3 mb-5">
+      {stats.map((s) => (
+        <div key={s.label} className={`rounded-2xl ${s.bg} px-3 py-3 text-center`}>
+          <span className="text-xl block mb-1">{s.icon}</span>
+          <p className={`text-xl font-bold leading-none ${s.text}`}>{s.value}</p>
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{s.label}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function SportDonut({ sessions }: { sessions: WorkoutSession[] }) {
+  if (sessions.length === 0) return null
+
+  const counts: Record<string, number> = {}
+  sessions.forEach((s) => {
+    const cat = getSportCategory(s.title)
+    counts[cat] = (counts[cat] ?? 0) + 1
+  })
+
+  const total = sessions.length
+  const allColors: Record<string, string> = Object.fromEntries(
+    [...SPORT_CATEGORIES.map((c) => [c.label, c.color]), ['Autre', '#9ca3af']]
+  )
+  const segments = Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, count]) => ({ label, count, color: allColors[label] ?? '#9ca3af' }))
+
+  const r = 38
+  const C = 2 * Math.PI * r
+  let cumul = 0
+  const arcs = segments.map((seg) => {
+    const len = (seg.count / total) * C
+    const off = C / 4 - cumul
+    cumul += len
+    return { ...seg, len, off }
+  })
+
+  return (
+    <div className="card flex items-center gap-5">
+      <div className="relative shrink-0">
+        <svg width={96} height={96} className="overflow-visible">
+          <circle cx={48} cy={48} r={r} fill="none" strokeWidth={10} className="stroke-gray-100 dark:stroke-gray-700" />
+          {arcs.map((arc) => (
+            <circle key={arc.label} cx={48} cy={48} r={r} fill="none" strokeWidth={10}
+              stroke={arc.color}
+              strokeDasharray={`${arc.len} ${C - arc.len}`}
+              strokeDashoffset={arc.off}
+              strokeLinecap="butt"
+              style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+            />
+          ))}
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <p className="text-sm font-bold text-gray-800 dark:text-gray-100">{total}</p>
+          <p className="text-[10px] text-gray-400 dark:text-gray-500">séances</p>
+        </div>
+      </div>
+      <div className="space-y-1.5 flex-1 min-w-0">
+        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">Répartition</p>
+        {segments.map((seg) => (
+          <div key={seg.label} className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+            <span className="text-xs text-gray-600 dark:text-gray-400 flex-1 truncate">{seg.label}</span>
+            <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">{seg.count}</span>
+            <span className="text-[10px] text-gray-400 w-7 text-right">{Math.round((seg.count / total) * 100)}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function getIsoWeekKey(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00`)
+  const thu = new Date(d)
+  thu.setDate(d.getDate() - ((d.getDay() + 6) % 7) + 3)
+  const firstThu = new Date(thu.getFullYear(), 0, 4)
+  const week = 1 + Math.round((thu.getTime() - firstThu.getTime()) / 604800000)
+  return `${thu.getFullYear()}-W${String(week).padStart(2, '0')}`
+}
+
+function WeeklyVolumeChart({ sessions }: { sessions: WorkoutSession[] }) {
+  if (sessions.length === 0) return null
+
+  const WEEKS = 8
+  const today = new Date()
+  const weeks = Array.from({ length: WEEKS }, (_, i) => {
+    const d = new Date(today)
+    d.setDate(d.getDate() - (WEEKS - 1 - i) * 7)
+    const mon = new Date(d)
+    mon.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+    const key = getIsoWeekKey(mon.toISOString().split('T')[0])
+    return { key, label: format(mon, 'd MMM', { locale: fr }), calories: 0, minutes: 0, count: 0 }
+  })
+
+  sessions.forEach((s) => {
+    const key = getIsoWeekKey(s.sessionDate)
+    const w = weeks.find((wk) => wk.key === key)
+    if (w) { w.calories += s.caloriesBurned ?? 0; w.minutes += s.durationMinutes ?? 0; w.count++ }
+  })
+
+  const useCalories = weeks.some((w) => w.calories > 0)
+  const values = weeks.map((w) => useCalories ? w.calories : w.minutes)
+  const maxVal = Math.max(...values, 1)
+  const unit = useCalories ? 'kcal' : 'min'
+  const BAR_H = 72
+
+  return (
+    <div className="card">
+      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">
+        {unit === 'kcal' ? 'Calories brûlées / semaine' : 'Durée / semaine'}
+      </p>
+      <div className="flex items-end gap-1.5" style={{ height: BAR_H + 32 }}>
+        {weeks.map((week, i) => {
+          const h = values[i] > 0 ? Math.max((values[i] / maxVal) * BAR_H, 4) : 0
+          const isCurrent = i === WEEKS - 1
+          return (
+            <div key={week.key} className="flex-1 flex flex-col items-center gap-1 group">
+              {values[i] > 0 && (
+                <span className="text-[9px] text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {values[i]}
+                </span>
+              )}
+              <div className="w-full flex items-end" style={{ height: BAR_H }}>
+                <div
+                  className={`w-full rounded-t-lg transition-all duration-500 ${isCurrent ? 'bg-amber-500' : 'bg-amber-200 dark:bg-amber-700/50'}`}
+                  style={{ height: h }}
+                  title={`${week.label} : ${values[i]} ${unit}`}
+                />
+              </div>
+              <span className={`text-[9px] truncate w-full text-center leading-tight ${isCurrent ? 'font-semibold text-amber-600 dark:text-amber-400' : 'text-gray-400 dark:text-gray-500'}`}>
+                {week.label}
+              </span>
+              {week.count > 0 && (
+                <span className="text-[8px] text-gray-400 dark:text-gray-500">{week.count}x</span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function SessionCard({
+  session, isExpanded, onToggleExpand, onDelete,
+}: {
+  session: WorkoutSession; isExpanded: boolean; onToggleExpand: () => void; onDelete: () => void
+}) {
+  const badge = sportBadge(session.title)
+  const borderCls = sessionCardBorder(session.title)
+  const volume = session.exercises.reduce((sum, ex) =>
+    sum + (ex.sets ?? 0) * (ex.reps ?? 0) * (ex.weightKg ?? 0), 0)
+
+  return (
+    <div className={`card overflow-hidden ${borderCls}`}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            {badge && <span className="text-lg leading-none">{badge}</span>}
+            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{session.title}</p>
+            {session.planDayId && (
+              <span className="text-xs rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-2 py-0.5 shrink-0">
+                Programme
+              </span>
+            )}
+          </div>
+
+          <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+            {format(new Date(`${session.sessionDate}T00:00:00`), 'EEEE dd MMMM yyyy', { locale: fr })}
+          </p>
+
+          <div className="flex flex-wrap gap-1.5">
+            {session.durationMinutes && (
+              <span className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full">
+                <Clock size={10} /> {session.durationMinutes}min
+              </span>
+            )}
+            {session.caloriesBurned && (
+              <span className="flex items-center gap-1 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-1 rounded-full">
+                <Flame size={10} /> {session.caloriesBurned} kcal
+              </span>
+            )}
+            {volume > 0 && (
+              <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 px-2 py-1 rounded-full">
+                ⚖️ {volume >= 1000 ? `${(volume / 1000).toFixed(1)}t` : `${Math.round(volume)}kg`} soulevés
+              </span>
+            )}
+          </div>
+
+          {session.exercises.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {session.exercises.slice(0, 4).map((ex) => {
+                const p: string[] = []
+                if (ex.sets && ex.reps) p.push(`${ex.sets}×${ex.reps}`)
+                if (ex.weightKg) p.push(`${ex.weightKg}kg`)
+                return (
+                  <span key={ex.id}
+                    className="text-[11px] bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full">
+                    {ex.name}{p.length ? ` · ${p.join(' ')}` : ''}
+                  </span>
+                )
+              })}
+              {session.exercises.length > 4 && (
+                <span className="text-[11px] text-gray-400 dark:text-gray-500 self-center">
+                  +{session.exercises.length - 4} autres
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1 shrink-0">
+          {session.exercises.length > 0 && (
+            <button type="button" onClick={onToggleExpand}
+              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+          )}
+          <button type="button" onClick={onDelete}
+            className="p-1 text-gray-300 dark:text-gray-500 hover:text-red-400 transition-colors">
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+
+      {isExpanded && session.exercises.length > 0 && (
+        <ul className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-1.5">
+          {session.exercises.map((ex) => <ExerciseLine key={ex.id} ex={ex} />)}
+        </ul>
+      )}
+      {session.notes && (
+        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">{session.notes}</p>
+      )}
     </div>
   )
 }
@@ -918,7 +1214,14 @@ export default function WorkoutPanel() {
 
       {activeTab === 'sessions' && (
         <>
+          {sessions.length > 0 && <GlobalStats sessions={sessions} />}
           {sessions.length > 0 && <ActivityHeatmap sessions={sessions} />}
+          {sessions.length > 1 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+              <SportDonut sessions={sessions} />
+              <WeeklyVolumeChart sessions={sessions} />
+            </div>
+          )}
           {weekSessions.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
               <span className="rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-3 py-1.5 text-sm font-medium">
@@ -961,48 +1264,15 @@ export default function WorkoutPanel() {
             />
           ) : (
             <div className="space-y-3">
-              {sessionsToShow.map(s => {
-                const isExpanded = expandedId === s.id
-                return (
-                  <div key={s.id} className="card">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {sportBadge(s.title) && (
-                            <span className="text-base leading-none">{sportBadge(s.title)}</span>
-                          )}
-                          <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{s.title}</p>
-                          {s.planDayId && <span className="text-xs rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-2 py-0.5">Programme</span>}
-                          {s.durationMinutes && <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"><Clock size={11} /> {s.durationMinutes}min</span>}
-                          {s.caloriesBurned && <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400"><Flame size={11} /> {s.caloriesBurned} kcal</span>}
-                        </div>
-                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                          {format(new Date(`${s.sessionDate}T00:00:00`), 'EEEE dd MMMM yyyy', { locale: fr })}
-                          {s.exercises.length > 0 && ` · ${s.exercises.length} exercice${s.exercises.length > 1 ? 's' : ''}`}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {s.exercises.length > 0 && (
-                          <button type="button" onClick={() => setExpandedId(isExpanded ? null : s.id)}
-                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                          </button>
-                        )}
-                        <button type="button" onClick={() => deleteSessionMutation.mutate(s.id)}
-                          className="p-1 text-gray-300 dark:text-gray-500 hover:text-red-400 transition-colors">
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                    {isExpanded && s.exercises.length > 0 && (
-                      <ul className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-1.5">
-                        {s.exercises.map(ex => <ExerciseLine key={ex.id} ex={ex} />)}
-                      </ul>
-                    )}
-                    {s.notes && <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">{s.notes}</p>}
-                  </div>
-                )
-              })}
+              {sessionsToShow.map((s) => (
+                <SessionCard
+                  key={s.id}
+                  session={s}
+                  isExpanded={expandedId === s.id}
+                  onToggleExpand={() => setExpandedId(expandedId === s.id ? null : s.id)}
+                  onDelete={() => deleteSessionMutation.mutate(s.id)}
+                />
+              ))}
             </div>
           )}
         </>
