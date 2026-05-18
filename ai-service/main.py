@@ -29,6 +29,18 @@ class PromptPayload(BaseModel):
     cached_foods: list[dict] | None = None
 
 
+class FoodExtractPayload(BaseModel):
+    foods: list[dict]
+    meal_type: str = "SNACK"
+    cached_foods: list[dict] | None = None
+
+
+class FoodPromptPayload(BaseModel):
+    prompt: str
+    meal_type: str | None = None
+    cached_foods: list[dict] | None = None
+
+
 SYSTEM_PROMPT = """Tu es un assistant intelligent de gestion personnelle ET un expert en nutrition.
 Ton rôle est d'analyser le texte libre d'un utilisateur et d'en extraire des éléments structurés.
 
@@ -151,6 +163,118 @@ async def process_prompt(payload: PromptPayload, x_internal_key: str = Header(de
         result = json.loads(raw_text.strip())
         return result
 
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=502, detail=f"Claude API error: {e}")
+
+
+FOOD_NUTRIENT_SYSTEM_PROMPT = """Tu es un expert en nutrition. Pour chaque aliment listé, retourne ses valeurs nutritionnelles précises.
+Retourne UNIQUEMENT un JSON valide avec cette structure:
+{
+  "food_logs": [
+    {
+      "meal_type": "BREAKFAST|LUNCH|DINNER|SNACK",
+      "food_item": "Nom exact de l'aliment",
+      "quantity": "portion utilisée (ex: 150g, 1 unité, 1 bol)",
+      "calories": 300,
+      "protein_g": 12.5,
+      "carbs_g": 45.0,
+      "fat_g": 8.0,
+      "fiber_g": 3.5,
+      "notes": "",
+      "nutrition_details": {
+        "vitamine_c": "10mg",
+        "calcium": "120mg",
+        "fer": "2mg",
+        "potassium": "300mg",
+        "sodium": "200mg"
+      }
+    }
+  ]
+}
+Règles:
+- calories ≈ (protéines×4) + (glucides×4) + (lipides×9)
+- Si la quantité n'est pas précisée, utilise une portion standard adulte
+- Un œuf = 70kcal, sandwich = 350kcal, poulet 150g = 248kcal, riz 150g cuit = 175kcal, banane = 90kcal
+- Retourne UNIQUEMENT le JSON, rien d'autre"""
+
+
+def _parse_ai_food_response(raw_text: str, meal_type: str | None = None) -> dict:
+    if raw_text.startswith("```"):
+        raw_text = raw_text.split("```")[1]
+        if raw_text.startswith("json"):
+            raw_text = raw_text[4:]
+    if raw_text.endswith("```"):
+        raw_text = raw_text[:-3]
+    result = json.loads(raw_text.strip())
+    if meal_type:
+        for fl in result.get("food_logs", []):
+            fl["meal_type"] = meal_type
+    return result
+
+
+@app.post("/extract-food")
+async def extract_food(payload: FoodExtractPayload, x_internal_key: str = Header(default="")):
+    if not INTERNAL_SECRET or not secrets.compare_digest(x_internal_key, INTERNAL_SECRET):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    foods_text = "\n".join(
+        f"- {f.get('name', '')}" + (f" ({f.get('quantity')})" if f.get("quantity") else "")
+        for f in payload.foods
+    )
+    user_content = f"Type de repas: {payload.meal_type}\n\nAliments à analyser:\n{foods_text}"
+
+    if payload.cached_foods:
+        cache_lines = "\n".join(
+            f"- {c.get('name')}: {c.get('calories')}kcal, P:{c.get('protein_g')}g, G:{c.get('carbs_g')}g, L:{c.get('fat_g')}g"
+            for c in payload.cached_foods
+        )
+        user_content = (
+            "[VALEURS DÉJÀ CONNUES — utilise-les exactement si l'aliment correspond]\n"
+            f"{cache_lines}\n\n{user_content}"
+        )
+
+    try:
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1024,
+            system=FOOD_NUTRIENT_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_content}],
+        )
+        return _parse_ai_food_response(message.content[0].text.strip(), payload.meal_type)
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=502, detail=f"Claude API error: {e}")
+
+
+@app.post("/extract-food-from-prompt")
+async def extract_food_from_prompt(payload: FoodPromptPayload, x_internal_key: str = Header(default="")):
+    if not INTERNAL_SECRET or not secrets.compare_digest(x_internal_key, INTERNAL_SECRET):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    meal_hint = f"Type de repas suggéré: {payload.meal_type}\n\n" if payload.meal_type else ""
+    user_content = f"{meal_hint}Description du repas:\n{payload.prompt}"
+
+    if payload.cached_foods:
+        cache_lines = "\n".join(
+            f"- {c.get('name')}: {c.get('calories')}kcal, P:{c.get('protein_g')}g, G:{c.get('carbs_g')}g, L:{c.get('fat_g')}g"
+            for c in payload.cached_foods
+        )
+        user_content = (
+            "[VALEURS DÉJÀ CONNUES — utilise-les exactement si l'aliment correspond]\n"
+            f"{cache_lines}\n\n{user_content}"
+        )
+
+    try:
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1024,
+            system=FOOD_NUTRIENT_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": user_content}],
+        )
+        return _parse_ai_food_response(message.content[0].text.strip(), payload.meal_type)
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
     except anthropic.APIError as e:

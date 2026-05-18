@@ -4,6 +4,7 @@ import com.smartlife.dto.NutritionSummaryDto;
 import com.smartlife.model.FoodLog;
 import com.smartlife.model.User;
 import com.smartlife.repository.FoodLogRepository;
+import com.smartlife.service.AiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,6 +21,7 @@ import java.util.Map;
 public class FoodLogController {
 
     private final FoodLogRepository foodLogRepository;
+    private final AiService aiService;
 
     @GetMapping
     public List<FoodLog> getFoodLogs(@AuthenticationPrincipal User user) {
@@ -63,6 +65,23 @@ public class FoodLogController {
                 "proteinG", l.getProteinG() != null ? l.getProteinG() : 0, "carbsG", l.getCarbsG() != null ? l.getCarbsG() : 0,
                 "fatG", l.getFatG() != null ? l.getFatG() : 0)).toList());
         return summary;
+    }
+
+    @SuppressWarnings("unchecked")
+    @PostMapping("/quick-add")
+    public ResponseEntity<List<FoodLog>> quickAddFoods(@RequestBody Map<String, Object> body,
+                                                        @AuthenticationPrincipal User user) {
+        List<Map<String, Object>> foods = (List<Map<String, Object>>) body.get("foods");
+        String mealType = (String) body.getOrDefault("mealType", "SNACK");
+        return ResponseEntity.ok(aiService.quickAddFoods(foods, mealType, user));
+    }
+
+    @PostMapping("/from-prompt")
+    public ResponseEntity<List<FoodLog>> addFromPrompt(@RequestBody Map<String, Object> body,
+                                                        @AuthenticationPrincipal User user) {
+        String prompt = (String) body.get("prompt");
+        String mealType = (String) body.getOrDefault("mealType", null);
+        return ResponseEntity.ok(aiService.addFoodsFromPrompt(prompt, mealType, user));
     }
 
     @DeleteMapping("/{id}")
