@@ -314,6 +314,49 @@ public class AiService {
                 .build();
     }
 
+    @SuppressWarnings("unchecked")
+    public WorkoutSession addWorkoutFromPrompt(String prompt, User user) {
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("prompt", prompt);
+
+        Map<String, Object> aiResult = webClientBuilder.build()
+                .post().uri(aiServiceUrl + "/extract-workout-from-prompt")
+                .header("X-Internal-Key", aiInternalSecret)
+                .bodyValue(requestBody).retrieve()
+                .bodyToMono(Map.class).block();
+
+        if (aiResult == null) throw new RuntimeException("AI service returned no response");
+
+        Map<String, Object> w = (Map<String, Object>) aiResult.get("workout");
+        if (w == null) throw new RuntimeException("No workout in AI response");
+
+        String title = (String) w.getOrDefault("title", "Séance");
+        if (title == null || title.isBlank()) title = "Séance";
+
+        var session = WorkoutSession.builder()
+                .user(user)
+                .title(title)
+                .durationMinutes(parseInteger(w.get("duration_minutes")))
+                .caloriesBurned(parseInteger(w.get("calories_burned")))
+                .notes((String) w.getOrDefault("notes", null))
+                .build();
+
+        var exercises = (List<Map<String, Object>>) w.getOrDefault("exercises", List.of());
+        for (var ex : exercises) {
+            String exName = (String) ex.getOrDefault("name", "Exercice");
+            if (exName == null || exName.isBlank()) continue;
+            session.getExercises().add(WorkoutExercise.builder()
+                    .session(session)
+                    .name(exName)
+                    .sets(parseInteger(ex.get("sets")))
+                    .reps(parseInteger(ex.get("reps")))
+                    .weightKg(parseBigDecimal(ex.get("weight_kg")))
+                    .durationSeconds(parseInteger(ex.get("duration_seconds")))
+                    .build());
+        }
+        return workoutSessionRepository.save(session);
+    }
+
     private Task.Priority parsePriority(String p) {
         try { return Task.Priority.valueOf(p.toUpperCase()); }
         catch (Exception e) { return Task.Priority.MEDIUM; }

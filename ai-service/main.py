@@ -41,6 +41,10 @@ class FoodPromptPayload(BaseModel):
     cached_foods: list[dict] | None = None
 
 
+class WorkoutPromptPayload(BaseModel):
+    prompt: str
+
+
 SYSTEM_PROMPT = """Tu es un assistant intelligent de gestion personnelle ET un expert en nutrition.
 Ton rôle est d'analyser le texte libre d'un utilisateur et d'en extraire des éléments structurés.
 
@@ -275,6 +279,51 @@ async def extract_food_from_prompt(payload: FoodPromptPayload, x_internal_key: s
             messages=[{"role": "user", "content": user_content}],
         )
         return _parse_ai_food_response(message.content[0].text.strip(), payload.meal_type)
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=502, detail=f"Claude API error: {e}")
+
+
+WORKOUT_SYSTEM_PROMPT = """Tu es un coach sportif expert. Analyse la description d'une séance de sport et retourne les données structurées.
+Retourne UNIQUEMENT un JSON valide :
+{
+  "workout": {
+    "title": "Nom de la séance (ex: Muscu dos/biceps, Course à pied 5km, Yoga matinal)",
+    "duration_minutes": 45,
+    "calories_burned": 300,
+    "notes": "",
+    "exercises": [
+      {"name": "Squat", "sets": 4, "reps": 12, "weight_kg": 80.0, "duration_seconds": null},
+      {"name": "Course", "sets": null, "reps": null, "weight_kg": null, "duration_seconds": 1800}
+    ]
+  }
+}
+Règles :
+- Estime calories_burned si non précisé : muscu ≈ 5kcal/min, course ≈ 10kcal/min, vélo ≈ 8kcal/min, yoga ≈ 3kcal/min, natation ≈ 9kcal/min
+- Les exercices sont optionnels (liste vide [] si non mentionnés)
+- Retourne UNIQUEMENT le JSON, rien d'autre"""
+
+
+@app.post("/extract-workout-from-prompt")
+async def extract_workout_from_prompt(payload: WorkoutPromptPayload, x_internal_key: str = Header(default="")):
+    if not INTERNAL_SECRET or not secrets.compare_digest(x_internal_key, INTERNAL_SECRET):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    try:
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1024,
+            system=WORKOUT_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": f"Séance décrite : {payload.prompt}"}],
+        )
+        raw_text = message.content[0].text.strip()
+        if raw_text.startswith("```"):
+            raw_text = raw_text.split("```")[1]
+            if raw_text.startswith("json"):
+                raw_text = raw_text[4:]
+        if raw_text.endswith("```"):
+            raw_text = raw_text[:-3]
+        return json.loads(raw_text.strip())
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
     except anthropic.APIError as e:

@@ -4,6 +4,7 @@ import com.smartlife.model.User;
 import com.smartlife.model.WorkoutExercise;
 import com.smartlife.model.WorkoutSession;
 import com.smartlife.repository.WorkoutSessionRepository;
+import com.smartlife.service.AiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -19,6 +20,7 @@ import java.util.Map;
 public class WorkoutController {
 
     private final WorkoutSessionRepository workoutSessionRepository;
+    private final AiService aiService;
 
     @GetMapping
     public List<WorkoutSession> getSessions(@AuthenticationPrincipal User user) {
@@ -51,6 +53,13 @@ public class WorkoutController {
         }
 
         return ResponseEntity.ok(workoutSessionRepository.save(session));
+    }
+
+    @PostMapping("/from-prompt")
+    public ResponseEntity<WorkoutSession> createFromPrompt(@RequestBody Map<String, Object> body,
+                                                           @AuthenticationPrincipal User user) {
+        String prompt = (String) body.get("prompt");
+        return ResponseEntity.ok(aiService.addWorkoutFromPrompt(prompt, user));
     }
 
     @DeleteMapping("/{id}")
