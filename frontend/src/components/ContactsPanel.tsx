@@ -3,6 +3,32 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Users, Trash2, Phone, Mail, MapPin, Search, Plus, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
+import { EmptyState, IllustrationContacts } from './EmptyState'
+
+const AVATAR_COLORS = [
+  'bg-blue-500 text-white',
+  'bg-violet-500 text-white',
+  'bg-rose-500 text-white',
+  'bg-amber-500 text-white',
+  'bg-green-500 text-white',
+  'bg-cyan-500 text-white',
+  'bg-pink-500 text-white',
+  'bg-indigo-500 text-white',
+  'bg-teal-500 text-white',
+  'bg-orange-500 text-white',
+  'bg-sky-500 text-white',
+  'bg-emerald-500 text-white',
+  'bg-fuchsia-500 text-white',
+  'bg-lime-500 text-white',
+  'bg-red-500 text-white',
+  'bg-purple-500 text-white',
+]
+
+function avatarColor(name: string) {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length]
+}
 
 interface Contact {
   id: number
@@ -159,16 +185,23 @@ export default function ContactsPanel() {
       )}
 
       {contacts.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-          <Users size={40} className="mx-auto mb-3 opacity-30" />
-          <p>Aucun contact.</p>
-        </div>
+        <EmptyState
+          illustration={<IllustrationContacts />}
+          title="Aucun contact"
+          subtitle="Ajoutez vos contacts pour les retrouver facilement."
+          action={
+            <button className="btn-primary" onClick={() => setShowForm(true)}>
+              <Plus size={16} className="inline mr-1" />
+              Ajouter un contact
+            </button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {contacts.map((c) => (
             <div key={c.id} className="card">
               <div className="flex items-start justify-between">
-                <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 dark:bg-primary-700 dark:text-primary-50 flex items-center justify-center font-bold text-lg mr-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg mr-3 shrink-0 ${avatarColor(c.name)}`}>
                   {c.name[0].toUpperCase()}
                 </div>
                 <div className="flex-1">

@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Bell, Check, Trash2, Plus } from 'lucide-react'
+import { Bell, Check, Trash2, Plus, AlertTriangle } from 'lucide-react'
 import { format, isPast } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
+import { EmptyState, IllustrationReminders } from './EmptyState'
 
 interface Reminder {
   id: number
@@ -54,6 +55,46 @@ export default function RemindersPanel() {
     createMutation.mutate()
   }
 
+  const active = reminders.filter((r) => !r.isDone)
+  const done = reminders.filter((r) => r.isDone)
+  const overdue = active.filter((r) => isPast(new Date(r.remindAt)))
+  const upcoming = active.filter((r) => !isPast(new Date(r.remindAt)))
+
+  const ReminderCard = ({ r }: { r: Reminder }) => {
+    const isOverdue = !r.isDone && isPast(new Date(r.remindAt))
+    return (
+      <div className={`card flex items-start gap-3 ${isOverdue ? 'border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-900/20' : r.isDone ? 'opacity-60' : ''}`}>
+        <div className="flex-1">
+          <p className={`font-medium ${r.isDone ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
+            {r.title}
+          </p>
+          {r.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{r.description}</p>}
+          <p className={`text-xs mt-1 ${isOverdue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>
+            {isOverdue ? '⚠ En retard · ' : ''}
+            {format(new Date(r.remindAt), 'dd MMM yyyy à HH:mm', { locale: fr })}
+          </p>
+        </div>
+        <div className="flex gap-2 shrink-0">
+          {!r.isDone && (
+            <button
+              onClick={() => doneMutation.mutate(r.id)}
+              className="p-1 text-gray-400 dark:text-gray-500 hover:text-green-500 transition-colors"
+              title="Marquer comme fait"
+            >
+              <Check size={15} />
+            </button>
+          )}
+          <button
+            onClick={() => deleteMutation.mutate(r.id)}
+            className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors"
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
@@ -95,42 +136,48 @@ export default function RemindersPanel() {
       </form>
 
       {reminders.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-          <Bell size={40} className="mx-auto mb-3 opacity-30" />
-          <p>Créez votre premier rappel ci-dessus ou via le Prompt IA.</p>
-        </div>
+        <EmptyState
+          illustration={<IllustrationReminders />}
+          title="Aucun rappel"
+          subtitle="Créez des rappels pour ne rien oublier. L'IA peut aussi en créer depuis votre prompt."
+        />
       ) : (
-        <div className="space-y-3 max-w-2xl">
-          {reminders.map((r) => {
-            const overdue = isPast(new Date(r.remindAt))
-            return (
-              <div key={r.id} className={`card flex items-start gap-3 ${overdue ? 'border-red-200 bg-red-50 dark:border-red-900/50 dark:bg-red-900/20' : ''}`}>
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900 dark:text-gray-100">{r.title}</p>
-                  {r.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{r.description}</p>}
-                  <p className={`text-xs mt-1 ${overdue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>
-                    {overdue ? '⚠ ' : ''}
-                    {format(new Date(r.remindAt), 'dd MMM yyyy à HH:mm', { locale: fr })}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => doneMutation.mutate(r.id)}
-                    className="p-1 text-gray-400 dark:text-gray-500 hover:text-green-500 transition-colors"
-                    title="Marquer comme fait"
-                  >
-                    <Check size={15} />
-                  </button>
-                  <button
-                    onClick={() => deleteMutation.mutate(r.id)}
-                    className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
+        <div className="max-w-2xl space-y-6">
+          {overdue.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle size={15} className="text-red-500" />
+                <h3 className="text-sm font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide">
+                  En retard ({overdue.length})
+                </h3>
               </div>
-            )
-          })}
+              <div className="space-y-3">
+                {overdue.map((r) => <ReminderCard key={r.id} r={r} />)}
+              </div>
+            </div>
+          )}
+
+          {upcoming.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-3">
+                À venir ({upcoming.length})
+              </h3>
+              <div className="space-y-3">
+                {upcoming.map((r) => <ReminderCard key={r.id} r={r} />)}
+              </div>
+            </div>
+          )}
+
+          {done.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">
+                Terminés ({done.length})
+              </h3>
+              <div className="space-y-3">
+                {done.map((r) => <ReminderCard key={r.id} r={r} />)}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

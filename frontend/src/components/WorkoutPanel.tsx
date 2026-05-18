@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Activity, CalendarDays, Check, ChevronDown, ChevronUp, Clock, Dumbbell,
+  Activity, Check, ChevronDown, ChevronUp, Clock, Dumbbell,
   Flame, MessageSquareText, Play, Plus, Trash2, X,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
+import { EmptyState, IllustrationWorkout, IllustrationPrograms } from './EmptyState'
 
 interface PlanExercise { name: string; sets: number | null; reps: number | null; weightKg: number | null; notes: string }
 interface PlanDay { id: number; dayNumber: number; label: string; exercises: PlanExercise[] }
@@ -106,6 +107,84 @@ const EXERCISE_LIBRARY: Record<string, PlanExercise[]> = {
     { name: 'Rameur', sets: null, reps: null, weightKg: null, notes: '20 min' },
     { name: 'HIIT 20-40', sets: 8, reps: null, weightKg: null, notes: '20s effort / 40s repos' },
   ],
+}
+
+const SPORT_BADGE_MAP: [RegExp, string][] = [
+  [/muscu|gym|musculation|bench|squat|deadlift/i, '🏋️'],
+  [/course|running|run|jogging/i, '🏃'],
+  [/vélo|velo|cycling|bike/i, '🚴'],
+  [/natation|swimming|swim|piscine/i, '🏊'],
+  [/yoga|pilates/i, '🧘'],
+  [/marche|walk/i, '🚶'],
+  [/football|foot|soccer/i, '⚽'],
+  [/tennis/i, '🎾'],
+  [/boxe|boxing|mma/i, '🥊'],
+  [/crossfit|cross.?fit/i, '💪'],
+  [/hiit/i, '⚡'],
+  [/escalade|climbing/i, '🧗'],
+  [/basket|basketball/i, '🏀'],
+]
+
+function sportBadge(title: string): string | null {
+  for (const [pattern, emoji] of SPORT_BADGE_MAP) {
+    if (pattern.test(title)) return emoji
+  }
+  return null
+}
+
+function ActivityHeatmap({ sessions }: { sessions: WorkoutSession[] }) {
+  const WEEKS = 12
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const countByDate: Record<string, number> = {}
+  sessions.forEach((s) => { countByDate[s.sessionDate] = (countByDate[s.sessionDate] ?? 0) + 1 })
+
+  const dow = (today.getDay() + 6) % 7 // 0=Mon
+  const totalDays = WEEKS * 7
+  const start = new Date(today)
+  start.setDate(start.getDate() - (totalDays - 1) + (6 - dow))
+
+  const cells: Array<{ date: string; count: number }> = []
+  for (let i = 0; i < totalDays; i++) {
+    const d = new Date(start)
+    d.setDate(d.getDate() + i)
+    const key = d.toISOString().split('T')[0]
+    cells.push({ date: key, count: countByDate[key] ?? 0 })
+  }
+
+  const cellColor = (count: number) => {
+    if (count === 0) return 'bg-gray-100 dark:bg-gray-700'
+    if (count === 1) return 'bg-amber-200 dark:bg-amber-800'
+    if (count === 2) return 'bg-amber-400 dark:bg-amber-600'
+    return 'bg-amber-500 dark:bg-amber-500'
+  }
+
+  return (
+    <div className="card mb-5">
+      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Activité des 12 dernières semaines</p>
+      <div className="flex gap-0.5">
+        {Array.from({ length: WEEKS }).map((_, wi) => (
+          <div key={wi} className="flex flex-col gap-0.5 flex-1">
+            {cells.slice(wi * 7, wi * 7 + 7).map((cell) => (
+              <div
+                key={cell.date}
+                title={cell.count > 0 ? `${cell.date}: ${cell.count} séance${cell.count > 1 ? 's' : ''}` : cell.date}
+                className={`aspect-square rounded-[2px] ${cellColor(cell.count)}`}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center gap-1.5 mt-2 text-[10px] text-gray-400 dark:text-gray-500">
+        <span>Moins</span>
+        {['bg-gray-100 dark:bg-gray-700', 'bg-amber-200 dark:bg-amber-800', 'bg-amber-400 dark:bg-amber-600', 'bg-amber-500'].map((cls, i) => (
+          <div key={i} className={`w-2.5 h-2.5 rounded-[2px] ${cls}`} />
+        ))}
+        <span>Plus</span>
+      </div>
+    </div>
+  )
 }
 
 const emptyExercise = (): ExerciseForm => ({ name: '', sets: '', reps: '', weightKg: '', durationSeconds: '' })
@@ -839,6 +918,7 @@ export default function WorkoutPanel() {
 
       {activeTab === 'sessions' && (
         <>
+          {sessions.length > 0 && <ActivityHeatmap sessions={sessions} />}
           {weekSessions.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
               <span className="rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-3 py-1.5 text-sm font-medium">
@@ -869,14 +949,16 @@ export default function WorkoutPanel() {
           )}
 
           {sessions.length === 0 ? (
-            <div className="text-center py-16">
-              <Dumbbell size={40} className="mx-auto text-gray-200 dark:text-gray-700 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400 mb-4">Aucune séance enregistrée.</p>
-              <button type="button" onClick={() => setShowAddModal(true)}
-                className="btn-primary inline-flex items-center gap-2">
-                <Plus size={16} /> Ajouter votre première séance
-              </button>
-            </div>
+            <EmptyState
+              illustration={<IllustrationWorkout />}
+              title="Aucune séance enregistrée"
+              subtitle="Commencez à tracker vos entraînements et suivez votre progression."
+              action={
+                <button type="button" onClick={() => setShowAddModal(true)} className="btn-primary inline-flex items-center gap-2">
+                  <Plus size={16} /> Ajouter votre première séance
+                </button>
+              }
+            />
           ) : (
             <div className="space-y-3">
               {sessionsToShow.map(s => {
@@ -886,6 +968,9 @@ export default function WorkoutPanel() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
+                          {sportBadge(s.title) && (
+                            <span className="text-base leading-none">{sportBadge(s.title)}</span>
+                          )}
                           <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{s.title}</p>
                           {s.planDayId && <span className="text-xs rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-2 py-0.5">Programme</span>}
                           {s.durationMinutes && <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400"><Clock size={11} /> {s.durationMinutes}min</span>}
@@ -925,14 +1010,16 @@ export default function WorkoutPanel() {
 
       {activeTab === 'programs' && (
         plans.length === 0 ? (
-          <div className="text-center py-16">
-            <CalendarDays size={42} className="mx-auto text-gray-200 dark:text-gray-700 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400 mb-4">Aucun programme créé.</p>
-            <button type="button" onClick={() => setShowCreatePlan(true)}
-              className="btn-primary inline-flex items-center gap-2">
-              <Plus size={16} /> Créer votre premier programme
-            </button>
-          </div>
+          <EmptyState
+            illustration={<IllustrationPrograms />}
+            title="Aucun programme"
+            subtitle="Créez un programme structuré pour atteindre vos objectifs sportifs."
+            action={
+              <button type="button" onClick={() => setShowCreatePlan(true)} className="btn-primary inline-flex items-center gap-2">
+                <Plus size={16} /> Créer votre premier programme
+              </button>
+            }
+          />
         ) : (
           <div className="space-y-3">
             {plans.map(plan => (

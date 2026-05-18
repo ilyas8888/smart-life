@@ -1,8 +1,47 @@
 import { useQuery } from '@tanstack/react-query'
-import { CheckSquare, Bell, UtensilsCrossed, Dumbbell, FileText, BookOpen, ChevronRight, TrendingUp, Flame } from 'lucide-react'
-import { format } from 'date-fns'
+import { CheckSquare, Bell, UtensilsCrossed, Dumbbell, FileText, BookOpen, ChevronRight, Flame } from 'lucide-react'
+import { format, differenceInCalendarDays, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import api from '../api/axios'
+
+const QUOTES = [
+  'La discipline est le pont entre les objectifs et les accomplissements.',
+  'Chaque jour est une nouvelle chance de progresser.',
+  'Le succès est la somme de petits efforts répétés jour après jour.',
+  'Votre seule limite, c\'est vous-même.',
+  'La santé est la vraie richesse.',
+  'Commencez là où vous êtes, utilisez ce que vous avez.',
+  'Un petit progrès chaque jour mène à de grands résultats.',
+  'La motivation vous lance, l\'habitude vous maintient.',
+  'Prendre soin de soi n\'est pas un luxe, c\'est une nécessité.',
+  'Chaque effort compte, même les petits.',
+  'Le meilleur moment pour commencer était hier, le second meilleur est maintenant.',
+  'Votre corps peut tout faire, c\'est votre esprit qu\'il faut convaincre.',
+  'Progresser, pas la perfection.',
+  'Un jour à la fois, une habitude à la fois.',
+  'Votre futur vous remerciera pour les efforts d\'aujourd\'hui.',
+]
+
+function getDailyQuote() {
+  const dayOfYear = Math.floor(
+    (Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86_400_000
+  )
+  return QUOTES[dayOfYear % QUOTES.length]
+}
+
+function computeStreak(dates: string[]): number {
+  if (!dates.length) return 0
+  const sorted = [...new Set(dates)].sort().reverse()
+  const today = format(new Date(), 'yyyy-MM-dd')
+  if (sorted[0] !== today) return 0
+  let streak = 1
+  for (let i = 1; i < sorted.length; i++) {
+    const diff = differenceInCalendarDays(parseISO(sorted[i - 1]), parseISO(sorted[i]))
+    if (diff === 1) streak++
+    else break
+  }
+  return streak
+}
 
 interface StatCardProps {
   icon: React.ElementType
@@ -37,7 +76,7 @@ interface Reminder { isDone: boolean; remindAt: string | null }
 interface FoodSummary { totalCalories: number; mealCount: number }
 interface WorkoutSession { sessionDate: string; caloriesBurned: number | null; durationMinutes: number | null }
 interface Note { id: number }
-interface DiaryEntry { id: number }
+interface DiaryEntry { id: number; entryDate: string }
 
 type Panel = 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout' | 'prompt'
 
@@ -51,6 +90,13 @@ function getWeekStart() {
   d.setDate(d.getDate() - d.getDay() + 1)
   d.setHours(0, 0, 0, 0)
   return d
+}
+
+function getGreetingEmoji(hour: number) {
+  if (hour < 6) return '🌙'
+  if (hour < 12) return '☀️'
+  if (hour < 18) return '🌤️'
+  return '🌙'
 }
 
 export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
@@ -100,22 +146,41 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
   const todayCalories = nutritionSummary?.totalCalories ?? 0
   const netCalories = todayCalories - (workouts.filter((w) => w.sessionDate === today).reduce((s, w) => s + (w.caloriesBurned ?? 0), 0))
 
+  const workoutDates = workouts.map((w) => w.sessionDate)
+  const diaryDates = diary.map((d) => d.entryDate)
+  const allActivityDates = [...new Set([...workoutDates, ...diaryDates])]
+  const streak = computeStreak(allActivityDates)
+
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir'
+  const emoji = getGreetingEmoji(hour)
   const firstName = displayName.split(' ')[0]
+  const quote = getDailyQuote()
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="mb-8">
-        <p className="text-sm text-gray-400 dark:text-gray-500 mb-1">
-          {format(new Date(), "EEEE dd MMMM yyyy", { locale: fr })}
-        </p>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-          {greeting}, {firstName} 👋
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">
-          Voici votre résumé du jour
-        </p>
+      {/* Hero */}
+      <div className="card mb-6 bg-gradient-to-br from-primary-600 to-blue-700 text-white border-0">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-primary-200 text-sm mb-1">
+              {format(new Date(), "EEEE dd MMMM yyyy", { locale: fr })}
+            </p>
+            <h1 className="text-2xl font-bold mb-0.5">
+              {emoji} {greeting}, {firstName} !
+            </h1>
+            <p className="text-primary-100 text-sm italic">"{quote}"</p>
+          </div>
+          {streak > 0 && (
+            <div className="flex flex-col items-center bg-white/15 rounded-2xl px-4 py-2 min-w-[64px]">
+              <span className="text-2xl">🔥</span>
+              <span className="text-xl font-bold leading-none">{streak}</span>
+              <span className="text-[10px] text-primary-100 uppercase tracking-wide">
+                {streak === 1 ? 'jour' : 'jours'}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 mb-6">
@@ -170,7 +235,7 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
       <div className="card bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 border-primary-100 dark:border-primary-800">
         <div className="flex items-center gap-3 mb-2">
           <div className="p-1.5 bg-primary-600 rounded-lg">
-            <TrendingUp size={16} className="text-white" />
+            <Flame size={16} className="text-white" />
           </div>
           <p className="font-semibold text-primary-900 dark:text-primary-200">Prompt IA</p>
         </div>

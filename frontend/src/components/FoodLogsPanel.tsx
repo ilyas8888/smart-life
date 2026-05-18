@@ -8,6 +8,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
+import { EmptyState, IllustrationFood } from './EmptyState'
 
 interface FoodLog {
   id: number
@@ -85,6 +86,63 @@ function MacroCard({ label, value, goal, unit, icon: Icon }: {
       </div>
       <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full mt-4 overflow-hidden">
         <div className={`h-full rounded-full ${progressColor(percent)}`} style={{ width: `${Math.min(percent, 100)}%` }} />
+      </div>
+    </div>
+  )
+}
+
+function MacroDonut({ protein, carbs, fat }: { protein: number; carbs: number; fat: number }) {
+  const total = protein + carbs + fat
+  if (total === 0) return null
+  const r = 38
+  const circumference = 2 * Math.PI * r
+  const segments = [
+    { value: protein, color: '#22c55e', label: 'Protéines', unit: 'g' },
+    { value: carbs, color: '#f59e0b', label: 'Glucides', unit: 'g' },
+    { value: fat, color: '#3b82f6', label: 'Lipides', unit: 'g' },
+  ]
+  let cumulative = 0
+  const arcs = segments.map((seg) => {
+    const length = (seg.value / total) * circumference
+    const offset = circumference / 4 - cumulative
+    cumulative += length
+    return { ...seg, length, offset }
+  })
+
+  return (
+    <div className="card flex items-center gap-6">
+      <div className="relative shrink-0">
+        <svg width={96} height={96} className="overflow-visible">
+          <circle cx={48} cy={48} r={r} fill="none" strokeWidth={10}
+            className="stroke-gray-100 dark:stroke-gray-700" />
+          {arcs.map((arc) => (
+            <circle key={arc.label} cx={48} cy={48} r={r} fill="none" strokeWidth={10}
+              stroke={arc.color}
+              strokeDasharray={`${arc.length} ${circumference - arc.length}`}
+              strokeDashoffset={arc.offset}
+              strokeLinecap="butt"
+              style={{ transform: 'rotate(-90deg)', transformOrigin: '50% 50%' }}
+            />
+          ))}
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 leading-none">{Math.round(total)}g</p>
+          <p className="text-[10px] text-gray-400 dark:text-gray-500">macros</p>
+        </div>
+      </div>
+      <div className="space-y-2 flex-1">
+        {segments.map((seg) => (
+          <div key={seg.label} className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+            <span className="text-xs text-gray-600 dark:text-gray-400 flex-1">{seg.label}</span>
+            <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+              {Math.round(seg.value)}{seg.unit}
+            </span>
+            <span className="text-xs text-gray-400 w-8 text-right">
+              {total > 0 ? Math.round((seg.value / total) * 100) : 0}%
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -457,14 +515,16 @@ export default function FoodLogsPanel() {
       </h2>
 
       {foodLogs.length === 0 && (
-        <div className="text-center py-16">
-          <UtensilsCrossed size={40} className="mx-auto text-gray-200 dark:text-gray-700 mb-4" />
-          <p className="text-gray-500 dark:text-gray-400 mb-4">Aucun repas enregistré aujourd'hui.</p>
-          <button type="button" onClick={() => setShowModal(true)}
-            className="btn-primary inline-flex items-center gap-2">
-            <Plus size={16} /> Ajouter votre premier repas
-          </button>
-        </div>
+        <EmptyState
+          illustration={<IllustrationFood />}
+          title="Aucun repas enregistré"
+          subtitle="Commencez à tracker votre alimentation pour suivre vos macros et calories."
+          action={
+            <button type="button" onClick={() => setShowModal(true)} className="btn-primary inline-flex items-center gap-2">
+              <Plus size={16} /> Ajouter votre premier repas
+            </button>
+          }
+        />
       )}
 
       {foodLogs.length > 0 && (
@@ -483,22 +543,25 @@ export default function FoodLogsPanel() {
           </div>
 
           <div className="mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
               <MacroCard label="Calories" value={caloriesTotal} goal={dailyGoals.calories} unit="kcal" icon={Flame} />
               <MacroCard label="Protéines" value={proteinTotal} goal={dailyGoals.proteinG} unit="g" icon={Dumbbell} />
               <MacroCard label="Glucides" value={carbsTotal} goal={dailyGoals.carbsG} unit="g" icon={UtensilsCrossed} />
               <MacroCard label="Lipides" value={fatTotal} goal={dailyGoals.fatG} unit="g" icon={UtensilsCrossed} />
             </div>
-            <div className="card mt-4 max-w-sm">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Fibres</p>
-                <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  {formatValue(fiberTotal)} / {dailyGoals.fiberG}g
-                </p>
-              </div>
-              <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full ${progressColor(fiberPercent)}`}
-                  style={{ width: `${Math.min(fiberPercent, 100)}%` }} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <MacroDonut protein={proteinTotal} carbs={carbsTotal} fat={fatTotal} />
+              <div className="card">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Fibres</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {formatValue(fiberTotal)} / {dailyGoals.fiberG}g
+                  </p>
+                </div>
+                <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${progressColor(fiberPercent)}`}
+                    style={{ width: `${Math.min(fiberPercent, 100)}%` }} />
+                </div>
               </div>
             </div>
           </div>

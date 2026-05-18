@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
+import { EmptyState, IllustrationTasks } from './EmptyState'
 
 interface Task {
   id: number
@@ -168,25 +169,44 @@ export default function TasksPanel() {
       </form>
 
       {tasks.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
-          <CheckSquare size={40} className="mx-auto mb-3 opacity-30" />
-          <p>Aucune tâche. Créez votre première tâche ci-dessus ou via le Prompt IA.</p>
-        </div>
+        <EmptyState
+          illustration={<IllustrationTasks />}
+          title="Aucune tâche"
+          subtitle="Créez votre première tâche ci-dessus ou décrivez votre journée via le Prompt IA."
+        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3 uppercase tracking-wide">À faire ({todo.length})</h3>
-            {todo.map((t) => <TaskCard key={t.id} task={t} />)}
+        <>
+          {tasks.length > 0 && (
+            <div className="mb-5">
+              <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-1.5">
+                <span>{done.length} / {tasks.length} terminée{done.length !== 1 ? 's' : ''}</span>
+                <span className="font-semibold text-primary-600 dark:text-primary-400">
+                  {Math.round((done.length / tasks.length) * 100)} %
+                </span>
+              </div>
+              <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-primary-500 to-green-500 rounded-full transition-all duration-500"
+                  style={{ width: `${(done.length / tasks.length) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3 uppercase tracking-wide">À faire ({todo.length})</h3>
+              {todo.map((t) => <TaskCard key={t.id} task={t} />)}
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-yellow-600 dark:text-yellow-300 mb-3 uppercase tracking-wide">En cours ({inProgress.length})</h3>
+              {inProgress.map((t) => <TaskCard key={t.id} task={t} />)}
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-green-600 dark:text-green-300 mb-3 uppercase tracking-wide">Terminé ({done.length})</h3>
+              {done.map((t) => <TaskCard key={t.id} task={t} />)}
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-yellow-600 dark:text-yellow-300 mb-3 uppercase tracking-wide">En cours ({inProgress.length})</h3>
-            {inProgress.map((t) => <TaskCard key={t.id} task={t} />)}
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-green-600 dark:text-green-300 mb-3 uppercase tracking-wide">Terminé ({done.length})</h3>
-            {done.map((t) => <TaskCard key={t.id} task={t} />)}
-          </div>
-        </div>
+        </>
       )}
     </div>
   )
