@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -52,6 +53,11 @@ public class FoodCacheService {
                         "fiber_g", c.getFiberG() != null ? c.getFiberG() : 0
                 ))
                 .toList();
+    }
+
+    public Optional<FoodCache> findByName(String name) {
+        if (name == null) return Optional.empty();
+        return repo.findByFoodNameNormalized(normalize(name));
     }
 
     private String normalize(String name) {

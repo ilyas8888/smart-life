@@ -221,6 +221,99 @@ public class AiService {
         return response;
     }
 
+    @SuppressWarnings("unchecked")
+    public List<FoodLog> quickAddFoods(List<Map<String, Object>> foods, String mealType, User user) {
+        List<FoodLog> result = new ArrayList<>();
+        List<Map<String, Object>> toAsk = new ArrayList<>();
+
+        for (var food : foods) {
+            String name = (String) food.get("name");
+            String quantity = (String) food.getOrDefault("quantity", null);
+            var cached = foodCacheService.findByName(name);
+            if (cached.isPresent()) {
+                var c = cached.get();
+                var log = FoodLog.builder()
+                        .user(user).logDate(LocalDate.now()).mealType(mealType)
+                        .foodItem(c.getFoodName())
+                        .calories(c.getCalories() != null ? c.getCalories().intValue() : null)
+                        .proteinG(c.getProteinG()).carbsG(c.getCarbsG())
+                        .fatG(c.getFatG()).fiberG(c.getFiberG())
+                        .quantity(quantity).nutritionDetails(c.getNutritionDetails())
+                        .build();
+                foodLogRepository.save(log);
+                foodCacheService.upsert(log);
+                result.add(log);
+            } else {
+                toAsk.add(food);
+            }
+        }
+
+        if (!toAsk.isEmpty()) {
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("foods", toAsk);
+            requestBody.put("meal_type", mealType);
+            requestBody.put("cached_foods", foodCacheService.getTopCachedFoods());
+
+            Map<String, Object> aiResult = webClientBuilder.build()
+                    .post().uri(aiServiceUrl + "/extract-food")
+                    .header("X-Internal-Key", aiInternalSecret)
+                    .bodyValue(requestBody).retrieve()
+                    .bodyToMono(Map.class).block();
+
+            if (aiResult != null) {
+                for (var f : (List<Map<String, Object>>) aiResult.getOrDefault("food_logs", List.of())) {
+                    var log = buildFoodLog(f, mealType, user);
+                    foodLogRepository.save(log);
+                    foodCacheService.upsert(log);
+                    result.add(log);
+                }
+            }
+        }
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<FoodLog> addFoodsFromPrompt(String prompt, String mealType, User user) {
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("prompt", prompt);
+        if (mealType != null) requestBody.put("meal_type", mealType);
+        requestBody.put("cached_foods", foodCacheService.getTopCachedFoods());
+
+        Map<String, Object> aiResult = webClientBuilder.build()
+                .post().uri(aiServiceUrl + "/extract-food-from-prompt")
+                .header("X-Internal-Key", aiInternalSecret)
+                .bodyValue(requestBody).retrieve()
+                .bodyToMono(Map.class).block();
+
+        if (aiResult == null) throw new RuntimeException("AI service returned no response");
+
+        List<FoodLog> result = new ArrayList<>();
+        for (var f : (List<Map<String, Object>>) aiResult.getOrDefault("food_logs", List.of())) {
+            String resolvedMealType = mealType != null ? mealType : (String) f.getOrDefault("meal_type", "SNACK");
+            var log = buildFoodLog(f, resolvedMealType, user);
+            foodLogRepository.save(log);
+            foodCacheService.upsert(log);
+            result.add(log);
+        }
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    private FoodLog buildFoodLog(Map<String, Object> f, String mealType, User user) {
+        return FoodLog.builder()
+                .user(user).logDate(LocalDate.now()).mealType(mealType)
+                .foodItem((String) f.get("food_item"))
+                .calories(parseInteger(f.get("calories")))
+                .proteinG(parseBigDecimal(f.get("protein_g")))
+                .carbsG(parseBigDecimal(f.get("carbs_g")))
+                .fatG(parseBigDecimal(f.get("fat_g")))
+                .fiberG(parseBigDecimal(f.get("fiber_g")))
+                .quantity((String) f.getOrDefault("quantity", null))
+                .nutritionDetails((Map<String, Object>) f.getOrDefault("nutrition_details", null))
+                .notes((String) f.getOrDefault("notes", null))
+                .build();
+    }
+
     private Task.Priority parsePriority(String p) {
         try { return Task.Priority.valueOf(p.toUpperCase()); }
         catch (Exception e) { return Task.Priority.MEDIUM; }
