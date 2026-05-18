@@ -1,4 +1,4 @@
-CREATE TABLE workout_sessions (
+CREATE TABLE IF NOT EXISTS workout_sessions (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
@@ -9,7 +9,7 @@ CREATE TABLE workout_sessions (
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE workout_exercises (
+CREATE TABLE IF NOT EXISTS workout_exercises (
     id BIGSERIAL PRIMARY KEY,
     session_id BIGINT NOT NULL REFERENCES workout_sessions(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
