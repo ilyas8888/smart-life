@@ -1,0 +1,1 @@
+ALTER TABLE notes ADD COLUMN color VARCHAR(20) NOT NULL DEFAULT 'default';
