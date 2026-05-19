@@ -49,6 +49,23 @@ public class TaskController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Task> updateTask(@PathVariable Long id,
+                                           @RequestBody Map<String, Object> body,
+                                           @AuthenticationPrincipal User user) {
+        return taskRepository.findById(id)
+                .filter(t -> t.getUser().getId().equals(user.getId()))
+                .map(t -> {
+                    if (body.containsKey("title")) t.setTitle((String) body.get("title"));
+                    if (body.containsKey("description")) t.setDescription((String) body.get("description"));
+                    if (body.containsKey("priority")) t.setPriority(Task.Priority.valueOf((String) body.get("priority")));
+                    if (body.containsKey("status")) t.setStatus(Task.TaskStatus.valueOf((String) body.get("status")));
+                    if (body.containsKey("dueDate")) t.setDueDate(body.get("dueDate") != null ? LocalDateTime.parse((String) body.get("dueDate")) : null);
+                    return ResponseEntity.ok(taskRepository.save(t));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id, @AuthenticationPrincipal User user) {
         return taskRepository.findById(id)

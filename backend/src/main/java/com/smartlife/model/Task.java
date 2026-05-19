@@ -26,10 +26,12 @@ public class Task {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TaskStatus status = TaskStatus.TODO;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     private Priority priority = Priority.MEDIUM;
 

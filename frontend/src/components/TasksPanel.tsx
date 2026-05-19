@@ -1,36 +1,139 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckSquare, Trash2, Clock, Plus } from 'lucide-react'
-import { format } from 'date-fns'
+import { CheckSquare, Trash2, Clock, Plus, Flag, Edit2, X, Search, AlertTriangle, Play, RotateCcw, Check } from 'lucide-react'
+import { format, isPast } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
-import { EmptyState, IllustrationTasks } from './EmptyState'
+import DateTimePicker from './DateTimePicker'
 
 interface Task {
   id: number
   title: string
-  description: string
+  description: string | null
   status: 'TODO' | 'IN_PROGRESS' | 'DONE'
   priority: 'LOW' | 'MEDIUM' | 'HIGH'
   dueDate: string | null
   createdAt: string
 }
 
-const priorityColors = {
-  LOW: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
-  MEDIUM: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
-  HIGH: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+const PRIORITY = {
+  HIGH: { label: 'Haute', strip: 'border-l-red-500', badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
+  MEDIUM: { label: 'Moyenne', strip: 'border-l-yellow-400', badge: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
+  LOW: { label: 'Basse', strip: 'border-l-green-500', badge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+} satisfies Record<Task['priority'], { label: string; strip: string; badge: string }>
+
+const STATUS_LABEL = { TODO: 'À faire', IN_PROGRESS: 'En cours', DONE: 'Terminé' }
+const STATUS_NEXT: Record<Task['status'], Task['status']> = { TODO: 'IN_PROGRESS', IN_PROGRESS: 'DONE', DONE: 'TODO' }
+const STATUS_COLORS = {
+  TODO: 'text-gray-500 dark:text-gray-400',
+  IN_PROGRESS: 'text-yellow-600 dark:text-yellow-400',
+  DONE: 'text-green-600 dark:text-green-400',
 }
 
-const priorityFr = { LOW: 'Basse', MEDIUM: 'Moyenne', HIGH: 'Haute' }
+function toInputDateTime(value: string | null) {
+  return value ? value.slice(0, 16) : ''
+}
+
+function priorityOf(task: Task) {
+  return PRIORITY[task.priority ?? 'MEDIUM'] ?? PRIORITY.MEDIUM
+}
+
+function TaskEditModal({
+  task, onClose, onSaved,
+}: {
+  task: Task
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [title, setTitle] = useState(task.title)
+  const [description, setDescription] = useState(task.description ?? '')
+  const [priority, setPriority] = useState<Task['priority']>(task.priority ?? 'MEDIUM')
+  const [status, setStatus] = useState<Task['status']>(task.status)
+  const [dueDate, setDueDate] = useState(toInputDateTime(task.dueDate))
+  const [saving, setSaving] = useState(false)
+
+  const save = () => {
+    if (!title.trim()) return
+    setSaving(true)
+    api.put(`/tasks/${task.id}`, {
+      title: title.trim(),
+      description: description.trim() || null,
+      priority,
+      status,
+      dueDate: dueDate || null,
+    })
+      .then(() => {
+        onSaved()
+        toast.success('Tâche mise à jour')
+        onClose()
+      })
+      .catch(() => toast.error('Erreur lors de la mise à jour'))
+      .finally(() => setSaving(false))
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <div>
+            <p className="text-xs text-gray-400 uppercase tracking-wide">Modifier</p>
+            <h3 className="font-bold text-gray-900 dark:text-gray-100">Tâche</h3>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-5 space-y-3">
+          <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Titre" />
+          <textarea className="input min-h-[90px] resize-none" value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optionnel)" />
+          <DateTimePicker value={dueDate} onChange={setDueDate} placeholder="Choisir une date et heure..." />
+          <div>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Priorité</p>
+            <div className="grid grid-cols-3 gap-2">
+              {(Object.keys(PRIORITY) as Task['priority'][]).map(p => (
+                <button key={p} type="button" onClick={() => setPriority(p)}
+                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all ${priority === p ? PRIORITY[p].badge : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'}`}>
+                  {PRIORITY[p].label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Statut</p>
+            <div className="grid grid-cols-3 gap-2">
+              {(Object.keys(STATUS_LABEL) as Task['status'][]).map(s => (
+                <button key={s} type="button" onClick={() => setStatus(s)}
+                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all ${status === s ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'}`}>
+                  {STATUS_LABEL[s]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="btn-secondary">Annuler</button>
+            <button type="button" onClick={save} disabled={!title.trim() || saving} className="btn-primary">
+              {saving ? 'Sauvegarde...' : 'Sauvegarder'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function TasksPanel() {
   const qc = useQueryClient()
+  const [formExpanded, setFormExpanded] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM')
+  const [priority, setPriority] = useState<Task['priority']>('MEDIUM')
   const [dueDate, setDueDate] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterPriority, setFilterPriority] = useState<Task['priority'] | null>(null)
+  const [editingTask, setEditingTask] = useState<Task | null>(null)
+
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
     queryKey: ['tasks'],
     queryFn: () => api.get('/tasks').then((r) => r.data),
@@ -40,7 +143,7 @@ export default function TasksPanel() {
     mutationFn: () =>
       api.post('/tasks', {
         title,
-        description,
+        description: description || null,
         priority,
         status: 'TODO',
         dueDate: dueDate || null,
@@ -51,6 +154,7 @@ export default function TasksPanel() {
       setDescription('')
       setPriority('MEDIUM')
       setDueDate('')
+      setFormExpanded(false)
       toast.success('Tâche créée')
     },
     onError: () => toast.error('Erreur lors de la création'),
@@ -67,11 +171,19 @@ export default function TasksPanel() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks'] }); toast.success('Tâche supprimée') },
   })
 
-  if (isLoading) return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement...</div>
+  const filteredTasks = useMemo(() => tasks.filter(task => {
+    const q = searchQuery.trim().toLowerCase()
+    const matchesSearch = !q || task.title.toLowerCase().includes(q) || (task.description ?? '').toLowerCase().includes(q)
+    const matchesPriority = !filterPriority || task.priority === filterPriority
+    return matchesSearch && matchesPriority
+  }), [tasks, searchQuery, filterPriority])
 
-  const todo = tasks.filter((t) => t.status === 'TODO')
-  const inProgress = tasks.filter((t) => t.status === 'IN_PROGRESS')
-  const done = tasks.filter((t) => t.status === 'DONE')
+  const todo = filteredTasks.filter((t) => t.status === 'TODO')
+  const inProgress = filteredTasks.filter((t) => t.status === 'IN_PROGRESS')
+  const done = filteredTasks.filter((t) => t.status === 'DONE')
+  const allDone = tasks.filter((t) => t.status === 'DONE')
+  const progress = tasks.length > 0 ? (allDone.length / tasks.length) * 100 : 0
+  const formIsEmpty = !title.trim() && !description.trim() && !dueDate && priority === 'MEDIUM'
 
   const handleCreate = (e: FormEvent) => {
     e.preventDefault()
@@ -79,134 +191,191 @@ export default function TasksPanel() {
     createMutation.mutate()
   }
 
-  const TaskCard = ({ task }: { task: Task }) => (
-    <div className="card mb-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityColors[task.priority]}`}>
-              {priorityFr[task.priority]}
-            </span>
-          </div>
-          <p className={`font-medium ${task.status === 'DONE' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
-            {task.title}
-          </p>
-          {task.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{task.description}</p>}
-          {task.dueDate && (
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 flex items-center gap-1">
-              <Clock size={12} />
-              {format(new Date(task.dueDate), 'dd MMM yyyy HH:mm', { locale: fr })}
+  const handleFormBlur = (e: React.FocusEvent<HTMLFormElement>) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+    if (formIsEmpty) setFormExpanded(false)
+  }
+
+  const TaskCard = ({ task }: { task: Task }) => {
+    const meta = priorityOf(task)
+    const due = task.dueDate ? new Date(task.dueDate) : null
+    const overdue = Boolean(due && isPast(due) && task.status !== 'DONE')
+    const nextStatus = STATUS_NEXT[task.status]
+    const NextIcon = task.status === 'TODO' ? Play : task.status === 'IN_PROGRESS' ? Check : RotateCcw
+
+    return (
+      <div className={`card border-l-4 ${meta.strip} ${overdue ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50' : task.status === 'DONE' ? 'opacity-75' : ''}`}>
+        <div className="flex items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.badge}`}>
+                <Flag size={9} className="inline mr-1" />{meta.label}
+              </span>
+              <span className={`text-[10px] font-semibold ${STATUS_COLORS[task.status]}`}>{STATUS_LABEL[task.status]}</span>
+              {overdue && (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                  ⚠ En retard
+                </span>
+              )}
+            </div>
+            <p className={`font-semibold ${task.status === 'DONE' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
+              {task.title}
             </p>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={task.status}
-            onChange={(e) => statusMutation.mutate({ id: task.id, status: e.target.value })}
-            className="text-xs border border-gray-200 rounded px-2 py-1 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
-          >
-            <option value="TODO">À faire</option>
-            <option value="IN_PROGRESS">En cours</option>
-            <option value="DONE">Terminé</option>
-          </select>
-          <button
-            onClick={() => deleteMutation.mutate(task.id)}
-            className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors"
-          >
-            <Trash2 size={15} />
-          </button>
+            {task.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{task.description}</p>}
+            {due && (
+              <div className={`flex items-center gap-1.5 text-xs mt-2 ${overdue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>
+                <Clock size={12} />
+                <span>{format(due, 'dd MMM yyyy à HH:mm', { locale: fr })}</span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button type="button"
+              onClick={() => statusMutation.mutate({ id: task.id, status: nextStatus })}
+              className="p-1.5 rounded-full text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+              title={STATUS_LABEL[nextStatus]}>
+              <NextIcon size={15} />
+            </button>
+            <button type="button" onClick={() => setEditingTask(task)}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              title="Modifier">
+              <Edit2 size={15} />
+            </button>
+            <button type="button" onClick={() => deleteMutation.mutate(task.id)}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              title="Supprimer">
+              <Trash2 size={15} />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  )
+    )
+  }
+
+  if (isLoading) return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement...</div>
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
         <CheckSquare className="text-primary-600" />
-        Tâches ({tasks.length})
+        Tâches
       </h2>
 
-      <form onSubmit={handleCreate} className="card mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-4 gap-2 mb-6">
+        {[
+          { label: 'Total', value: tasks.length, icon: <CheckSquare size={15} /> },
+          { label: 'À faire', value: tasks.filter(t => t.status === 'TODO').length, icon: <AlertTriangle size={15} /> },
+          { label: 'En cours', value: tasks.filter(t => t.status === 'IN_PROGRESS').length, icon: <Clock size={15} /> },
+          { label: 'Terminées', value: allDone.length, icon: <Check size={15} /> },
+        ].map(stat => (
+          <div key={stat.label} className="rounded-xl bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center">
+            <div className="flex justify-center text-primary-600 dark:text-primary-400 mb-1">{stat.icon}</div>
+            <p className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-none">{stat.value}</p>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <form onSubmit={handleCreate} onBlur={handleFormBlur} className="card mb-5">
+        {!formExpanded ? (
           <input
-            className="input lg:col-span-2"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Titre de la tâche"
-            required
+            className="w-full bg-transparent outline-none text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400"
+            placeholder="Ajouter une tâche..."
+            onFocus={() => setFormExpanded(true)}
           />
-          <input
-            className="input lg:col-span-2"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description (optionnel)"
-          />
-          <select
-            className="input"
-            value={priority}
-            onChange={(e) => setPriority(e.target.value as 'LOW' | 'MEDIUM' | 'HIGH')}
-          >
-            <option value="LOW">Basse</option>
-            <option value="MEDIUM">Moyenne</option>
-            <option value="HIGH">Haute</option>
-          </select>
-          <input
-            className="input md:col-span-2 lg:col-span-2"
-            type="datetime-local"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-          />
-          <button
-            type="submit"
-            className="btn-primary md:col-span-2 lg:col-span-1 flex items-center justify-center gap-2"
-            disabled={!title.trim() || createMutation.isPending}
-          >
-            <Plus size={16} />
-            Ajouter
-          </button>
-        </div>
+        ) : (
+          <div className="space-y-3">
+            <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titre de la tâche" autoFocus />
+            <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optionnel)" />
+            <DateTimePicker value={dueDate} onChange={setDueDate} placeholder="Choisir une échéance..." />
+            <div className="grid grid-cols-3 gap-2">
+              {(Object.keys(PRIORITY) as Task['priority'][]).map(p => (
+                <button key={p} type="button" onClick={() => setPriority(p)}
+                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all ${priority === p ? PRIORITY[p].badge : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'}`}>
+                  {PRIORITY[p].label}
+                </button>
+              ))}
+            </div>
+            <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2"
+              disabled={!title.trim() || createMutation.isPending}>
+              <Plus size={16} />
+              {createMutation.isPending ? 'Création...' : 'Ajouter'}
+            </button>
+          </div>
+        )}
       </form>
 
-      {tasks.length === 0 ? (
-        <EmptyState
-          illustration={<IllustrationTasks />}
-          title="Aucune tâche"
-          subtitle="Créez votre première tâche ci-dessus ou décrivez votre journée via le Prompt IA."
-        />
-      ) : (
-        <>
-          {tasks.length > 0 && (
-            <div className="mb-5">
-              <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-1.5">
-                <span>{done.length} / {tasks.length} terminée{done.length !== 1 ? 's' : ''}</span>
-                <span className="font-semibold text-primary-600 dark:text-primary-400">
-                  {Math.round((done.length / tasks.length) * 100)} %
-                </span>
-              </div>
-              <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-primary-500 to-green-500 rounded-full transition-all duration-500"
-                  style={{ width: `${(done.length / tasks.length) * 100}%` }}
-                />
-              </div>
-            </div>
+      <div className="flex flex-col gap-3 mb-5">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input placeholder="Rechercher dans les tâches..."
+            className="input pl-9 py-2 text-sm w-full" value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)} />
+          {searchQuery && (
+            <button type="button" onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2"><X size={14} className="text-gray-400" /></button>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3 uppercase tracking-wide">À faire ({todo.length})</h3>
-              {todo.map((t) => <TaskCard key={t.id} task={t} />)}
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-yellow-600 dark:text-yellow-300 mb-3 uppercase tracking-wide">En cours ({inProgress.length})</h3>
-              {inProgress.map((t) => <TaskCard key={t.id} task={t} />)}
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-green-600 dark:text-green-300 mb-3 uppercase tracking-wide">Terminé ({done.length})</h3>
-              {done.map((t) => <TaskCard key={t.id} task={t} />)}
-            </div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-gray-400 font-medium">Priorité :</span>
+          <button type="button" onClick={() => setFilterPriority(null)}
+            className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${!filterPriority ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>
+            Toutes
+          </button>
+          {(Object.keys(PRIORITY) as Task['priority'][]).map(p => (
+            <button key={p} type="button" onClick={() => setFilterPriority(filterPriority === p ? null : p)}
+              className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 ${
+                p === 'HIGH' ? 'bg-red-400' : p === 'MEDIUM' ? 'bg-yellow-400' : 'bg-green-400'
+              } ${filterPriority === p ? 'border-gray-800 dark:border-white scale-125' : 'border-transparent'}`}
+              title={PRIORITY[p].label} />
+          ))}
+        </div>
+      </div>
+
+      {tasks.length > 0 && (
+        <div className="mb-5">
+          <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 mb-1.5">
+            <span>{allDone.length} / {tasks.length} terminée{allDone.length !== 1 ? 's' : ''}</span>
+            <span className="font-semibold text-primary-600 dark:text-primary-400">{Math.round(progress)} %</span>
           </div>
-        </>
+          <div className="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-primary-500 to-green-500 rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {tasks.length === 0 ? (
+        <div className="text-center py-16">
+          <CheckSquare size={56} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
+          <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Aucune tâche</h3>
+          <p className="text-gray-400 text-sm">Ajoute une tâche pour organiser ta journée.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3 uppercase tracking-wide">À faire ({todo.length})</h3>
+            <div className="space-y-3">{todo.map((t) => <TaskCard key={t.id} task={t} />)}</div>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-yellow-600 dark:text-yellow-300 mb-3 uppercase tracking-wide">En cours ({inProgress.length})</h3>
+            <div className="space-y-3">{inProgress.map((t) => <TaskCard key={t.id} task={t} />)}</div>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-green-600 dark:text-green-300 mb-3 uppercase tracking-wide">Terminé ({done.length})</h3>
+            <div className="space-y-3">{done.map((t) => <TaskCard key={t.id} task={t} />)}</div>
+          </div>
+        </div>
+      )}
+
+      {editingTask && (
+        <TaskEditModal
+          task={editingTask}
+          onClose={() => setEditingTask(null)}
+          onSaved={() => qc.invalidateQueries({ queryKey: ['tasks'] })}
+        />
       )}
     </div>
   )
