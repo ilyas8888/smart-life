@@ -42,6 +42,23 @@ public class ContactController {
         return ResponseEntity.ok(contactRepository.save(contact));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Contact> updateContact(@PathVariable Long id,
+                                                 @RequestBody Map<String, Object> body,
+                                                 @AuthenticationPrincipal User user) {
+        return contactRepository.findById(id)
+                .filter(c -> c.getUser().getId().equals(user.getId()))
+                .map(c -> {
+                    if (body.containsKey("name")) c.setName((String) body.get("name"));
+                    if (body.containsKey("phone")) c.setPhone((String) body.get("phone"));
+                    if (body.containsKey("email")) c.setEmail((String) body.get("email"));
+                    if (body.containsKey("address")) c.setAddress((String) body.get("address"));
+                    if (body.containsKey("notes")) c.setNotes((String) body.get("notes"));
+                    return ResponseEntity.ok(contactRepository.save(c));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteContact(@PathVariable Long id, @AuthenticationPrincipal User user) {
         return contactRepository.findById(id)
