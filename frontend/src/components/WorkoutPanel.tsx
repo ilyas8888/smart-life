@@ -44,13 +44,6 @@ const GOAL_LABELS: Record<GoalType, string> = {
   GENERAL: 'Général',
 }
 
-const GOAL_COLORS: Record<GoalType, string> = {
-  MUSCLE_GAIN: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  FAT_LOSS: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
-  ENDURANCE: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  GENERAL: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-}
-
 const STATUS_COLORS: Record<string, string> = {
   ACTIVE: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
   PAUSED: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
@@ -563,8 +556,6 @@ const dayLabel = (date: string) => {
   if (date === yesterdayString()) return 'Hier'
   return format(new Date(`${date}T00:00:00`), 'dd MMM', { locale: fr })
 }
-const goalLabel = (goal: string) => GOAL_LABELS[(goal as GoalType) in GOAL_LABELS ? goal as GoalType : 'GENERAL']
-const goalColor = (goal: string) => GOAL_COLORS[(goal as GoalType) in GOAL_COLORS ? goal as GoalType : 'GENERAL']
 const planExerciseWeight = (ex: PlanExercise) => ex.weightKg ?? (ex as unknown as { weight_kg?: number | null }).weight_kg ?? null
 
 function ProgressRing({ percent, size = 64 }: { percent: number; size?: number }) {
