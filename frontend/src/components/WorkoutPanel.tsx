@@ -856,8 +856,11 @@ function AddWorkoutModal({
   )
 }
 
-function PlanDetailModal({ plan, onClose, onStartSession }: { plan: WorkoutPlan; onClose: () => void; onStartSession: (day: PlanDay) => void }) {
+function PlanDetailModal({ plan, onClose, onStartSession, onStatusChange }: {
+  plan: WorkoutPlan; onClose: () => void; onStartSession: (day: PlanDay) => void; onStatusChange: (id: number, status: string) => void
+}) {
   const [progress, setProgress] = useState<PlanProgress | null>(null)
+  const [localStatus, setLocalStatus] = useState(plan.status)
   const cfg = GOAL_CONFIG[(plan.goal as GoalType) in GOAL_CONFIG ? plan.goal as GoalType : 'GENERAL']
   const jsDow = new Date().getDay()
   const planDow = jsDow === 0 ? 7 : jsDow
@@ -867,6 +870,12 @@ function PlanDetailModal({ plan, onClose, onStartSession }: { plan: WorkoutPlan;
   useEffect(() => {
     api.get(`/workout-plans/${plan.id}/progress`).then(r => setProgress(r.data))
   }, [plan.id])
+
+  const changeStatus = (newStatus: string) => {
+    api.patch(`/workout-plans/${plan.id}/status?status=${newStatus}`)
+      .then(() => { setLocalStatus(newStatus); onStatusChange(plan.id, newStatus) })
+      .catch(() => toast.error('Erreur lors du changement de statut'))
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -883,10 +892,39 @@ function PlanDetailModal({ plan, onClose, onStartSession }: { plan: WorkoutPlan;
                   <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{plan.name}</h3>
                   <div className="flex flex-wrap gap-1.5 mt-1">
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
-                    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[plan.status] ?? STATUS_COLORS.ARCHIVED}`}>
-                      {plan.status === 'ACTIVE' && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />}
-                      {STATUS_LABELS[plan.status] ?? plan.status}
+                    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[localStatus] ?? STATUS_COLORS.ARCHIVED}`}>
+                      {localStatus === 'ACTIVE' && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />}
+                      {STATUS_LABELS[localStatus] ?? localStatus}
                     </span>
+                  </div>
+                  {/* Status actions */}
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {localStatus === 'ACTIVE' && <>
+                      <button type="button" onClick={() => changeStatus('PAUSED')}
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors">
+                        ⏸ Mettre en pause
+                      </button>
+                      <button type="button" onClick={() => changeStatus('COMPLETED')}
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                        ✓ Marquer terminé
+                      </button>
+                    </>}
+                    {localStatus === 'PAUSED' && <>
+                      <button type="button" onClick={() => changeStatus('ACTIVE')}
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                        ▶ Réactiver
+                      </button>
+                      <button type="button" onClick={() => changeStatus('COMPLETED')}
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                        ✓ Marquer terminé
+                      </button>
+                    </>}
+                    {localStatus === 'COMPLETED' && (
+                      <button type="button" onClick={() => changeStatus('ACTIVE')}
+                        className="text-xs font-medium px-3 py-1.5 rounded-lg bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                        ↺ Relancer le programme
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1525,6 +1563,11 @@ export default function WorkoutPanel() {
           plan={selectedPlan}
           onClose={() => setSelectedPlan(null)}
           onStartSession={handleStartFromPlan}
+          onStatusChange={(id, status) => {
+            qc.setQueryData<WorkoutPlan[]>(['workout-plans'], prev =>
+              prev?.map(p => p.id === id ? { ...p, status } : p) ?? []
+            )
+          }}
         />
       )}
     </div>
