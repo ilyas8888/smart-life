@@ -8,7 +8,6 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
-import { EmptyState, IllustrationWorkout } from './EmptyState'
 
 interface PlanExercise { name: string; sets: number | null; reps: number | null; weightKg: number | null; notes: string }
 interface PlanDay { id: number; dayNumber: number; label: string; exercises: PlanExercise[] }
@@ -40,6 +39,30 @@ const SPORT_PRESETS = [
 
 const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
 const DAY_SHORT = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+
+const imgUrl = (path: string) => `${import.meta.env.BASE_URL}${path}`
+
+const GOAL_IMAGES: Record<GoalType, string> = {
+  MUSCLE_GAIN: imgUrl('images/goals/muscle.jpg'),
+  FAT_LOSS: imgUrl('images/goals/fat-loss.jpg'),
+  ENDURANCE: imgUrl('images/goals/endurance.jpg'),
+  GENERAL: imgUrl('images/goals/general.jpg'),
+}
+
+const SPORT_IMAGES: [RegExp, string][] = [
+  [/muscu|gym|musculation|bench|squat|deadlift|push|pull|legs/i, imgUrl('images/sports/gym.png')],
+  [/course|running|run|jogging/i, imgUrl('images/sports/running.png')],
+  [/vélo|velo|cycling|bike/i, imgUrl('images/sports/cycling.png')],
+  [/yoga|pilates/i, imgUrl('images/sports/yoga.png')],
+  [/boxe|boxing|mma/i, imgUrl('images/sports/boxing.png')],
+]
+
+function sportImage(title: string): string | null {
+  for (const [pattern, img] of SPORT_IMAGES) {
+    if (pattern.test(title)) return img
+  }
+  return null
+}
 
 const GOAL_LABELS: Record<GoalType, string> = {
   MUSCLE_GAIN: 'Prise de masse',
@@ -460,6 +483,7 @@ function SessionCard({
   session: WorkoutSession; isExpanded: boolean; onToggleExpand: () => void; onDelete: () => void
 }) {
   const badge = sportBadge(session.title)
+  const sImg = sportImage(session.title)
   const borderCls = sessionCardBorder(session.title)
   const volume = session.exercises.reduce((sum, ex) =>
     sum + (ex.sets ?? 0) * (ex.reps ?? 0) * (ex.weightKg ?? 0), 0)
@@ -521,6 +545,12 @@ function SessionCard({
             </div>
           )}
         </div>
+
+        {sImg && (
+          <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 opacity-80">
+            <img src={sImg} alt="" className="w-full h-full object-cover" />
+          </div>
+        )}
 
         <div className="flex items-center gap-1 shrink-0">
           {session.exercises.length > 0 && (
@@ -1086,16 +1116,26 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
             </div>
 
             <div className="bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 mb-4">
-              <div className={`bg-gradient-to-r ${cfg.gradient} p-4 border-b border-gray-800`}>
-                <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">
-                  Exercice {currentExIdx + 1}/{exercises.length}
-                </p>
-                <h3 className="text-xl font-bold">{currentEx.exercise.name}</h3>
-                <p className="text-sm text-gray-400 mt-0.5">
-                  {targetSets} séries
-                  {currentEx.exercise.reps ? ` × ${currentEx.exercise.reps} reps` : ''}
-                  {planExerciseWeight(currentEx.exercise) ? ` · ${planExerciseWeight(currentEx.exercise)} kg cible` : ''}
-                </p>
+              <div className="relative p-4 border-b border-gray-800 overflow-hidden">
+                {sportImage(currentEx.exercise.name) && (
+                  <img
+                    src={sportImage(currentEx.exercise.name)!}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover opacity-10"
+                  />
+                )}
+                <div className={`absolute inset-0 bg-gradient-to-r ${cfg.gradient} opacity-60`} />
+                <div className="relative z-10">
+                  <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">
+                    Exercice {currentExIdx + 1}/{exercises.length}
+                  </p>
+                  <h3 className="text-xl font-bold">{currentEx.exercise.name}</h3>
+                  <p className="text-sm text-gray-400 mt-0.5">
+                    {targetSets} séries
+                    {currentEx.exercise.reps ? ` × ${currentEx.exercise.reps} reps` : ''}
+                    {planExerciseWeight(currentEx.exercise) ? ` · ${planExerciseWeight(currentEx.exercise)} kg cible` : ''}
+                  </p>
+                </div>
               </div>
 
               {currentEx.setLogs.length > 0 && (
@@ -1246,16 +1286,23 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange }: {
         <ArrowLeft size={16} /> Retour aux programmes
       </button>
 
-      <div className={`rounded-2xl overflow-hidden bg-gradient-to-br ${cfg.gradient} p-5 border border-gray-100 dark:border-gray-700 mb-5`}>
-        <div className="flex items-start gap-4">
+      <div className="relative rounded-2xl overflow-hidden mb-5">
+        <img
+          src={GOAL_IMAGES[(plan.goal as GoalType) in GOAL_IMAGES ? plan.goal as GoalType : 'GENERAL']}
+          alt={cfg.label}
+          className="w-full h-48 object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
+        <div className="absolute inset-0 p-5 flex flex-col justify-end">
+          <div className="flex items-start gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-2xl">{cfg.emoji}</span>
               <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{plan.name}</h3>
+                <h3 className="text-lg font-bold text-white">{plan.name}</h3>
                 <div className="flex flex-wrap gap-1.5 mt-1">
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
-                  <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[localStatus] ?? STATUS_COLORS.ARCHIVED}`}>
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full backdrop-blur-sm bg-black/30 text-white border border-white/20">{cfg.label}</span>
+                  <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/20 ${STATUS_COLORS[localStatus] ?? STATUS_COLORS.ARCHIVED}`}>
                     {localStatus === 'ACTIVE' && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />}
                     {STATUS_LABELS[localStatus] ?? localStatus}
                   </span>
@@ -1292,28 +1339,28 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange }: {
             </div>
             <div className="grid grid-cols-3 gap-2 mt-3 text-center">
               <div>
-                <p className="text-base font-bold text-gray-900 dark:text-gray-100">
+                <p className="text-base font-bold text-white">
                   {progress?.doneSessions ?? 0}/{progress?.totalSessions ?? 0}
                 </p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">séances</p>
+                <p className="text-[10px] text-white/70">séances</p>
               </div>
               <div>
-                <p className="text-base font-bold text-gray-900 dark:text-gray-100">
+                <p className="text-base font-bold text-white">
                   {progress?.weeksElapsed ?? 1}/{plan.weeks}
                 </p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">semaines</p>
+                <p className="text-[10px] text-white/70">semaines</p>
               </div>
               <div>
-                <p className="text-base font-bold text-gray-900 dark:text-gray-100">{plan.daysPerWeek}j</p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">par semaine</p>
+                <p className="text-base font-bold text-white">{plan.daysPerWeek}j</p>
+                <p className="text-[10px] text-white/70">par semaine</p>
               </div>
             </div>
             <div className="mt-3">
-              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <div className="flex justify-between text-xs text-white/70 mb-1">
                 <span>Progression</span>
                 <span className="font-semibold">{progress?.percent ?? 0}%</span>
               </div>
-              <div className="h-2 bg-white/50 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="h-2 bg-white/25 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all ${goalProgressBar(plan.goal)}`}
                   style={{ width: `${progress?.percent ?? 0}%` }} />
               </div>
@@ -1321,9 +1368,10 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange }: {
           </div>
           <div className="relative shrink-0">
             <ProgressRing percent={progress?.percent ?? 0} size={56} />
-            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">
+            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
               {progress?.percent ?? 0}%
             </span>
+          </div>
           </div>
         </div>
       </div>
@@ -1630,14 +1678,28 @@ function ProgramCard({ plan, onClick, onDelete }: {
 
   return (
     <div onClick={onClick}
-      className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-xl hover:-translate-y-0.5 transition-all bg-white dark:bg-gray-800">
-      <div className={`h-36 bg-gradient-to-br ${cfg.gradient} flex items-center justify-center relative`}>
-        <span className="text-6xl filter drop-shadow">{cfg.emoji}</span>
+      className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-xl hover:-translate-y-0.5 transition-all bg-white dark:bg-gray-800 group">
+      <div className="h-40 relative overflow-hidden">
+        <img
+          src={GOAL_IMAGES[(plan.goal as GoalType) in GOAL_IMAGES ? plan.goal as GoalType : 'GENERAL']}
+          alt={cfg.label}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        <div className="absolute bottom-3 left-3 flex items-center gap-2">
+          <span className="text-2xl drop-shadow-lg">{cfg.emoji}</span>
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full backdrop-blur-sm bg-black/30 text-white border border-white/20">
+            {cfg.label}
+          </span>
+        </div>
         {plan.status === 'ACTIVE' && (
-          <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white shadow" />
+          <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white shadow-lg" />
         )}
         {plan.status === 'PAUSED' && (
-          <span className="absolute top-3 right-3 text-xs bg-yellow-400 text-yellow-900 font-bold px-2 py-0.5 rounded-full">⏸</span>
+          <span className="absolute top-3 right-3 text-[10px] bg-yellow-400 text-yellow-900 font-bold px-2 py-0.5 rounded-full">⏸</span>
+        )}
+        {plan.status === 'COMPLETED' && (
+          <span className="absolute top-3 right-3 text-[10px] bg-blue-400 text-white font-bold px-2 py-0.5 rounded-full">✓</span>
         )}
       </div>
 
@@ -1650,7 +1712,6 @@ function ProgramCard({ plan, onClick, onDelete }: {
           </button>
         </div>
         <div className="flex flex-wrap gap-1.5 mb-3">
-          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
           <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
             {plan.daysPerWeek}j/sem · {plan.weeks}sem
           </span>
@@ -1829,16 +1890,12 @@ export default function WorkoutPanel() {
           )}
 
           {sessions.length === 0 ? (
-            <EmptyState
-              illustration={<IllustrationWorkout />}
-              title="Aucune séance enregistrée"
-              subtitle="Commencez à tracker vos entraînements et suivez votre progression."
-              action={
-                <button type="button" onClick={() => setShowAddModal(true)} className="btn-primary inline-flex items-center gap-2">
-                  <Plus size={16} /> Ajouter votre première séance
-                </button>
-              }
-            />
+            <div className="text-center py-12">
+              <img src={imgUrl('images/empty/no-sessions.png')} alt="Aucune séance"
+                className="w-48 h-auto mx-auto mb-4 opacity-90" />
+              <p className="font-semibold text-gray-700 dark:text-gray-300 mb-1">Aucune séance enregistrée</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">Commence par enregistrer ta première séance</p>
+            </div>
           ) : (
             <div className="space-y-3">
               {sessionsToShow.map((s) => (
@@ -1856,20 +1913,32 @@ export default function WorkoutPanel() {
       )}
 
       {activeTab === 'programs' && (
-        <div className="grid grid-cols-2 gap-4">
-          {plans.map(plan => (
-            <ProgramCard key={plan.id} plan={plan}
-              onClick={() => { setDetailPlan(plan); setView('detail') }}
-              onDelete={() => deletePlanMutation.mutate(plan.id)} />
-          ))}
-          <button type="button" onClick={() => setShowCreatePlan(true)}
-            className="rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 h-48 flex flex-col items-center justify-center gap-3 text-gray-400 hover:border-amber-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors group">
-            <div className="w-12 h-12 rounded-full border-2 border-current flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Plus size={24} />
-            </div>
-            <span className="text-sm font-medium">Nouveau programme</span>
-          </button>
-        </div>
+        plans.length === 0 ? (
+          <div className="text-center py-12">
+            <img src={imgUrl('images/empty/no-programs.png')} alt="Aucun programme"
+              className="w-48 h-auto mx-auto mb-4 opacity-90" />
+            <p className="font-semibold text-gray-700 dark:text-gray-300 mb-1">Aucun programme créé</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500">Crée ton premier programme d'entraînement</p>
+            <button type="button" onClick={() => setShowCreatePlan(true)} className="btn-primary mt-4 inline-flex items-center gap-2">
+              <Plus size={16} /> Créer un programme
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            {plans.map(plan => (
+              <ProgramCard key={plan.id} plan={plan}
+                onClick={() => { setDetailPlan(plan); setView('detail') }}
+                onDelete={() => deletePlanMutation.mutate(plan.id)} />
+            ))}
+            <button type="button" onClick={() => setShowCreatePlan(true)}
+              className="rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 h-48 flex flex-col items-center justify-center gap-3 text-gray-400 hover:border-amber-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors group">
+              <div className="w-12 h-12 rounded-full border-2 border-current flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Plus size={24} />
+              </div>
+              <span className="text-sm font-medium">Nouveau programme</span>
+            </button>
+          </div>
+        )
       )}
 
       {showAddModal && (
