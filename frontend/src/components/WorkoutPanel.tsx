@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Activity, Check, ChevronDown, ChevronUp, Clock, Dumbbell,
@@ -899,8 +899,98 @@ function AddWorkoutModal({
   )
 }
 
+function PreSessionModal({ day, plan, onClose, onConfirm }: {
+  day: PlanDay; plan: WorkoutPlan; onClose: () => void; onConfirm: (exercises: ExerciseForm[]) => void
+}) {
+  const cfg = GOAL_CONFIG[(plan.goal as GoalType) in GOAL_CONFIG ? plan.goal as GoalType : 'GENERAL']
+  const [exercises, setExercises] = useState<ExerciseForm[]>(() =>
+    day.exercises.map(e => ({
+      name: e.name,
+      sets: String(e.sets ?? ''),
+      reps: String(e.reps ?? ''),
+      weightKg: String(planExerciseWeight(e) ?? ''),
+      durationSeconds: '',
+    }))
+  )
+
+  const updateExercise = (index: number, field: keyof ExerciseForm, value: string) =>
+    setExercises(prev => prev.map((exercise, i) => i === index ? { ...exercise, [field]: value } : exercise))
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className={`bg-gradient-to-br ${cfg.gradient} p-5 border-b border-gray-100 dark:border-gray-700`}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-2xl">{cfg.emoji}</span>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">{day.label}</h3>
+              </div>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Ajustez vos charges avant de commencer</p>
+            </div>
+            <button type="button" onClick={onClose}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white/50 dark:hover:bg-gray-700 transition-colors shrink-0">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-5">
+          <div className="space-y-2 mb-5">
+            {exercises.map((exercise, i) => (
+              <div key={i} className="rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
+                <div className="flex items-center gap-2.5 px-3 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+                  <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                    {i + 1}
+                  </span>
+                  <input
+                    className="flex-1 bg-transparent font-semibold text-sm text-gray-900 dark:text-gray-100 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500 min-w-0"
+                    value={exercise.name}
+                    onChange={e => updateExercise(i, 'name', e.target.value)}
+                    placeholder="Nom de l'exercice"
+                  />
+                </div>
+                <div className="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700">
+                  {[
+                    { label: 'Séries', field: 'sets' as keyof ExerciseForm, step: '1' },
+                    { label: 'Répétitions', field: 'reps' as keyof ExerciseForm, step: '1' },
+                    { label: 'Poids (kg)', field: 'weightKg' as keyof ExerciseForm, step: '0.5' },
+                  ].map(({ label, field, step }) => (
+                    <div key={field} className="flex flex-col items-center py-3 px-2">
+                      <p className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">{label}</p>
+                      <input
+                        type="number" min="0" step={step}
+                        className="w-full text-center font-bold text-xl text-gray-900 dark:text-gray-100 bg-transparent border-none focus:outline-none p-0 leading-none"
+                        value={exercise[field]}
+                        onChange={e => updateExercise(i, field, e.target.value)}
+                        placeholder="—"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="btn-secondary">Annuler</button>
+            <button type="button" onClick={() => onConfirm(exercises)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-colors ${goalAccentBtn(plan.goal)}`}>
+              <Play size={16} /> Commencer la séance
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function PlanDetailModal({ plan, onClose, onStartSession, onStatusChange }: {
-  plan: WorkoutPlan; onClose: () => void; onStartSession: (day: PlanDay) => void; onStatusChange: (id: number, status: string) => void
+  plan: WorkoutPlan; onClose: () => void; onStartSession: (day: PlanDay, plan: WorkoutPlan) => void; onStatusChange: (id: number, status: string) => void
 }) {
   const [progress, setProgress] = useState<PlanProgress | null>(null)
   const [localStatus, setLocalStatus] = useState(plan.status)
@@ -1025,7 +1115,7 @@ function PlanDetailModal({ plan, onClose, onStartSession, onStatusChange }: {
                   <p className="font-bold text-gray-900 dark:text-gray-100 text-base">{today.label}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{today.exercises.length} exercices</p>
                 </div>
-                <button type="button" onClick={() => onStartSession(today)}
+                <button type="button" onClick={() => onStartSession(today, plan)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-colors ${goalAccentBtn(plan.goal)}`}>
                   <Play size={16} /> Démarrer
                 </button>
@@ -1076,7 +1166,7 @@ function PlanDetailModal({ plan, onClose, onStartSession, onStatusChange }: {
                         </p>
                       </div>
                       {!isRest && day && (
-                        <button type="button" onClick={() => onStartSession(day)}
+                        <button type="button" onClick={() => onStartSession(day, plan)}
                           className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors shrink-0">
                           <Play size={14} />
                         </button>
@@ -1290,7 +1380,7 @@ function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSucces
 }
 
 function ProgramCard({ plan, onViewDetail, onDelete, onStartSession }: {
-  plan: WorkoutPlan; onViewDetail: () => void; onDelete: () => void; onStartSession?: (day: PlanDay) => void
+  plan: WorkoutPlan; onViewDetail: () => void; onDelete: () => void; onStartSession?: (day: PlanDay, plan: WorkoutPlan) => void
 }) {
   const { data: progress } = useQuery<PlanProgress>({
     queryKey: ['plan-progress', plan.id],
@@ -1370,7 +1460,7 @@ function ProgramCard({ plan, onViewDetail, onDelete, onStartSession }: {
             <span className="font-normal text-xs ml-1 opacity-70">· {todayDay.exercises.length} exercices</span>
           </p>
           {onStartSession && (
-            <button type="button" onClick={() => onStartSession(todayDay)}
+            <button type="button" onClick={() => onStartSession(todayDay, plan)}
               className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition-colors ${goalAccentBtn(plan.goal)}`}>
               <Play size={12} /> Démarrer
             </button>
@@ -1404,6 +1494,10 @@ export default function WorkoutPanel() {
   const [showCreatePlan, setShowCreatePlan] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<WorkoutPlan | null>(null)
   const [startFromDay, setStartFromDay] = useState<PlanDay | null>(null)
+  const [preSessionDay, setPreSessionDay] = useState<PlanDay | null>(null)
+  const [preSessionPlan, setPreSessionPlan] = useState<WorkoutPlan | null>(null)
+  const [sessionPrefillExercises, setSessionPrefillExercises] = useState<PlanExercise[] | undefined>(undefined)
+  const [sessionPrefillTitle, setSessionPrefillTitle] = useState<string | undefined>(undefined)
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery<WorkoutSession[]>({
     queryKey: ['workouts'],
@@ -1449,8 +1543,28 @@ export default function WorkoutPanel() {
     calories: weekSessions.reduce((sum, session) => sum + (session.caloriesBurned ?? 0), 0),
   }), [weekSessions])
 
-  const handleStartFromPlan = (day: PlanDay) => {
-    setStartFromDay(day)
+  const handleStartSession = (day: PlanDay, plan: WorkoutPlan) => {
+    setPreSessionDay(day)
+    setPreSessionPlan(plan)
+  }
+  const handlePreSessionConfirm = (adjustedExercises: ExerciseForm[]) => {
+    if (!preSessionDay || !preSessionPlan) return
+
+    const prefillExercises = adjustedExercises
+      .filter(e => e.name.trim())
+      .map(e => ({
+        name: e.name.trim(),
+        sets: e.sets ? parseInt(e.sets) : null,
+        reps: e.reps ? parseInt(e.reps) : null,
+        weightKg: e.weightKg ? parseFloat(e.weightKg) : null,
+        notes: '',
+      }))
+
+    setStartFromDay(preSessionDay)
+    setSessionPrefillExercises(prefillExercises)
+    setSessionPrefillTitle(`${preSessionPlan.name} — ${preSessionDay.label}`)
+    setPreSessionDay(null)
+    setPreSessionPlan(null)
     setSelectedPlan(null)
     setShowAddModal(true)
   }
@@ -1460,6 +1574,8 @@ export default function WorkoutPanel() {
     qc.invalidateQueries({ queryKey: ['plan-progress'] })
     setShowAddModal(false)
     setStartFromDay(null)
+    setSessionPrefillExercises(undefined)
+    setSessionPrefillTitle(undefined)
   }
 
   if (sessionsLoading || plansLoading) return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement…</div>
@@ -1580,18 +1696,31 @@ export default function WorkoutPanel() {
               <ProgramCard key={plan.id} plan={plan}
                 onViewDetail={() => setSelectedPlan(plan)}
                 onDelete={() => deletePlanMutation.mutate(plan.id)}
-                onStartSession={handleStartFromPlan} />
+                onStartSession={handleStartSession} />
             ))}
           </div>
         )
       )}
 
+      {preSessionDay && preSessionPlan && (
+        <PreSessionModal
+          day={preSessionDay}
+          plan={preSessionPlan}
+          onClose={() => { setPreSessionDay(null); setPreSessionPlan(null) }}
+          onConfirm={handlePreSessionConfirm}
+        />
+      )}
       {showAddModal && (
         <AddWorkoutModal
-          onClose={() => { setShowAddModal(false); setStartFromDay(null) }}
+          onClose={() => {
+            setShowAddModal(false)
+            setStartFromDay(null)
+            setSessionPrefillExercises(undefined)
+            setSessionPrefillTitle(undefined)
+          }}
           onSuccess={handleAddSuccess}
-          prefillExercises={startFromDay?.exercises}
-          prefillTitle={startFromDay?.label}
+          prefillExercises={sessionPrefillExercises ?? startFromDay?.exercises}
+          prefillTitle={sessionPrefillTitle ?? startFromDay?.label}
           prefillPlanDayId={startFromDay?.id}
         />
       )}
@@ -1605,7 +1734,7 @@ export default function WorkoutPanel() {
         <PlanDetailModal
           plan={selectedPlan}
           onClose={() => setSelectedPlan(null)}
-          onStartSession={handleStartFromPlan}
+          onStartSession={handleStartSession}
           onStatusChange={(id, status) => {
             qc.setQueryData<WorkoutPlan[]>(['workout-plans'], prev =>
               prev?.map(p => p.id === id ? { ...p, status } : p) ?? []
