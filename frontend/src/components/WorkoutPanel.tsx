@@ -62,6 +62,74 @@ const STATUS_LABELS: Record<string, string> = {
   ACTIVE: 'Actif', PAUSED: 'Pause', COMPLETED: 'Terminé', ARCHIVED: 'Archivé',
 }
 
+const GOAL_CONFIG: Record<GoalType, {
+  label: string; emoji: string; gradient: string; accentText: string; borderLeft: string; badge: string
+}> = {
+  MUSCLE_GAIN: {
+    label: 'Prise de masse', emoji: '🏋️',
+    gradient: 'from-amber-500/10 to-orange-500/5',
+    accentText: 'text-amber-600 dark:text-amber-400',
+    borderLeft: 'border-l-amber-500',
+    badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  },
+  FAT_LOSS: {
+    label: 'Perte de poids', emoji: '🔥',
+    gradient: 'from-red-500/10 to-rose-500/5',
+    accentText: 'text-red-600 dark:text-red-400',
+    borderLeft: 'border-l-red-500',
+    badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  },
+  ENDURANCE: {
+    label: 'Endurance', emoji: '🏃',
+    gradient: 'from-green-500/10 to-emerald-500/5',
+    accentText: 'text-green-600 dark:text-green-400',
+    borderLeft: 'border-l-green-500',
+    badge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  },
+  GENERAL: {
+    label: 'Général', emoji: '⚡',
+    gradient: 'from-blue-500/10 to-indigo-500/5',
+    accentText: 'text-blue-600 dark:text-blue-400',
+    borderLeft: 'border-l-blue-500',
+    badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  },
+}
+
+function goalAccentBtn(goal: string) {
+  if (goal === 'FAT_LOSS') return 'bg-red-500 hover:bg-red-600'
+  if (goal === 'ENDURANCE') return 'bg-green-500 hover:bg-green-600'
+  if (goal === 'GENERAL') return 'bg-blue-500 hover:bg-blue-600'
+  return 'bg-amber-500 hover:bg-amber-600'
+}
+
+function goalProgressBar(goal: string) {
+  if (goal === 'FAT_LOSS') return 'bg-red-500'
+  if (goal === 'ENDURANCE') return 'bg-green-500'
+  if (goal === 'GENERAL') return 'bg-blue-500'
+  return 'bg-amber-500'
+}
+
+function goalTodayBg(goal: string) {
+  if (goal === 'FAT_LOSS') return 'bg-red-50 dark:bg-red-900/20'
+  if (goal === 'ENDURANCE') return 'bg-green-50 dark:bg-green-900/20'
+  if (goal === 'GENERAL') return 'bg-blue-50 dark:bg-blue-900/20'
+  return 'bg-amber-50 dark:bg-amber-900/20'
+}
+
+function goalTodayBorder(goal: string) {
+  if (goal === 'FAT_LOSS') return 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20'
+  if (goal === 'ENDURANCE') return 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20'
+  if (goal === 'GENERAL') return 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20'
+  return 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20'
+}
+
+function goalDayBorder(goal: string) {
+  if (goal === 'FAT_LOSS') return 'border-red-300 dark:border-red-700'
+  if (goal === 'ENDURANCE') return 'border-green-300 dark:border-green-700'
+  if (goal === 'GENERAL') return 'border-blue-300 dark:border-blue-700'
+  return 'border-amber-300 dark:border-amber-700'
+}
+
 const EXERCISE_LIBRARY: Record<string, PlanExercise[]> = {
   Push: [
     { name: 'Développé couché', sets: 4, reps: 10, weightKg: 60, notes: '' },
@@ -799,9 +867,11 @@ function AddWorkoutModal({
 
 function PlanDetailModal({ plan, onClose, onStartSession }: { plan: WorkoutPlan; onClose: () => void; onStartSession: (day: PlanDay) => void }) {
   const [progress, setProgress] = useState<PlanProgress | null>(null)
+  const cfg = GOAL_CONFIG[(plan.goal as GoalType) in GOAL_CONFIG ? plan.goal as GoalType : 'GENERAL']
   const jsDow = new Date().getDay()
   const planDow = jsDow === 0 ? 7 : jsDow
   const today = plan.days.find(day => day.dayNumber === planDow)
+  const isTodayRest = !today || today.label.toLowerCase() === 'repos'
 
   useEffect(() => {
     api.get(`/workout-plans/${plan.id}/progress`).then(r => setProgress(r.data))
@@ -811,61 +881,139 @@ function PlanDetailModal({ plan, onClose, onStartSession }: { plan: WorkoutPlan;
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-start justify-between gap-3 p-5 border-b border-gray-100 dark:border-gray-700">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{plan.name}</h3>
-            <span className={`inline-flex mt-2 rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_COLORS[plan.status] ?? STATUS_COLORS.ARCHIVED}`}>
-              {STATUS_LABELS[plan.status] ?? plan.status}
-            </span>
-          </div>
-          <button type="button" onClick={onClose}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-            <X size={18} />
-          </button>
-        </div>
-        <div className="p-5">
-          <div className="mb-5">
-            <div className="flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <span>Semaine {progress?.weeksElapsed ?? 1}/{plan.weeks}</span>
-              <span>{progress?.percent ?? 0}%</span>
-            </div>
-            <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: `${progress?.percent ?? 0}%` }} />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-7 gap-1.5 mb-5">
-            {DAY_SHORT.map((label, index) => {
-              const dayNumber = index + 1
-              const day = plan.days.find(d => d.dayNumber === dayNumber)
-              const isRest = !day || day.label.toLowerCase() === 'repos'
-              const completed = day ? progress?.completedDayIds.includes(day.id) : false
-              return (
-                <div key={label}
-                  className={`rounded-xl border p-2 text-center min-h-20 ${dayNumber === planDow ? 'border-amber-500' : 'border-gray-100 dark:border-gray-700'} ${isRest ? 'bg-gray-50 dark:bg-gray-700/50 text-gray-400' : 'bg-white dark:bg-gray-800'}`}>
-                  <p className="text-xs font-semibold">{label}</p>
-                  <p className="text-[11px] mt-1 truncate">{isRest ? 'Repos' : day.label}</p>
-                  <p className="text-lg mt-1">{isRest ? '—' : completed ? '✅' : '⬜'}</p>
+        {/* Hero header */}
+        <div className={`bg-gradient-to-br ${cfg.gradient} p-5 border-b border-gray-100 dark:border-gray-700`}>
+          <div className="flex items-start gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">{cfg.emoji}</span>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{plan.name}</h3>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
+                    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[plan.status] ?? STATUS_COLORS.ARCHIVED}`}>
+                      {plan.status === 'ACTIVE' && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />}
+                      {STATUS_LABELS[plan.status] ?? plan.status}
+                    </span>
+                  </div>
                 </div>
-              )
-            })}
+              </div>
+              <div className="grid grid-cols-3 gap-2 mt-3 text-center">
+                <div>
+                  <p className="text-base font-bold text-gray-900 dark:text-gray-100">
+                    {progress?.doneSessions ?? 0}/{progress?.totalSessions ?? 0}
+                  </p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400">séances</p>
+                </div>
+                <div>
+                  <p className="text-base font-bold text-gray-900 dark:text-gray-100">
+                    {progress?.weeksElapsed ?? 1}/{plan.weeks}
+                  </p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400">semaines</p>
+                </div>
+                <div>
+                  <p className="text-base font-bold text-gray-900 dark:text-gray-100">{plan.daysPerWeek}j</p>
+                  <p className="text-[10px] text-gray-500 dark:text-gray-400">par semaine</p>
+                </div>
+              </div>
+              <div className="mt-3">
+                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <span>Progression</span>
+                  <span className="font-semibold">{progress?.percent ?? 0}%</span>
+                </div>
+                <div className="h-2 bg-white/50 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${goalProgressBar(plan.goal)}`}
+                    style={{ width: `${progress?.percent ?? 0}%` }} />
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-2 shrink-0">
+              <button type="button" onClick={onClose}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white/50 dark:hover:bg-gray-700 transition-colors">
+                <X size={18} />
+              </button>
+              <div className="relative">
+                <ProgressRing percent={progress?.percent ?? 0} size={56} />
+                <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">
+                  {progress?.percent ?? 0}%
+                </span>
+              </div>
+            </div>
           </div>
+        </div>
 
-          <div className="rounded-xl border border-gray-100 dark:border-gray-700 p-4">
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Séance du jour</h4>
-            {!today || today.label.toLowerCase() === 'repos' ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">Repos aujourd'hui</p>
-            ) : (
-              <>
-                <ul className="divide-y divide-gray-50 dark:divide-gray-700 mb-4">
-                  {today.exercises.map((ex, i) => <PlanExerciseLine key={`${ex.name}-${i}`} ex={ex} />)}
-                </ul>
+        <div className="p-5 space-y-4">
+          {/* Today's session – featured */}
+          {!isTodayRest && today && (
+            <div className={`rounded-2xl border-2 p-4 ${goalTodayBorder(plan.goal)}`}>
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className={`text-xs font-semibold uppercase tracking-wide mb-0.5 ${cfg.accentText}`}>Séance d'aujourd'hui</p>
+                  <p className="font-bold text-gray-900 dark:text-gray-100 text-base">{today.label}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{today.exercises.length} exercices</p>
+                </div>
                 <button type="button" onClick={() => onStartSession(today)}
-                  className="btn-primary inline-flex items-center gap-2">
-                  <Play size={16} /> Démarrer la séance
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-colors ${goalAccentBtn(plan.goal)}`}>
+                  <Play size={16} /> Démarrer
                 </button>
-              </>
-            )}
+              </div>
+              <ul className="space-y-0 divide-y divide-gray-100/60 dark:divide-gray-700/60">
+                {today.exercises.slice(0, 5).map((ex, i) => <PlanExerciseLine key={`today-${ex.name}-${i}`} ex={ex} />)}
+                {today.exercises.length > 5 && (
+                  <li className="text-xs text-gray-400 pt-1.5">+{today.exercises.length - 5} autres exercices</li>
+                )}
+              </ul>
+            </div>
+          )}
+
+          {/* Weekly schedule */}
+          <div>
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Planning de la semaine</p>
+            <div className="space-y-2">
+              {DAY_LABELS.map((label, index) => {
+                const dayNumber = index + 1
+                const day = plan.days.find(d => d.dayNumber === dayNumber)
+                const isRest = !day || day.label.toLowerCase() === 'repos'
+                const isToday = dayNumber === planDow
+                const completed = day ? progress?.completedDayIds.includes(day.id) : false
+                return (
+                  <div key={dayNumber} className={`rounded-xl border p-3 transition-colors ${
+                    isToday ? goalDayBorder(plan.goal) : 'border-gray-100 dark:border-gray-700'
+                  } ${isRest ? 'opacity-50' : ''}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                        isToday ? goalAccentBtn(plan.goal).split(' ')[0] + ' text-white' :
+                        completed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
+                        'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                      }`}>
+                        {completed && !isToday ? <Check size={14} /> : label.slice(0, 2)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</p>
+                          {isToday && (
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${cfg.badge}`}>Aujourd'hui</span>
+                          )}
+                          {completed && !isToday && (
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">✓ Complété</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          {isRest ? 'Repos' : `${day?.label} · ${day?.exercises.length} exercices`}
+                        </p>
+                      </div>
+                      {!isRest && day && (
+                        <button type="button" onClick={() => onStartSession(day)}
+                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors shrink-0">
+                          <Play size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -1069,42 +1217,106 @@ function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSucces
   )
 }
 
-function ProgramCard({ plan, onViewDetail, onDelete }: { plan: WorkoutPlan; onViewDetail: () => void; onDelete: () => void }) {
+function ProgramCard({ plan, onViewDetail, onDelete, onStartSession }: {
+  plan: WorkoutPlan; onViewDetail: () => void; onDelete: () => void; onStartSession?: (day: PlanDay) => void
+}) {
   const { data: progress } = useQuery<PlanProgress>({
     queryKey: ['plan-progress', plan.id],
     queryFn: () => api.get(`/workout-plans/${plan.id}/progress`).then(r => r.data),
   })
   const percent = progress?.percent ?? 0
+  const cfg = GOAL_CONFIG[(plan.goal as GoalType) in GOAL_CONFIG ? plan.goal as GoalType : 'GENERAL']
+  const jsDow = new Date().getDay()
+  const planDow = jsDow === 0 ? 7 : jsDow
+  const todayDay = plan.days.find(d => d.dayNumber === planDow)
+  const isTodayRest = !todayDay || todayDay.label.toLowerCase() === 'repos'
+
   return (
-    <div className="card">
-      <div className="flex items-start gap-4">
-        <div className="relative shrink-0">
-          <ProgressRing percent={percent} />
-          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">{percent}%</span>
+    <div className={`rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800 border-l-4 ${cfg.borderLeft}`}>
+      {/* Gradient header */}
+      <div className={`bg-gradient-to-r ${cfg.gradient} px-4 pt-4 pb-3`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="text-xl">{cfg.emoji}</span>
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 truncate">{plan.name}</h3>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
+              <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[plan.status] ?? STATUS_COLORS.ARCHIVED}`}>
+                {plan.status === 'ACTIVE' && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />}
+                {STATUS_LABELS[plan.status] ?? plan.status}
+              </span>
+            </div>
+          </div>
+          <div className="relative shrink-0">
+            <ProgressRing percent={percent} size={52} />
+            <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-gray-700 dark:text-gray-200">{percent}%</span>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-2">
-            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{plan.name}</p>
-            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[plan.status] ?? STATUS_COLORS.ARCHIVED}`}>
-              {STATUS_LABELS[plan.status] ?? plan.status}
-            </span>
-            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${goalColor(plan.goal)}`}>
-              {goalLabel(plan.goal)}
-            </span>
-          </div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            {progress?.doneSessions ?? 0}/{progress?.totalSessions ?? 0} séances · Semaine {progress?.weeksElapsed ?? 1}/{plan.weeks}
+      </div>
+
+      {/* Progress bar */}
+      <div className="px-4 py-2.5 border-b border-gray-50 dark:border-gray-700/50">
+        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+          <span>{progress?.doneSessions ?? 0}/{progress?.totalSessions ?? 0} séances</span>
+          <span>Semaine {progress?.weeksElapsed ?? 1}/{plan.weeks}</span>
+        </div>
+        <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className={`h-full rounded-full transition-all duration-700 ${goalProgressBar(plan.goal)}`}
+            style={{ width: `${percent}%` }} />
+        </div>
+      </div>
+
+      {/* Week day indicators */}
+      <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-700/50">
+        <div className="grid grid-cols-7 gap-1">
+          {DAY_SHORT.map((label, index) => {
+            const dayNumber = index + 1
+            const day = plan.days.find(d => d.dayNumber === dayNumber)
+            const isRest = !day || day.label.toLowerCase() === 'repos'
+            const isToday = dayNumber === planDow
+            return (
+              <div key={label} className={`flex flex-col items-center gap-0.5 rounded-lg py-1.5 px-0.5 ${
+                isToday ? cfg.badge : 'text-gray-400 dark:text-gray-500'
+              }`}>
+                <span className="text-[10px] font-semibold">{label}</span>
+                <span className="text-[9px] font-medium truncate max-w-full text-center leading-tight">
+                  {isRest ? '—' : (day?.label.slice(0, 4) ?? '')}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Today's workout callout */}
+      {!isTodayRest && todayDay && (
+        <div className={`mx-4 mt-3 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 ${goalTodayBg(plan.goal)}`}>
+          <p className={`text-sm font-semibold ${cfg.accentText}`}>
+            Aujourd'hui : {todayDay.label}
+            <span className="font-normal text-xs ml-1 opacity-70">· {todayDay.exercises.length} exercices</span>
           </p>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-            {plan.daysPerWeek} jours/sem · {plan.weeks} semaines
-          </p>
-          <div className="flex gap-2 mt-4">
-            <button type="button" onClick={onViewDetail} className="btn-secondary text-sm">Voir le détail</button>
-            <button type="button" onClick={onDelete}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-              Supprimer
+          {onStartSession && (
+            <button type="button" onClick={() => onStartSession(todayDay)}
+              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition-colors ${goalAccentBtn(plan.goal)}`}>
+              <Play size={12} /> Démarrer
             </button>
-          </div>
+          )}
+        </div>
+      )}
+
+      {/* Footer actions */}
+      <div className="px-4 py-3 flex items-center justify-between gap-2 mt-1">
+        <p className="text-xs text-gray-400 dark:text-gray-500">{plan.daysPerWeek}j/sem · {plan.weeks} semaines</p>
+        <div className="flex gap-2">
+          <button type="button" onClick={onDelete}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+            Supprimer
+          </button>
+          <button type="button" onClick={onViewDetail} className="btn-secondary text-xs py-1.5">
+            Voir le détail
+          </button>
         </div>
       </div>
     </div>
@@ -1295,7 +1507,8 @@ export default function WorkoutPanel() {
             {plans.map(plan => (
               <ProgramCard key={plan.id} plan={plan}
                 onViewDetail={() => setSelectedPlan(plan)}
-                onDelete={() => deletePlanMutation.mutate(plan.id)} />
+                onDelete={() => deletePlanMutation.mutate(plan.id)}
+                onStartSession={handleStartFromPlan} />
             ))}
           </div>
         )

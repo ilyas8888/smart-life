@@ -30,6 +30,9 @@ public class Note {
 
     private boolean isPinned = false;
 
+    @Column(length = 20)
+    private String color = "default";
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
