@@ -22,6 +22,7 @@ public class DiaryEntry {
     @JsonIgnore
     private User user;
 
+    @Builder.Default
     private LocalDate entryDate = LocalDate.now();
 
     @Column(columnDefinition = "TEXT", nullable = false)
