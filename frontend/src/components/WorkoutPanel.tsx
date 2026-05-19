@@ -872,7 +872,7 @@ function PlanDetailModal({ plan, onClose, onStartSession, onStatusChange }: {
   }, [plan.id])
 
   const changeStatus = (newStatus: string) => {
-    api.patch(`/workout-plans/${plan.id}/status?status=${newStatus}`)
+    api.patch(`/workout-plans/${plan.id}/status`, { status: newStatus })
       .then(() => { setLocalStatus(newStatus); onStatusChange(plan.id, newStatus) })
       .catch(() => toast.error('Erreur lors du changement de statut'))
   }

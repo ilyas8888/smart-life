@@ -77,7 +77,7 @@ public class SecurityConfig {
         String prodOrigin = System.getenv("FRONTEND_URL");
         if (prodOrigin != null && !prodOrigin.isBlank()) origins.add(prodOrigin);
         config.setAllowedOrigins(origins);
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
