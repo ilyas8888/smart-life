@@ -357,7 +357,8 @@ export default function NotesPanel() {
       </div>
 
       <form ref={formRef} onSubmit={handleCreate}
-        onBlur={() => {
+        onBlur={(e: React.FocusEvent) => {
+          if (formRef.current?.contains(e.relatedTarget as Node)) return
           if (title || content || formTags.length > 0) return
           setFormExpanded(false)
         }}
