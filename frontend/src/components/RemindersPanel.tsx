@@ -12,7 +12,7 @@ interface Reminder {
   title: string
   description: string | null
   remindAt: string
-  isDone: boolean
+  done: boolean
   priority: 'LOW' | 'MEDIUM' | 'HIGH'
 }
 
@@ -141,8 +141,8 @@ export default function RemindersPanel() {
     reminders.map(r => ({ ...r, priority: r.priority ?? 'MEDIUM' })),
     [reminders]
   )
-  const active = normalizedReminders.filter(r => !r.isDone)
-  const done = normalizedReminders.filter(r => r.isDone)
+  const active = normalizedReminders.filter(r => !r.done)
+  const done = normalizedReminders.filter(r => r.done)
   const overdue = active.filter(r => isPast(new Date(r.remindAt)))
   const today = active.filter(r => !isPast(new Date(r.remindAt)) && isToday(new Date(r.remindAt)))
   const tomorrow = active.filter(r => !isPast(new Date(r.remindAt)) && isTomorrow(new Date(r.remindAt)))
@@ -178,13 +178,13 @@ export default function RemindersPanel() {
   const ReminderCard = ({ reminder }: { reminder: Reminder }) => {
     const meta = priorityOf(reminder)
     const date = new Date(reminder.remindAt)
-    const isOverdue = !reminder.isDone && isPast(date)
+    const isOverdue = !reminder.done && isPast(date)
     return (
-      <div className={`card border-l-4 ${meta.strip} ${isOverdue ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50' : reminder.isDone ? 'opacity-70' : ''}`}>
+      <div className={`card border-l-4 ${meta.strip} ${isOverdue ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50' : reminder.done ? 'opacity-70' : ''}`}>
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <p className={`font-semibold ${reminder.isDone ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
+              <p className={`font-semibold ${reminder.done ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
                 {reminder.title}
               </p>
               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.badge}`}>
@@ -211,7 +211,7 @@ export default function RemindersPanel() {
               title="Modifier">
               <Edit2 size={15} />
             </button>
-            {!reminder.isDone && (
+            {!reminder.done && (
               <button type="button" onClick={() => doneMutation.mutate(reminder.id)}
                 className="p-1.5 rounded-lg text-gray-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
                 title="Marquer comme fait">
