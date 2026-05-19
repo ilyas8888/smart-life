@@ -1,14 +1,14 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Activity, Check, ChevronDown, ChevronUp, Clock, Dumbbell,
-  Flame, MessageSquareText, Play, Plus, Trash2, X,
+  Activity, ArrowLeft, Check, ChevronDown, ChevronUp, Clock, Dumbbell,
+  Flame, MessageSquareText, Play, Plus, SkipForward, Timer, Trash2, X,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
-import { EmptyState, IllustrationWorkout, IllustrationPrograms } from './EmptyState'
+import { EmptyState, IllustrationWorkout } from './EmptyState'
 
 interface PlanExercise { name: string; sets: number | null; reps: number | null; weightKg: number | null; notes: string }
 interface PlanDay { id: number; dayNumber: number; label: string; exercises: PlanExercise[] }
@@ -17,9 +17,13 @@ interface PlanProgress { totalSessions: number; doneSessions: number; percent: n
 interface WorkoutExercise { id: number; name: string; sets: number | null; reps: number | null; weightKg: number | null; durationSeconds: number | null }
 interface WorkoutSession { id: number; title: string; sessionDate: string; durationMinutes: number | null; caloriesBurned: number | null; notes: string | null; exercises: WorkoutExercise[]; planDayId: number | null }
 interface ExerciseForm { name: string; sets: string; reps: string; weightKg: string; durationSeconds: string }
+interface SetLog { setNumber: number; weightKg: string; reps: string }
+interface ExerciseProgress { exercise: PlanExercise; setLogs: SetLog[] }
 type Mode = null | 'guided' | 'prompt'
 type GoalType = 'MUSCLE_GAIN' | 'FAT_LOSS' | 'ENDURANCE' | 'GENERAL'
 type TabType = 'sessions' | 'programs'
+type WorkoutView = 'list' | 'detail' | 'session'
+type WorkoutPhase = 'exercising' | 'resting' | 'done'
 
 const SPORT_PRESETS = [
   { label: 'Muscu', emoji: '', rate: 5 },
@@ -899,98 +903,323 @@ function AddWorkoutModal({
   )
 }
 
-function PreSessionModal({ day, plan, onClose, onConfirm }: {
-  day: PlanDay; plan: WorkoutPlan; onClose: () => void; onConfirm: (exercises: ExerciseForm[]) => void
-}) {
-  const cfg = GOAL_CONFIG[(plan.goal as GoalType) in GOAL_CONFIG ? plan.goal as GoalType : 'GENERAL']
-  const [exercises, setExercises] = useState<ExerciseForm[]>(() =>
-    day.exercises.map(e => ({
-      name: e.name,
-      sets: String(e.sets ?? ''),
-      reps: String(e.reps ?? ''),
-      weightKg: String(planExerciseWeight(e) ?? ''),
-      durationSeconds: '',
-    }))
-  )
+const REST_SECONDS = 90
 
-  const updateExercise = (index: number, field: keyof ExerciseForm, value: string) =>
-    setExercises(prev => prev.map((exercise, i) => i === index ? { ...exercise, [field]: value } : exercise))
+function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
+  plan: WorkoutPlan; day: PlanDay
+  onFinish: () => void; onDiscard: () => void
+}) {
+  const qc = useQueryClient()
+  const [elapsed, setElapsed] = useState(0)
+  const [exercises] = useState<ExerciseProgress[]>(() =>
+    day.exercises.map(ex => ({ exercise: ex, setLogs: [] }))
+  )
+  const [currentExIdx, setCurrentExIdx] = useState(0)
+  const [currentSetNum, setCurrentSetNum] = useState(1)
+  const [weightInput, setWeightInput] = useState('')
+  const [repsInput, setRepsInput] = useState('')
+  const [phase, setPhase] = useState<WorkoutPhase>('exercising')
+  const [restRemaining, setRestRemaining] = useState(REST_SECONDS)
+  const [, forceUpdate] = useState(0)
+  const [showDiscard, setShowDiscard] = useState(false)
+
+  useEffect(() => {
+    const id = setInterval(() => setElapsed(s => s + 1), 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    if (phase !== 'resting') return
+    if (restRemaining <= 0) { advanceAfterRest(); return }
+    const id = setInterval(() => setRestRemaining(r => r - 1), 1000)
+    return () => clearInterval(id)
+  }, [phase, restRemaining])
+
+  const currentEx = exercises[currentExIdx]
+  const targetSets = currentEx?.exercise.sets ?? 3
+  const isLastExercise = currentExIdx === exercises.length - 1
+  const isLastSet = currentSetNum === targetSets
+
+  const formatTime = (s: number) => {
+    const m = Math.floor(s / 60); const sec = s % 60
+    return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+  }
+
+  const confirmSet = () => {
+    if (!currentEx) return
+    currentEx.setLogs.push({ setNumber: currentSetNum, weightKg: weightInput, reps: repsInput })
+    forceUpdate(n => n + 1)
+    if (isLastSet) {
+      if (isLastExercise) {
+        setPhase('done')
+      } else {
+        setCurrentExIdx(i => i + 1)
+        setCurrentSetNum(1)
+        setWeightInput('')
+        setRepsInput('')
+      }
+    } else {
+      setPhase('resting')
+      setRestRemaining(REST_SECONDS)
+    }
+  }
+
+  const advanceAfterRest = () => {
+    if (!currentEx) return
+    const last = currentEx.setLogs[currentEx.setLogs.length - 1]
+    setWeightInput(last?.weightKg ?? '')
+    setRepsInput(last?.reps ?? '')
+    setCurrentSetNum(n => n + 1)
+    setPhase('exercising')
+  }
+
+  const cfg = GOAL_CONFIG[(plan.goal as GoalType) in GOAL_CONFIG ? plan.goal as GoalType : 'GENERAL']
+
+  const saveMutation = useMutation({
+    mutationFn: () => api.post('/workouts', {
+      title: `${plan.name} — ${day.label}`,
+      durationMinutes: Math.max(1, Math.round(elapsed / 60)),
+      caloriesBurned: null,
+      planDayId: day.id,
+      notes: null,
+      exercises: exercises.flatMap(ep =>
+        ep.setLogs.length > 0
+          ? ep.setLogs.map(log => ({
+              name: ep.exercise.name,
+              sets: 1,
+              reps: log.reps ? parseInt(log.reps) : ep.exercise.reps,
+              weightKg: log.weightKg ? parseFloat(log.weightKg) : planExerciseWeight(ep.exercise),
+              durationSeconds: null,
+            }))
+          : [{
+              name: ep.exercise.name,
+              sets: ep.exercise.sets,
+              reps: ep.exercise.reps,
+              weightKg: planExerciseWeight(ep.exercise),
+              durationSeconds: null,
+            }]
+      ),
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workouts'] })
+      qc.invalidateQueries({ queryKey: ['timeline'] })
+      qc.invalidateQueries({ queryKey: ['workout-plans'] })
+      qc.invalidateQueries({ queryKey: ['plan-progress'] })
+      toast.success('Séance enregistrée !')
+      onFinish()
+    },
+    onError: () => toast.error("Erreur lors de l'enregistrement"),
+  })
+
+  const totalSets = exercises.reduce((s, e) => s + (e.exercise.sets ?? 3), 0)
+  const doneSets = exercises.reduce((s, e) => s + e.setLogs.length, 0)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className={`bg-gradient-to-br ${cfg.gradient} p-5 border-b border-gray-100 dark:border-gray-700`}>
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-2xl">{cfg.emoji}</span>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 truncate">{day.label}</h3>
-              </div>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Ajustez vos charges avant de commencer</p>
+    <div className="fixed inset-0 z-50 bg-gray-950 text-white overflow-y-auto flex flex-col">
+      <div className="sticky top-0 z-10 bg-gray-950/95 backdrop-blur-sm border-b border-gray-800 px-4 py-3 flex items-center gap-3">
+        <button type="button" onClick={() => setShowDiscard(true)}
+          className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-red-400 transition-colors">
+          <X size={16} /> Abandonner
+        </button>
+        <div className="flex-1 text-center">
+          <p className="text-xs text-gray-500 truncate">{plan.name} — {day.label}</p>
+          <p className="text-2xl font-mono font-bold text-amber-400 leading-none mt-0.5">{formatTime(elapsed)}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-gray-500">{doneSets}/{totalSets} séries</p>
+          <p className="text-xs font-semibold text-amber-400">{currentExIdx + 1}/{exercises.length} ex.</p>
+        </div>
+      </div>
+
+      <div className="h-1 bg-gray-800 shrink-0">
+        <div className="h-full bg-amber-500 transition-all duration-300"
+          style={{ width: `${totalSets > 0 ? (doneSets / totalSets) * 100 : 0}%` }} />
+      </div>
+
+      <div className="flex-1 p-4 max-w-lg mx-auto w-full">
+        {phase === 'done' ? (
+          <div>
+            <div className="text-center py-8">
+              <div className="text-6xl mb-3"></div>
+              <h2 className="text-2xl font-bold">Séance terminée !</h2>
+              <p className="text-gray-400 mt-1">{formatTime(elapsed)} · {doneSets} séries</p>
             </div>
-            <button type="button" onClick={onClose}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white/50 dark:hover:bg-gray-700 transition-colors shrink-0">
-              <X size={18} />
+            <div className="space-y-3 mb-6">
+              {exercises.map((ep, i) => (
+                <div key={i} className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-6 h-6 rounded-full bg-amber-500 text-black text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                    <p className="font-semibold">{ep.exercise.name}</p>
+                  </div>
+                  {ep.setLogs.length > 0 ? (
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {ep.setLogs.map((log, j) => (
+                        <div key={j} className="bg-gray-800 rounded-lg px-3 py-2 text-sm flex items-center gap-2">
+                          <Check size={12} className="text-green-400 shrink-0" />
+                          <span className="text-gray-300">S{j + 1} · {log.weightKg || '—'}kg × {log.reps || '—'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-600 italic">Non effectué</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}
+              className="w-full py-4 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 rounded-2xl font-bold text-black text-lg transition-colors">
+              {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer la séance'}
             </button>
           </div>
-        </div>
-
-        <div className="p-5">
-          <div className="space-y-2 mb-5">
-            {exercises.map((exercise, i) => (
-              <div key={i} className="rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
-                <div className="flex items-center gap-2.5 px-3 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
-                  <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-                    {i + 1}
-                  </span>
-                  <input
-                    className="flex-1 bg-transparent font-semibold text-sm text-gray-900 dark:text-gray-100 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500 min-w-0"
-                    value={exercise.name}
-                    onChange={e => updateExercise(i, 'name', e.target.value)}
-                    placeholder="Nom de l'exercice"
-                  />
+        ) : currentEx ? (
+          <div>
+            <div className="flex gap-2 overflow-x-auto pb-2 mb-4" style={{ scrollbarWidth: 'none' }}>
+              {exercises.map((ep, i) => (
+                <div key={i} className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                  i < currentExIdx ? 'bg-green-900/50 text-green-400' :
+                  i === currentExIdx ? 'bg-amber-500 text-black' :
+                  'bg-gray-800 text-gray-500'
+                }`}>
+                  {i < currentExIdx ? '✓ ' : ''}{ep.exercise.name.split(' ').slice(0, 2).join(' ')}
                 </div>
-                <div className="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700">
-                  {[
-                    { label: 'Séries', field: 'sets' as keyof ExerciseForm, step: '1' },
-                    { label: 'Répétitions', field: 'reps' as keyof ExerciseForm, step: '1' },
-                    { label: 'Poids (kg)', field: 'weightKg' as keyof ExerciseForm, step: '0.5' },
-                  ].map(({ label, field, step }) => (
-                    <div key={field} className="flex flex-col items-center py-3 px-2">
-                      <p className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">{label}</p>
-                      <input
-                        type="number" min="0" step={step}
-                        className="w-full text-center font-bold text-xl text-gray-900 dark:text-gray-100 bg-transparent border-none focus:outline-none p-0 leading-none"
-                        value={exercise[field]}
-                        onChange={e => updateExercise(i, field, e.target.value)}
-                        placeholder="—"
-                      />
+              ))}
+            </div>
+
+            <div className="bg-gray-900 rounded-2xl overflow-hidden border border-gray-800 mb-4">
+              <div className={`bg-gradient-to-r ${cfg.gradient} p-4 border-b border-gray-800`}>
+                <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">
+                  Exercice {currentExIdx + 1}/{exercises.length}
+                </p>
+                <h3 className="text-xl font-bold">{currentEx.exercise.name}</h3>
+                <p className="text-sm text-gray-400 mt-0.5">
+                  {targetSets} séries
+                  {currentEx.exercise.reps ? ` × ${currentEx.exercise.reps} reps` : ''}
+                  {planExerciseWeight(currentEx.exercise) ? ` · ${planExerciseWeight(currentEx.exercise)} kg cible` : ''}
+                </p>
+              </div>
+
+              {currentEx.setLogs.length > 0 && (
+                <div className="px-4 py-3 border-b border-gray-800 space-y-2">
+                  {currentEx.setLogs.map((log, j) => (
+                    <div key={j} className="flex items-center gap-3 text-sm">
+                      <div className="w-6 h-6 rounded-full bg-green-900 flex items-center justify-center shrink-0">
+                        <Check size={12} className="text-green-400" />
+                      </div>
+                      <span className="text-gray-400">Série {log.setNumber}</span>
+                      <span className="font-semibold text-white">{log.weightKg || '—'} kg × {log.reps || '—'} reps</span>
                     </div>
                   ))}
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
 
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={onClose} className="btn-secondary">Annuler</button>
-            <button type="button" onClick={() => onConfirm(exercises)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-colors ${goalAccentBtn(plan.goal)}`}>
-              <Play size={16} /> Commencer la séance
+              {phase === 'exercising' && (
+                <div className="p-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="px-3 py-1 rounded-full bg-amber-500 text-black text-sm font-bold">
+                      Série {currentSetNum}/{targetSets}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="bg-gray-800 rounded-xl p-4">
+                      <p className="text-xs text-gray-500 uppercase tracking-widest mb-2 text-center">Poids (kg)</p>
+                      <input type="number" inputMode="decimal" min="0" step="2.5"
+                        className="w-full text-center text-4xl font-bold bg-transparent border-none outline-none text-white placeholder-gray-700"
+                        value={weightInput}
+                        onChange={e => setWeightInput(e.target.value)}
+                        placeholder="0" />
+                    </div>
+                    <div className="bg-gray-800 rounded-xl p-4">
+                      <p className="text-xs text-gray-500 uppercase tracking-widest mb-2 text-center">Répétitions</p>
+                      <input type="number" inputMode="numeric" min="0" step="1"
+                        className="w-full text-center text-4xl font-bold bg-transparent border-none outline-none text-white placeholder-gray-700"
+                        value={repsInput}
+                        onChange={e => setRepsInput(e.target.value)}
+                        placeholder="0" />
+                    </div>
+                  </div>
+                  <button type="button" onClick={confirmSet}
+                    className="w-full py-4 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] rounded-xl font-bold text-black text-base transition-all flex items-center justify-center gap-2">
+                    <Check size={20} /> Valider la série {currentSetNum}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {phase === 'resting' && (
+              <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 text-center mb-4">
+                <p className="text-xs text-gray-400 uppercase tracking-widest mb-4 flex items-center justify-center gap-2">
+                  <Timer size={14} /> Temps de repos
+                </p>
+                <div className="relative w-28 h-28 mx-auto mb-4">
+                  <svg className="-rotate-90" width="112" height="112">
+                    <circle cx="56" cy="56" r="46" fill="none" strokeWidth="7" className="stroke-gray-700" />
+                    <circle cx="56" cy="56" r="46" fill="none" strokeWidth="7" stroke="#f59e0b"
+                      strokeDasharray={`${2 * Math.PI * 46}`}
+                      strokeDashoffset={`${(2 * Math.PI * 46) * (1 - restRemaining / REST_SECONDS)}`}
+                      strokeLinecap="round" style={{ transition: 'stroke-dashoffset 1s linear' }} />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-2xl font-bold font-mono text-amber-400">
+                      {Math.floor(restRemaining / 60)}:{String(restRemaining % 60).padStart(2, '0')}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 mb-3">Préparez-vous pour la série {currentSetNum}</p>
+                <button type="button" onClick={advanceAfterRest}
+                  className="flex items-center gap-2 mx-auto text-sm text-gray-400 hover:text-white transition-colors px-4 py-2 rounded-lg border border-gray-700 hover:border-gray-500">
+                  <SkipForward size={14} /> Sauter le repos
+                </button>
+              </div>
+            )}
+
+            {!isLastExercise && exercises[currentExIdx + 1] && (
+              <div className="bg-gray-900/50 rounded-xl p-3 flex items-center gap-3 border border-gray-800">
+                <span className="text-xl">⏭</span>
+                <div>
+                  <p className="text-xs text-gray-500">Prochain exercice</p>
+                  <p className="text-sm font-medium">{exercises[currentExIdx + 1].exercise.name}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <h2 className="text-xl font-bold">Aucun exercice</h2>
+            <button type="button" onClick={onDiscard}
+              className="mt-4 px-4 py-2 rounded-xl bg-amber-500 text-black font-semibold">
+              Retour
             </button>
           </div>
-        </div>
+        )}
       </div>
+
+      {showDiscard && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60">
+          <div className="bg-gray-900 rounded-2xl p-6 max-w-sm w-full border border-gray-700">
+            <h3 className="font-bold text-lg mb-2">Abandonner la séance ?</h3>
+            <p className="text-gray-400 text-sm mb-5">La progression en cours sera perdue.</p>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setShowDiscard(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-700 text-sm font-medium hover:bg-gray-800">
+                Continuer
+              </button>
+              <button type="button" onClick={onDiscard}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-sm font-bold">
+                Abandonner
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-function PlanDetailModal({ plan, onClose, onStartSession, onStatusChange }: {
-  plan: WorkoutPlan; onClose: () => void; onStartSession: (day: PlanDay, plan: WorkoutPlan) => void; onStatusChange: (id: number, status: string) => void
+function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange }: {
+  plan: WorkoutPlan
+  onBack: () => void
+  onStartSession: (day: PlanDay) => void
+  onStatusChange: (id: number, status: string) => void
 }) {
   const [progress, setProgress] = useState<PlanProgress | null>(null)
   const [localStatus, setLocalStatus] = useState(plan.status)
@@ -1011,172 +1240,181 @@ function PlanDetailModal({ plan, onClose, onStartSession, onStatusChange }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+    <div className="max-w-3xl mx-auto">
+      <button type="button" onClick={onBack}
+        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 mb-5 transition-colors">
+        <ArrowLeft size={16} /> Retour aux programmes
+      </button>
 
-        {/* Hero header */}
-        <div className={`bg-gradient-to-br ${cfg.gradient} p-5 border-b border-gray-100 dark:border-gray-700`}>
-          <div className="flex items-start gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">{cfg.emoji}</span>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{plan.name}</h3>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
-                    <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[localStatus] ?? STATUS_COLORS.ARCHIVED}`}>
-                      {localStatus === 'ACTIVE' && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />}
-                      {STATUS_LABELS[localStatus] ?? localStatus}
-                    </span>
-                  </div>
-                  {/* Status actions */}
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {localStatus === 'ACTIVE' && <>
-                      <button type="button" onClick={() => changeStatus('PAUSED')}
-                        className="text-xs font-medium px-3 py-1.5 rounded-lg bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors">
-                        ⏸ Mettre en pause
-                      </button>
-                      <button type="button" onClick={() => changeStatus('COMPLETED')}
-                        className="text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
-                        ✓ Marquer terminé
-                      </button>
-                    </>}
-                    {localStatus === 'PAUSED' && <>
-                      <button type="button" onClick={() => changeStatus('ACTIVE')}
-                        className="text-xs font-medium px-3 py-1.5 rounded-lg bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
-                        ▶ Réactiver
-                      </button>
-                      <button type="button" onClick={() => changeStatus('COMPLETED')}
-                        className="text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
-                        ✓ Marquer terminé
-                      </button>
-                    </>}
-                    {localStatus === 'COMPLETED' && (
-                      <button type="button" onClick={() => changeStatus('ACTIVE')}
-                        className="text-xs font-medium px-3 py-1.5 rounded-lg bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
-                        ↺ Relancer le programme
-                      </button>
-                    )}
-                  </div>
+      <div className={`rounded-2xl overflow-hidden bg-gradient-to-br ${cfg.gradient} p-5 border border-gray-100 dark:border-gray-700 mb-5`}>
+        <div className="flex items-start gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl">{cfg.emoji}</span>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{plan.name}</h3>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
+                  <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[localStatus] ?? STATUS_COLORS.ARCHIVED}`}>
+                    {localStatus === 'ACTIVE' && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />}
+                    {STATUS_LABELS[localStatus] ?? localStatus}
+                  </span>
                 </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2 mt-3 text-center">
-                <div>
-                  <p className="text-base font-bold text-gray-900 dark:text-gray-100">
-                    {progress?.doneSessions ?? 0}/{progress?.totalSessions ?? 0}
-                  </p>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400">séances</p>
-                </div>
-                <div>
-                  <p className="text-base font-bold text-gray-900 dark:text-gray-100">
-                    {progress?.weeksElapsed ?? 1}/{plan.weeks}
-                  </p>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400">semaines</p>
-                </div>
-                <div>
-                  <p className="text-base font-bold text-gray-900 dark:text-gray-100">{plan.daysPerWeek}j</p>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-400">par semaine</p>
-                </div>
-              </div>
-              <div className="mt-3">
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  <span>Progression</span>
-                  <span className="font-semibold">{progress?.percent ?? 0}%</span>
-                </div>
-                <div className="h-2 bg-white/50 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all ${goalProgressBar(plan.goal)}`}
-                    style={{ width: `${progress?.percent ?? 0}%` }} />
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {localStatus === 'ACTIVE' && <>
+                    <button type="button" onClick={() => changeStatus('PAUSED')}
+                      className="text-xs font-medium px-3 py-1.5 rounded-lg bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors">
+                      ⏸ Mettre en pause
+                    </button>
+                    <button type="button" onClick={() => changeStatus('COMPLETED')}
+                      className="text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                      ✓ Marquer terminé
+                    </button>
+                  </>}
+                  {localStatus === 'PAUSED' && <>
+                    <button type="button" onClick={() => changeStatus('ACTIVE')}
+                      className="text-xs font-medium px-3 py-1.5 rounded-lg bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                      ▶ Réactiver
+                    </button>
+                    <button type="button" onClick={() => changeStatus('COMPLETED')}
+                      className="text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                      ✓ Marquer terminé
+                    </button>
+                  </>}
+                  {localStatus === 'COMPLETED' && (
+                    <button type="button" onClick={() => changeStatus('ACTIVE')}
+                      className="text-xs font-medium px-3 py-1.5 rounded-lg bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors">
+                      ↺ Relancer le programme
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="flex flex-col items-end gap-2 shrink-0">
-              <button type="button" onClick={onClose}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white/50 dark:hover:bg-gray-700 transition-colors">
-                <X size={18} />
-              </button>
-              <div className="relative">
-                <ProgressRing percent={progress?.percent ?? 0} size={56} />
-                <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">
-                  {progress?.percent ?? 0}%
-                </span>
+            <div className="grid grid-cols-3 gap-2 mt-3 text-center">
+              <div>
+                <p className="text-base font-bold text-gray-900 dark:text-gray-100">
+                  {progress?.doneSessions ?? 0}/{progress?.totalSessions ?? 0}
+                </p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400">séances</p>
+              </div>
+              <div>
+                <p className="text-base font-bold text-gray-900 dark:text-gray-100">
+                  {progress?.weeksElapsed ?? 1}/{plan.weeks}
+                </p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400">semaines</p>
+              </div>
+              <div>
+                <p className="text-base font-bold text-gray-900 dark:text-gray-100">{plan.daysPerWeek}j</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400">par semaine</p>
               </div>
             </div>
+            <div className="mt-3">
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <span>Progression</span>
+                <span className="font-semibold">{progress?.percent ?? 0}%</span>
+              </div>
+              <div className="h-2 bg-white/50 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all ${goalProgressBar(plan.goal)}`}
+                  style={{ width: `${progress?.percent ?? 0}%` }} />
+              </div>
+            </div>
+          </div>
+          <div className="relative shrink-0">
+            <ProgressRing percent={progress?.percent ?? 0} size={56} />
+            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700 dark:text-gray-200">
+              {progress?.percent ?? 0}%
+            </span>
           </div>
         </div>
+      </div>
 
-        <div className="p-5 space-y-4">
-          {/* Today's session – featured */}
-          {!isTodayRest && today && (
-            <div className={`rounded-2xl border-2 p-4 ${goalTodayBorder(plan.goal)}`}>
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <p className={`text-xs font-semibold uppercase tracking-wide mb-0.5 ${cfg.accentText}`}>Séance d'aujourd'hui</p>
-                  <p className="font-bold text-gray-900 dark:text-gray-100 text-base">{today.label}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{today.exercises.length} exercices</p>
-                </div>
-                <button type="button" onClick={() => onStartSession(today, plan)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-colors ${goalAccentBtn(plan.goal)}`}>
-                  <Play size={16} /> Démarrer
-                </button>
-              </div>
-              <ul className="space-y-0 divide-y divide-gray-100/60 dark:divide-gray-700/60">
-                {today.exercises.slice(0, 5).map((ex, i) => <PlanExerciseLine key={`today-${ex.name}-${i}`} ex={ex} />)}
-                {today.exercises.length > 5 && (
-                  <li className="text-xs text-gray-400 pt-1.5">+{today.exercises.length - 5} autres exercices</li>
-                )}
-              </ul>
+      {!isTodayRest && today && (
+        <div className={`rounded-2xl border-2 p-4 mb-5 ${goalTodayBorder(plan.goal)} ${goalTodayBg(plan.goal)}`}>
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className={`text-xs font-semibold uppercase tracking-wide mb-0.5 ${cfg.accentText}`}>Séance d'aujourd'hui</p>
+              <p className="font-bold text-gray-900 dark:text-gray-100 text-base">{today.label}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{today.exercises.length} exercices</p>
             </div>
-          )}
+            <button type="button" onClick={() => onStartSession(today)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-colors ${goalAccentBtn(plan.goal)}`}>
+              <Play size={16} /> Démarrer
+            </button>
+          </div>
+          <ul className="space-y-0 divide-y divide-gray-100/60 dark:divide-gray-700/60">
+            {today.exercises.slice(0, 5).map((ex, i) => <PlanExerciseLine key={`today-${ex.name}-${i}`} ex={ex} />)}
+            {today.exercises.length > 5 && (
+              <li className="text-xs text-gray-400 pt-1.5">+{today.exercises.length - 5} autres exercices</li>
+            )}
+          </ul>
+        </div>
+      )}
 
-          {/* Weekly schedule */}
-          <div>
-            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Planning de la semaine</p>
-            <div className="space-y-2">
-              {DAY_LABELS.map((label, index) => {
-                const dayNumber = index + 1
-                const day = plan.days.find(d => d.dayNumber === dayNumber)
-                const isRest = !day || day.label.toLowerCase() === 'repos'
-                const isToday = dayNumber === planDow
-                const completed = day ? progress?.completedDayIds.includes(day.id) : false
-                return (
-                  <div key={dayNumber} className={`rounded-xl border p-3 transition-colors ${
-                    isToday ? goalDayBorder(plan.goal) : 'border-gray-100 dark:border-gray-700'
-                  } ${isRest ? 'opacity-50' : ''}`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                        isToday ? goalAccentBtn(plan.goal).split(' ')[0] + ' text-white' :
-                        completed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
-                        'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
-                      }`}>
-                        {completed && !isToday ? <Check size={14} /> : label.slice(0, 2)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</p>
-                          {isToday && (
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${cfg.badge}`}>Aujourd'hui</span>
-                          )}
-                          {completed && !isToday && (
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">✓ Complété</span>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">
-                          {isRest ? 'Repos' : `${day?.label} · ${day?.exercises.length} exercices`}
-                        </p>
-                      </div>
-                      {!isRest && day && (
-                        <button type="button" onClick={() => onStartSession(day, plan)}
-                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors shrink-0">
-                          <Play size={14} />
-                        </button>
+      <div>
+        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Planning de la semaine</p>
+        <div className="space-y-2">
+          {DAY_LABELS.map((label, index) => {
+            const dayNumber = index + 1
+            const day = plan.days.find(d => d.dayNumber === dayNumber)
+            const isRest = !day || day.label.toLowerCase() === 'repos'
+            const isToday = dayNumber === planDow
+            const completed = day ? progress?.completedDayIds.includes(day.id) : false
+            return (
+              <div key={dayNumber} className={`rounded-xl border p-3 transition-colors ${
+                isToday ? goalDayBorder(plan.goal) : 'border-gray-100 dark:border-gray-700'
+              } ${isRest ? 'opacity-50' : ''}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                    isToday ? goalAccentBtn(plan.goal).split(' ')[0] + ' text-white' :
+                    completed ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
+                    'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                  }`}>
+                    {completed && !isToday ? <Check size={14} /> : label.slice(0, 2)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">{label}</p>
+                      {isToday && (
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${cfg.badge}`}>Aujourd'hui</span>
+                      )}
+                      {completed && !isToday && (
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">✓ Complété</span>
                       )}
                     </div>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                      {isRest ? 'Repos' : `${day?.label} · ${day?.exercises.length} exercices`}
+                    </p>
                   </div>
-                )
-              })}
-            </div>
-          </div>
+                  {!isRest && day && (
+                    <button type="button" onClick={() => onStartSession(day)}
+                      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors shrink-0">
+                      <Play size={14} />
+                    </button>
+                  )}
+                </div>
+                {!isRest && day && (
+                  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {day.exercises.map((ex, i) => {
+                      const weight = planExerciseWeight(ex)
+                      const parts = [
+                        ex.sets && ex.reps ? `${ex.sets}×${ex.reps}` : ex.sets ? `${ex.sets}s` : '',
+                        weight ? `${weight}kg` : '',
+                      ].filter(Boolean)
+                      return (
+                        <div key={`${day.id}-${ex.name}-${i}`} className="rounded-lg bg-gray-50 dark:bg-gray-700/50 px-3 py-2 flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                            {i + 1}
+                          </span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{ex.name}</span>
+                          {parts.length > 0 && <span className="text-xs text-gray-400 shrink-0">{parts.join(' · ')}</span>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
@@ -1379,106 +1617,50 @@ function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSucces
   )
 }
 
-function ProgramCard({ plan, onViewDetail, onDelete, onStartSession }: {
-  plan: WorkoutPlan; onViewDetail: () => void; onDelete: () => void; onStartSession?: (day: PlanDay, plan: WorkoutPlan) => void
+function ProgramCard({ plan, onClick, onDelete }: {
+  plan: WorkoutPlan
+  onClick: () => void
+  onDelete: () => void
 }) {
+  const cfg = GOAL_CONFIG[(plan.goal as GoalType) in GOAL_CONFIG ? plan.goal as GoalType : 'GENERAL']
   const { data: progress } = useQuery<PlanProgress>({
     queryKey: ['plan-progress', plan.id],
     queryFn: () => api.get(`/workout-plans/${plan.id}/progress`).then(r => r.data),
   })
-  const percent = progress?.percent ?? 0
-  const cfg = GOAL_CONFIG[(plan.goal as GoalType) in GOAL_CONFIG ? plan.goal as GoalType : 'GENERAL']
-  const jsDow = new Date().getDay()
-  const planDow = jsDow === 0 ? 7 : jsDow
-  const todayDay = plan.days.find(d => d.dayNumber === planDow)
-  const isTodayRest = !todayDay || todayDay.label.toLowerCase() === 'repos'
 
   return (
-    <div className={`rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800 border-l-4 ${cfg.borderLeft}`}>
-      {/* Gradient header */}
-      <div className={`bg-gradient-to-r ${cfg.gradient} px-4 pt-4 pb-3`}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-xl">{cfg.emoji}</span>
-              <h3 className="font-bold text-gray-900 dark:text-gray-100 truncate">{plan.name}</h3>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
-              <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[plan.status] ?? STATUS_COLORS.ARCHIVED}`}>
-                {plan.status === 'ACTIVE' && <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />}
-                {STATUS_LABELS[plan.status] ?? plan.status}
-              </span>
-            </div>
-          </div>
-          <div className="relative shrink-0">
-            <ProgressRing percent={percent} size={52} />
-            <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold text-gray-700 dark:text-gray-200">{percent}%</span>
-          </div>
-        </div>
+    <div onClick={onClick}
+      className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-xl hover:-translate-y-0.5 transition-all bg-white dark:bg-gray-800">
+      <div className={`h-36 bg-gradient-to-br ${cfg.gradient} flex items-center justify-center relative`}>
+        <span className="text-6xl filter drop-shadow">{cfg.emoji}</span>
+        {plan.status === 'ACTIVE' && (
+          <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white shadow" />
+        )}
+        {plan.status === 'PAUSED' && (
+          <span className="absolute top-3 right-3 text-xs bg-yellow-400 text-yellow-900 font-bold px-2 py-0.5 rounded-full">⏸</span>
+        )}
       </div>
 
-      {/* Progress bar */}
-      <div className="px-4 py-2.5 border-b border-gray-50 dark:border-gray-700/50">
-        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
-          <span>{progress?.doneSessions ?? 0}/{progress?.totalSessions ?? 0} séances</span>
-          <span>Semaine {progress?.weeksElapsed ?? 1}/{plan.weeks}</span>
-        </div>
-        <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div className={`h-full rounded-full transition-all duration-700 ${goalProgressBar(plan.goal)}`}
-            style={{ width: `${percent}%` }} />
-        </div>
-      </div>
-
-      {/* Week day indicators */}
-      <div className="px-4 py-3 border-b border-gray-50 dark:border-gray-700/50">
-        <div className="grid grid-cols-7 gap-1">
-          {DAY_SHORT.map((label, index) => {
-            const dayNumber = index + 1
-            const day = plan.days.find(d => d.dayNumber === dayNumber)
-            const isRest = !day || day.label.toLowerCase() === 'repos'
-            const isToday = dayNumber === planDow
-            return (
-              <div key={label} className={`flex flex-col items-center gap-0.5 rounded-lg py-1.5 px-0.5 ${
-                isToday ? cfg.badge : 'text-gray-400 dark:text-gray-500'
-              }`}>
-                <span className="text-[10px] font-semibold">{label}</span>
-                <span className="text-[9px] font-medium truncate max-w-full text-center leading-tight">
-                  {isRest ? '—' : (day?.label.slice(0, 4) ?? '')}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Today's workout callout */}
-      {!isTodayRest && todayDay && (
-        <div className={`mx-4 mt-3 rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 ${goalTodayBg(plan.goal)}`}>
-          <p className={`text-sm font-semibold ${cfg.accentText}`}>
-            Aujourd'hui : {todayDay.label}
-            <span className="font-normal text-xs ml-1 opacity-70">· {todayDay.exercises.length} exercices</span>
-          </p>
-          {onStartSession && (
-            <button type="button" onClick={() => onStartSession(todayDay, plan)}
-              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition-colors ${goalAccentBtn(plan.goal)}`}>
-              <Play size={12} /> Démarrer
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Footer actions */}
-      <div className="px-4 py-3 flex items-center justify-between gap-2 mt-1">
-        <p className="text-xs text-gray-400 dark:text-gray-500">{plan.daysPerWeek}j/sem · {plan.weeks} semaines</p>
-        <div className="flex gap-2">
-          <button type="button" onClick={onDelete}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-            Supprimer
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3 className="font-bold text-gray-900 dark:text-gray-100 leading-tight line-clamp-2">{plan.name}</h3>
+          <button type="button" onClick={e => { e.stopPropagation(); onDelete() }}
+            className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-400 transition-colors shrink-0 mt-0.5">
+            <Trash2 size={14} />
           </button>
-          <button type="button" onClick={onViewDetail} className="btn-secondary text-xs py-1.5">
-            Voir le détail
-          </button>
+        </div>
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${cfg.badge}`}>{cfg.label}</span>
+          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+            {plan.daysPerWeek}j/sem · {plan.weeks}sem
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full ${goalProgressBar(plan.goal)} transition-all`}
+              style={{ width: `${progress?.percent ?? 0}%` }} />
+          </div>
+          <span className="text-xs text-gray-400 shrink-0">{progress?.doneSessions ?? 0}/{progress?.totalSessions ?? 0}</span>
         </div>
       </div>
     </div>
@@ -1492,12 +1674,10 @@ export default function WorkoutPanel() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [showCreatePlan, setShowCreatePlan] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState<WorkoutPlan | null>(null)
-  const [startFromDay, setStartFromDay] = useState<PlanDay | null>(null)
-  const [preSessionDay, setPreSessionDay] = useState<PlanDay | null>(null)
-  const [preSessionPlan, setPreSessionPlan] = useState<WorkoutPlan | null>(null)
-  const [sessionPrefillExercises, setSessionPrefillExercises] = useState<PlanExercise[] | undefined>(undefined)
-  const [sessionPrefillTitle, setSessionPrefillTitle] = useState<string | undefined>(undefined)
+  const [view, setView] = useState<WorkoutView>('list')
+  const [detailPlan, setDetailPlan] = useState<WorkoutPlan | null>(null)
+  const [activePlan, setActivePlan] = useState<WorkoutPlan | null>(null)
+  const [activeDay, setActiveDay] = useState<PlanDay | null>(null)
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery<WorkoutSession[]>({
     queryKey: ['workouts'],
@@ -1543,42 +1723,45 @@ export default function WorkoutPanel() {
     calories: weekSessions.reduce((sum, session) => sum + (session.caloriesBurned ?? 0), 0),
   }), [weekSessions])
 
-  const handleStartSession = (day: PlanDay, plan: WorkoutPlan) => {
-    setPreSessionDay(day)
-    setPreSessionPlan(plan)
-  }
-  const handlePreSessionConfirm = (adjustedExercises: ExerciseForm[]) => {
-    if (!preSessionDay || !preSessionPlan) return
-
-    const prefillExercises = adjustedExercises
-      .filter(e => e.name.trim())
-      .map(e => ({
-        name: e.name.trim(),
-        sets: e.sets ? parseInt(e.sets) : null,
-        reps: e.reps ? parseInt(e.reps) : null,
-        weightKg: e.weightKg ? parseFloat(e.weightKg) : null,
-        notes: '',
-      }))
-
-    setStartFromDay(preSessionDay)
-    setSessionPrefillExercises(prefillExercises)
-    setSessionPrefillTitle(`${preSessionPlan.name} — ${preSessionDay.label}`)
-    setPreSessionDay(null)
-    setPreSessionPlan(null)
-    setSelectedPlan(null)
-    setShowAddModal(true)
-  }
   const handleAddSuccess = () => {
     qc.invalidateQueries({ queryKey: ['workouts'] })
     qc.invalidateQueries({ queryKey: ['timeline'] })
     qc.invalidateQueries({ queryKey: ['plan-progress'] })
     setShowAddModal(false)
-    setStartFromDay(null)
-    setSessionPrefillExercises(undefined)
-    setSessionPrefillTitle(undefined)
   }
 
   if (sessionsLoading || plansLoading) return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement…</div>
+
+  if (view === 'session' && activePlan && activeDay) {
+    return (
+      <ActiveWorkoutSession
+        plan={activePlan}
+        day={activeDay}
+        onFinish={() => { setView('detail'); setActivePlan(null); setActiveDay(null) }}
+        onDiscard={() => { setView('detail'); setActivePlan(null); setActiveDay(null) }}
+      />
+    )
+  }
+
+  if (view === 'detail' && detailPlan) {
+    const currentPlan = plans.find(p => p.id === detailPlan.id) ?? detailPlan
+    return (
+      <ProgramDetailView
+        plan={currentPlan}
+        onBack={() => setView('list')}
+        onStartSession={(day) => {
+          setActivePlan(currentPlan)
+          setActiveDay(day)
+          setView('session')
+        }}
+        onStatusChange={(id, status) => {
+          qc.setQueryData<WorkoutPlan[]>(['workout-plans'], prev =>
+            prev?.map(p => p.id === id ? { ...p, status } : p) ?? []
+          )
+        }}
+      />
+    )
+  }
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -1587,12 +1770,6 @@ export default function WorkoutPanel() {
           <Dumbbell className="text-amber-500" /> Sport & Entraînement
         </h2>
         <div className="flex gap-2">
-          {activeTab === 'programs' && (
-            <button type="button" onClick={() => setShowCreatePlan(true)}
-              className="btn-secondary flex items-center gap-2 text-sm">
-              <Plus size={16} /> Programme
-            </button>
-          )}
           <button type="button" onClick={() => setShowAddModal(true)}
             className="btn-primary flex items-center gap-2 text-sm">
             <Plus size={16} /> Nouvelle séance
@@ -1679,67 +1856,32 @@ export default function WorkoutPanel() {
       )}
 
       {activeTab === 'programs' && (
-        plans.length === 0 ? (
-          <EmptyState
-            illustration={<IllustrationPrograms />}
-            title="Aucun programme"
-            subtitle="Créez un programme structuré pour atteindre vos objectifs sportifs."
-            action={
-              <button type="button" onClick={() => setShowCreatePlan(true)} className="btn-primary inline-flex items-center gap-2">
-                <Plus size={16} /> Créer votre premier programme
-              </button>
-            }
-          />
-        ) : (
-          <div className="space-y-3">
-            {plans.map(plan => (
-              <ProgramCard key={plan.id} plan={plan}
-                onViewDetail={() => setSelectedPlan(plan)}
-                onDelete={() => deletePlanMutation.mutate(plan.id)}
-                onStartSession={handleStartSession} />
-            ))}
-          </div>
-        )
+        <div className="grid grid-cols-2 gap-4">
+          {plans.map(plan => (
+            <ProgramCard key={plan.id} plan={plan}
+              onClick={() => { setDetailPlan(plan); setView('detail') }}
+              onDelete={() => deletePlanMutation.mutate(plan.id)} />
+          ))}
+          <button type="button" onClick={() => setShowCreatePlan(true)}
+            className="rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 h-48 flex flex-col items-center justify-center gap-3 text-gray-400 hover:border-amber-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors group">
+            <div className="w-12 h-12 rounded-full border-2 border-current flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Plus size={24} />
+            </div>
+            <span className="text-sm font-medium">Nouveau programme</span>
+          </button>
+        </div>
       )}
 
-      {preSessionDay && preSessionPlan && (
-        <PreSessionModal
-          day={preSessionDay}
-          plan={preSessionPlan}
-          onClose={() => { setPreSessionDay(null); setPreSessionPlan(null) }}
-          onConfirm={handlePreSessionConfirm}
-        />
-      )}
       {showAddModal && (
         <AddWorkoutModal
-          onClose={() => {
-            setShowAddModal(false)
-            setStartFromDay(null)
-            setSessionPrefillExercises(undefined)
-            setSessionPrefillTitle(undefined)
-          }}
+          onClose={() => setShowAddModal(false)}
           onSuccess={handleAddSuccess}
-          prefillExercises={sessionPrefillExercises ?? startFromDay?.exercises}
-          prefillTitle={sessionPrefillTitle ?? startFromDay?.label}
-          prefillPlanDayId={startFromDay?.id}
         />
       )}
       {showCreatePlan && (
         <CreatePlanModal
           onClose={() => setShowCreatePlan(false)}
           onSuccess={() => { qc.invalidateQueries({ queryKey: ['workout-plans'] }); setShowCreatePlan(false) }}
-        />
-      )}
-      {selectedPlan && (
-        <PlanDetailModal
-          plan={selectedPlan}
-          onClose={() => setSelectedPlan(null)}
-          onStartSession={handleStartSession}
-          onStatusChange={(id, status) => {
-            qc.setQueryData<WorkoutPlan[]>(['workout-plans'], prev =>
-              prev?.map(p => p.id === id ? { ...p, status } : p) ?? []
-            )
-          }}
         />
       )}
     </div>
