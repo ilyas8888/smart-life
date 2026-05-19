@@ -30,6 +30,7 @@ public class NoteController {
                 .user(user)
                 .title((String) body.get("title"))
                 .content((String) body.get("content"))
+                .tags(body.get("tags") instanceof List<?> tags ? tags.stream().map(String::valueOf).toArray(String[]::new) : null)
                 .isPinned(Boolean.TRUE.equals(body.get("isPinned")))
                 .color(body.get("color") != null ? (String) body.get("color") : "default")
                 .build();
@@ -51,6 +52,20 @@ public class NoteController {
         return noteRepository.findById(id)
                 .filter(n -> n.getUser().getId().equals(user.getId()))
                 .map(n -> { n.setColor(color); return ResponseEntity.ok(noteRepository.save(n)); })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Note> updateNote(@PathVariable Long id,
+                                           @RequestBody Map<String, Object> body,
+                                           @AuthenticationPrincipal User user) {
+        return noteRepository.findById(id)
+                .filter(n -> n.getUser().getId().equals(user.getId()))
+                .map(n -> {
+                    if (body.containsKey("title")) n.setTitle((String) body.get("title"));
+                    if (body.containsKey("content")) n.setContent((String) body.get("content"));
+                    return ResponseEntity.ok(noteRepository.save(n));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
