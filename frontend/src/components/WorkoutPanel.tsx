@@ -784,36 +784,79 @@ function AddWorkoutModal({
               </div>
               <button type="button" onClick={() => setShowExercises(v => !v)}
                 className="w-full flex items-center justify-between rounded-xl border border-gray-100 dark:border-gray-700 px-3 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Ajouter des exercices (facultatif)
+                <span className="flex items-center gap-2">
+                  <Dumbbell size={15} className="text-amber-500" />
+                  {exercises.filter(e => e.name.trim()).length > 0
+                    ? `Exercices · ${exercises.filter(e => e.name.trim()).length} ajouté${exercises.filter(e => e.name.trim()).length > 1 ? 's' : ''}`
+                    : 'Exercices (facultatif)'}
+                </span>
                 {showExercises ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
               {showExercises && (
                 <div className="space-y-2 mb-4">
-                  {exercises.map((exercise, i) => (
-                    <div key={i} className="rounded-xl border border-gray-100 dark:border-gray-700 p-3">
-                      <div className="flex gap-2">
-                        <input className="input flex-1 text-sm" value={exercise.name}
-                          onChange={e => updateExercise(i, 'name', e.target.value)} placeholder="Nom exercice" />
-                        {exercises.length > 1 && (
-                          <button type="button" onClick={() => removeExercise(i)}
-                            className="p-2 text-gray-300 hover:text-red-400 transition-colors">
-                            <X size={14} />
+                  {/* Bibliothèque rapide si le sport correspond */}
+                  {(EXERCISE_LIBRARY as Record<string, typeof EXERCISE_LIBRARY[keyof typeof EXERCISE_LIBRARY]>)[sportLabel] && (
+                    <div className="rounded-xl bg-gray-50 dark:bg-gray-700/40 px-3 py-2.5">
+                      <p className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-2">Bibliothèque rapide — {sportLabel}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(EXERCISE_LIBRARY as Record<string, typeof EXERCISE_LIBRARY[keyof typeof EXERCISE_LIBRARY]>)[sportLabel].map(ex => (
+                          <button key={ex.name} type="button"
+                            onClick={() => {
+                              const newEx: ExerciseForm = { name: ex.name, sets: String(ex.sets ?? ''), reps: String(ex.reps ?? ''), weightKg: String(ex.weightKg ?? ''), durationSeconds: '' }
+                              setExercises(prev => [...prev.filter(e => e.name.trim()), newEx])
+                            }}
+                            className="text-xs px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 font-medium transition-colors">
+                            + {ex.name}
                           </button>
-                        )}
+                        ))}
                       </div>
-                      <div className="grid grid-cols-3 gap-2 mt-2">
-                        <input type="number" className="input text-sm" value={exercise.sets}
-                          onChange={e => updateExercise(i, 'sets', e.target.value)} placeholder="Séries" min="1" />
-                        <input type="number" className="input text-sm" value={exercise.reps}
-                          onChange={e => updateExercise(i, 'reps', e.target.value)} placeholder="Reps" min="1" />
-                        <input type="number" className="input text-sm" value={exercise.weightKg}
-                          onChange={e => updateExercise(i, 'weightKg', e.target.value)} placeholder="Poids" min="0" step="0.5" />
+                    </div>
+                  )}
+
+                  {/* Cartes exercices */}
+                  {exercises.map((exercise, i) => (
+                    <div key={i} className="rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm">
+                      {/* Header carte */}
+                      <div className="flex items-center gap-2.5 px-3 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+                        <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                          {i + 1}
+                        </span>
+                        <input
+                          className="flex-1 bg-transparent font-semibold text-sm text-gray-900 dark:text-gray-100 focus:outline-none placeholder-gray-400 dark:placeholder-gray-500 min-w-0"
+                          value={exercise.name}
+                          onChange={e => updateExercise(i, 'name', e.target.value)}
+                          placeholder="Nom de l'exercice"
+                        />
+                        <button type="button" onClick={() => removeExercise(i)}
+                          className="p-1 text-gray-300 dark:text-gray-600 hover:text-red-400 transition-colors shrink-0">
+                          <X size={14} />
+                        </button>
+                      </div>
+                      {/* Blocs métriques */}
+                      <div className="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700">
+                        {[
+                          { label: 'Séries', field: 'sets' as keyof ExerciseForm, step: '1' },
+                          { label: 'Répétitions', field: 'reps' as keyof ExerciseForm, step: '1' },
+                          { label: 'Poids (kg)', field: 'weightKg' as keyof ExerciseForm, step: '0.5' },
+                        ].map(({ label, field, step }) => (
+                          <div key={field} className="flex flex-col items-center py-3 px-2">
+                            <p className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5">{label}</p>
+                            <input
+                              type="number" min="0" step={step}
+                              className="w-full text-center font-bold text-xl text-gray-900 dark:text-gray-100 bg-transparent border-none focus:outline-none p-0 leading-none"
+                              value={exercise[field]}
+                              onChange={e => updateExercise(i, field, e.target.value)}
+                              placeholder="—"
+                            />
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}
+
                   <button type="button" onClick={addExercise}
-                    className="w-full rounded-xl border border-dashed border-gray-200 dark:border-gray-700 py-2 text-sm text-gray-500 dark:text-gray-400 hover:border-amber-400 hover:text-amber-600 flex items-center justify-center gap-1">
-                    <Plus size={14} /> Ajouter une ligne
+                    className="w-full rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 py-3 text-sm text-gray-400 dark:text-gray-500 hover:border-amber-400 hover:text-amber-500 dark:hover:text-amber-400 flex items-center justify-center gap-2 transition-colors font-medium">
+                    <Plus size={15} /> Ajouter un exercice
                   </button>
                 </div>
               )}
