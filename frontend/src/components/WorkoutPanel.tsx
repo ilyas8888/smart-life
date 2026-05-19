@@ -64,6 +64,27 @@ function sportImage(title: string): string | null {
   return null
 }
 
+interface ExerciseGroup { name: string; sets: WorkoutExercise[] }
+
+function groupExercises(exercises: WorkoutExercise[]): ExerciseGroup[] {
+  const map = new Map<string, WorkoutExercise[]>()
+  for (const ex of exercises) {
+    if (!map.has(ex.name)) map.set(ex.name, [])
+    map.get(ex.name)!.push(ex)
+  }
+  return Array.from(map.entries()).map(([name, sets]) => ({ name, sets }))
+}
+
+function isPR(sessions: WorkoutSession[], exerciseName: string, weightKg: number | null, sessionDate: string): boolean {
+  if (!weightKg) return false
+  const maxBefore = sessions
+    .filter(s => s.sessionDate < sessionDate)
+    .flatMap(s => s.exercises)
+    .filter(e => e.name === exerciseName && e.weightKg !== null)
+    .reduce((max, e) => Math.max(max, e.weightKg!), 0)
+  return weightKg > maxBefore
+}
+
 const GOAL_LABELS: Record<GoalType, string> = {
   MUSCLE_GAIN: 'Prise de masse',
   FAT_LOSS: 'Perte de poids',
@@ -478,100 +499,151 @@ function WeeklyVolumeChart({ sessions }: { sessions: WorkoutSession[] }) {
 }
 
 function SessionCard({
-  session, isExpanded, onToggleExpand, onDelete,
+  session, sessions, isExpanded, onToggleExpand, onDelete,
 }: {
-  session: WorkoutSession; isExpanded: boolean; onToggleExpand: () => void; onDelete: () => void
+  session: WorkoutSession; sessions: WorkoutSession[]
+  isExpanded: boolean; onToggleExpand: () => void; onDelete: () => void
 }) {
   const badge = sportBadge(session.title)
-  const sImg = sportImage(session.title)
   const borderCls = sessionCardBorder(session.title)
-  const volume = session.exercises.reduce((sum, ex) =>
-    sum + (ex.sets ?? 0) * (ex.reps ?? 0) * (ex.weightKg ?? 0), 0)
+  const sImg = sportImage(session.title)
+  const groups = groupExercises(session.exercises)
+  const totalVolume = session.exercises.reduce((s, e) =>
+    s + (e.sets ?? 1) * (e.reps ?? 0) * (e.weightKg ?? 0), 0)
 
   return (
     <div className={`card overflow-hidden ${borderCls}`}>
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start gap-3">
+        {sImg ? (
+          <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0">
+            <img src={sImg} alt="" className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <div className="w-14 h-14 rounded-xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center shrink-0 text-2xl">
+            {badge ?? '️'}
+          </div>
+        )}
+
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            {badge && <span className="text-lg leading-none">{badge}</span>}
-            <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{session.title}</p>
-            {session.planDayId && (
-              <span className="text-xs rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-2 py-0.5 shrink-0">
-                Programme
-              </span>
-            )}
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="font-bold text-gray-900 dark:text-gray-100 truncate">{session.title}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                {format(new Date(`${session.sessionDate}T00:00:00`), 'EEEE dd MMMM yyyy', { locale: fr })}
+                {session.planDayId && (
+                  <span className="ml-2 text-amber-500">· Programme</span>
+                )}
+              </p>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              {groups.length > 0 && (
+                <button type="button" onClick={onToggleExpand}
+                  className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+              )}
+              <button type="button" onClick={onDelete}
+                className="p-1.5 text-gray-300 dark:text-gray-600 hover:text-red-400 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
+                <Trash2 size={14} />
+              </button>
+            </div>
           </div>
 
-          <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
-            {format(new Date(`${session.sessionDate}T00:00:00`), 'EEEE dd MMMM yyyy', { locale: fr })}
-          </p>
-
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 mt-2">
             {session.durationMinutes && (
               <span className="flex items-center gap-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-full">
                 <Clock size={10} /> {session.durationMinutes}min
               </span>
             )}
-            {session.caloriesBurned && (
+            {session.caloriesBurned != null && session.caloriesBurned > 0 && (
               <span className="flex items-center gap-1 text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-1 rounded-full">
                 <Flame size={10} /> {session.caloriesBurned} kcal
               </span>
             )}
-            {volume > 0 && (
+            {totalVolume > 0 && (
               <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 px-2 py-1 rounded-full">
-                ⚖️ {volume >= 1000 ? `${(volume / 1000).toFixed(1)}t` : `${Math.round(volume)}kg`} soulevés
+                ⚖️ {totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}t` : `${Math.round(totalVolume)}kg`}
+              </span>
+            )}
+            {groups.length > 0 && (
+              <span className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-2 py-1 rounded-full">
+                {groups.length} exercice{groups.length > 1 ? 's' : ''}
               </span>
             )}
           </div>
-
-          {session.exercises.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {session.exercises.slice(0, 4).map((ex) => {
-                const p: string[] = []
-                if (ex.sets && ex.reps) p.push(`${ex.sets}×${ex.reps}`)
-                if (ex.weightKg) p.push(`${ex.weightKg}kg`)
-                return (
-                  <span key={ex.id}
-                    className="text-[11px] bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full">
-                    {ex.name}{p.length ? ` · ${p.join(' ')}` : ''}
-                  </span>
-                )
-              })}
-              {session.exercises.length > 4 && (
-                <span className="text-[11px] text-gray-400 dark:text-gray-500 self-center">
-                  +{session.exercises.length - 4} autres
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-        {sImg && (
-          <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 opacity-80">
-            <img src={sImg} alt="" className="w-full h-full object-cover" />
-          </div>
-        )}
-
-        <div className="flex items-center gap-1 shrink-0">
-          {session.exercises.length > 0 && (
-            <button type="button" onClick={onToggleExpand}
-              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </button>
-          )}
-          <button type="button" onClick={onDelete}
-            className="p-1 text-gray-300 dark:text-gray-500 hover:text-red-400 transition-colors">
-            <Trash2 size={14} />
-          </button>
         </div>
       </div>
 
-      {isExpanded && session.exercises.length > 0 && (
-        <ul className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-1.5">
-          {session.exercises.map((ex) => <ExerciseLine key={ex.id} ex={ex} />)}
-        </ul>
+      {!isExpanded && groups.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+          {groups.slice(0, 4).map(g => (
+            <span key={g.name}
+              className="text-[11px] bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-2 py-0.5 rounded-full">
+              {g.name} · {g.sets.length} série{g.sets.length > 1 ? 's' : ''}
+            </span>
+          ))}
+          {groups.length > 4 && (
+            <span className="text-[11px] text-gray-400 self-center">+{groups.length - 4}</span>
+          )}
+        </div>
       )}
-      {session.notes && (
+
+      {isExpanded && groups.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-4">
+          {groups.map(group => (
+            <div key={group.name}>
+              <p className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                {group.name}
+              </p>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-widest">
+                    <th className="text-left pb-1 font-medium w-10">Série</th>
+                    <th className="text-center pb-1 font-medium">Poids</th>
+                    <th className="text-center pb-1 font-medium">Reps</th>
+                    <th className="text-center pb-1 font-medium">Volume</th>
+                    <th className="w-6" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-700/50">
+                  {group.sets.map((set, i) => {
+                    const vol = (set.reps ?? 0) * (set.weightKg ?? 0)
+                    const pr = isPR(sessions, set.name, set.weightKg, session.sessionDate)
+                    return (
+                      <tr key={set.id} className="text-gray-700 dark:text-gray-300">
+                        <td className="py-1.5">
+                          <span className="w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 text-[10px] font-bold flex items-center justify-center">
+                            {i + 1}
+                          </span>
+                        </td>
+                        <td className="py-1.5 text-center font-semibold">
+                          {set.weightKg != null ? `${set.weightKg} kg` : '—'}
+                        </td>
+                        <td className="py-1.5 text-center">{set.reps ?? '—'}</td>
+                        <td className="py-1.5 text-center text-gray-400 dark:text-gray-500 text-xs">
+                          {vol > 0 ? `${vol} kg` : '—'}
+                        </td>
+                        <td className="py-1.5 text-center">
+                          {pr && (
+                            <span title="Personal Record" className="text-xs">PR</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ))}
+          {session.notes && (
+            <p className="text-xs text-gray-400 italic pt-1 border-t border-gray-100 dark:border-gray-700">
+              {session.notes}
+            </p>
+          )}
+        </div>
+      )}
+      {!isExpanded && session.notes && (
         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 italic">{session.notes}</p>
       )}
     </div>
@@ -579,17 +651,6 @@ function SessionCard({
 }
 
 const emptyExercise = (): ExerciseForm => ({ name: '', sets: '', reps: '', weightKg: '', durationSeconds: '' })
-const formatDuration = (seconds: number) => {
-  const m = Math.floor(seconds / 60); const s = seconds % 60
-  return m > 0 ? (s > 0 ? `${m}min ${s}s` : `${m}min`) : `${s}s`
-}
-const todayString = () => new Date().toISOString().split('T')[0]
-const yesterdayString = () => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0] }
-const dayLabel = (date: string) => {
-  if (date === todayString()) return "Aujourd'hui"
-  if (date === yesterdayString()) return 'Hier'
-  return format(new Date(`${date}T00:00:00`), 'dd MMM', { locale: fr })
-}
 const planExerciseWeight = (ex: PlanExercise) => ex.weightKg ?? (ex as unknown as { weight_kg?: number | null }).weight_kg ?? null
 
 function ProgressRing({ percent, size = 64 }: { percent: number; size?: number }) {
@@ -604,22 +665,6 @@ function ProgressRing({ percent, size = 64 }: { percent: number; size?: number }
         className="stroke-amber-500 transition-all duration-500"
         strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" />
     </svg>
-  )
-}
-
-function ExerciseLine({ ex }: { ex: WorkoutExercise }) {
-  const parts: string[] = []
-  if (ex.sets && ex.reps) parts.push(`${ex.sets}×${ex.reps}`)
-  else if (ex.sets) parts.push(`${ex.sets} séries`)
-  else if (ex.reps) parts.push(`${ex.reps} reps`)
-  if (ex.weightKg) parts.push(`${ex.weightKg}kg`)
-  if (ex.durationSeconds) parts.push(formatDuration(ex.durationSeconds))
-  return (
-    <li className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
-      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-      <span className="font-medium text-gray-800 dark:text-gray-200">{ex.name}</span>
-      {parts.length > 0 && <span className="text-gray-400">— {parts.join(', ')}</span>}
-    </li>
   )
 }
 
@@ -1731,7 +1776,6 @@ function ProgramCard({ plan, onClick, onDelete }: {
 export default function WorkoutPanel() {
   const qc = useQueryClient()
   const [activeTab, setActiveTab] = useState<TabType>('sessions')
-  const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [showCreatePlan, setShowCreatePlan] = useState(false)
@@ -1764,13 +1808,15 @@ export default function WorkoutPanel() {
     },
   })
 
-  const dates = useMemo(() =>
-    Array.from(new Set(sessions.map(s => s.sessionDate))).sort((a, b) => b.localeCompare(a)),
-    [sessions]
-  )
-  const sessionsToShow = useMemo(() =>
-    selectedDate ? sessions.filter(s => s.sessionDate === selectedDate) : sessions,
-    [selectedDate, sessions]
+  const sessionsByMonth = useMemo(() => sessions.reduce((acc, s) => {
+    const month = s.sessionDate.slice(0, 7)
+    if (!acc[month]) acc[month] = []
+    acc[month].push(s)
+    return acc
+  }, {} as Record<string, WorkoutSession[]>), [sessions])
+  const sortedMonths = useMemo(() =>
+    Object.keys(sessionsByMonth).sort((a, b) => b.localeCompare(a)),
+    [sessionsByMonth]
   )
   const weekSessions = useMemo(() => {
     const start = new Date()
@@ -1840,7 +1886,7 @@ export default function WorkoutPanel() {
 
       <div className="flex gap-4 border-b border-gray-100 dark:border-gray-700 mb-6">
         {[
-          ['sessions', 'Séances'],
+          ['sessions', 'Historique'],
           ['programs', 'Programmes'],
         ].map(([key, label]) => (
           <button key={key} type="button" onClick={() => setActiveTab(key as TabType)}
@@ -1874,21 +1920,6 @@ export default function WorkoutPanel() {
             </div>
           )}
 
-          {sessions.length > 0 && (
-            <div className="overflow-x-auto flex gap-2 mb-6">
-              <button type="button" onClick={() => setSelectedDate(null)}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${selectedDate === null ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'}`}>
-                Toutes
-              </button>
-              {dates.map(date => (
-                <button key={date} type="button" onClick={() => setSelectedDate(date)}
-                  className={`rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${selectedDate === date ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'}`}>
-                  {dayLabel(date)}
-                </button>
-              ))}
-            </div>
-          )}
-
           {sessions.length === 0 ? (
             <div className="text-center py-12">
               <img src={imgUrl('images/empty/no-sessions.png')} alt="Aucune séance"
@@ -1897,17 +1928,35 @@ export default function WorkoutPanel() {
               <p className="text-sm text-gray-400 dark:text-gray-500">Commence par enregistrer ta première séance</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {sessionsToShow.map((s) => (
-                <SessionCard
-                  key={s.id}
-                  session={s}
-                  isExpanded={expandedId === s.id}
-                  onToggleExpand={() => setExpandedId(expandedId === s.id ? null : s.id)}
-                  onDelete={() => deleteSessionMutation.mutate(s.id)}
-                />
-              ))}
-            </div>
+            <>
+              {sortedMonths.map(month => {
+                const [year, m] = month.split('-')
+                const monthLabel = new Date(Number(year), Number(m) - 1).toLocaleString('fr', { month: 'long', year: 'numeric' })
+                const monthSessions = sessionsByMonth[month]
+                const monthVolume = monthSessions.reduce((s, w) =>
+                  s + w.exercises.reduce((es, ex) => es + (ex.sets ?? 1) * (ex.reps ?? 0) * (ex.weightKg ?? 0), 0), 0)
+                return (
+                  <div key={month} className="mb-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 capitalize">{monthLabel}</h3>
+                      <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
+                      <span className="text-xs text-gray-400">{monthSessions.length} séance{monthSessions.length > 1 ? 's' : ''}</span>
+                      {monthVolume > 0 && (
+                        <span className="text-xs text-gray-400">{monthVolume >= 1000 ? `${(monthVolume / 1000).toFixed(1)}t` : `${Math.round(monthVolume)}kg`}</span>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      {monthSessions.map(s => (
+                        <SessionCard key={s.id} session={s} sessions={sessions}
+                          isExpanded={expandedId === s.id}
+                          onToggleExpand={() => setExpandedId(expandedId === s.id ? null : s.id)}
+                          onDelete={() => deleteSessionMutation.mutate(s.id)} />
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
+            </>
           )}
         </>
       )}
