@@ -5,6 +5,7 @@ import { format, isPast, isToday, isTomorrow, isThisWeek, formatDistanceToNow } 
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
+import DateTimePicker from './DateTimePicker'
 
 interface Reminder {
   id: number
@@ -76,7 +77,7 @@ function ReminderEditModal({
         <div className="p-5 space-y-3">
           <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Titre" />
           <textarea className="input min-h-[90px] resize-none" value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optionnel)" />
-          <input className="input" type="datetime-local" value={remindAt} onChange={e => setRemindAt(e.target.value)} />
+          <DateTimePicker value={remindAt} onChange={setRemindAt} placeholder="Choisir une date et heure..." />
           <div className="grid grid-cols-3 gap-2">
             {(Object.keys(PRIORITY) as Reminder['priority'][]).map(p => (
               <button key={p} type="button" onClick={() => setPriority(p)}
@@ -287,7 +288,7 @@ export default function RemindersPanel() {
           <div className="space-y-3">
             <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titre du rappel" autoFocus />
             <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optionnel)" />
-            <input className="input" type="datetime-local" value={remindAt} onChange={(e) => setRemindAt(e.target.value)} />
+            <DateTimePicker value={remindAt} onChange={setRemindAt} placeholder="Choisir une date et heure..." />
             <div className="grid grid-cols-3 gap-2">
               {(Object.keys(PRIORITY) as Reminder['priority'][]).map(p => (
                 <button key={p} type="button" onClick={() => setPriority(p)}
