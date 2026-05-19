@@ -29,9 +29,15 @@ public class Reminder {
     @Column(nullable = false)
     private LocalDateTime remindAt;
 
+    @Builder.Default
     private boolean isRecurring = false;
     private String recurrenceRule;
+
+    @Builder.Default
     private boolean isDone = false;
+
+    @Builder.Default
+    private String priority = "MEDIUM";
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

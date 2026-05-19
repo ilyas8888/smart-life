@@ -20,7 +20,11 @@ public class ReminderController {
     private final ReminderRepository reminderRepository;
 
     @GetMapping
-    public List<Reminder> getReminders(@AuthenticationPrincipal User user) {
+    public List<Reminder> getReminders(@RequestParam(defaultValue = "false") boolean includeDone,
+                                       @AuthenticationPrincipal User user) {
+        if (includeDone) {
+            return reminderRepository.findByUserIdOrderByRemindAtAsc(user.getId());
+        }
         return reminderRepository.findByUserIdAndIsDoneFalseOrderByRemindAtAsc(user.getId());
     }
 
@@ -32,6 +36,7 @@ public class ReminderController {
                 .title((String) body.get("title"))
                 .description((String) body.getOrDefault("description", ""))
                 .remindAt(LocalDateTime.parse((String) body.get("remindAt")))
+                .priority(body.getOrDefault("priority", "MEDIUM").toString())
                 .isDone(false)
                 .build();
         return ResponseEntity.ok(reminderRepository.save(reminder));
@@ -42,6 +47,22 @@ public class ReminderController {
         return reminderRepository.findById(id)
                 .filter(r -> r.getUser().getId().equals(user.getId()))
                 .map(r -> { r.setDone(true); return ResponseEntity.ok(reminderRepository.save(r)); })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Reminder> updateReminder(@PathVariable Long id,
+                                                   @RequestBody Map<String, Object> body,
+                                                   @AuthenticationPrincipal User user) {
+        return reminderRepository.findById(id)
+                .filter(r -> r.getUser().getId().equals(user.getId()))
+                .map(r -> {
+                    if (body.containsKey("title")) r.setTitle((String) body.get("title"));
+                    if (body.containsKey("description")) r.setDescription((String) body.get("description"));
+                    if (body.containsKey("remindAt")) r.setRemindAt(LocalDateTime.parse((String) body.get("remindAt")));
+                    if (body.containsKey("priority")) r.setPriority(body.get("priority").toString());
+                    return ResponseEntity.ok(reminderRepository.save(r));
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 
