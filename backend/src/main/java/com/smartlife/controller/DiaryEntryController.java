@@ -41,4 +41,18 @@ public class DiaryEntryController {
                 .map(e -> { diaryEntryRepository.delete(e); return ResponseEntity.noContent().<Void>build(); })
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<DiaryEntry> updateEntry(@PathVariable Long id,
+                                                   @RequestBody Map<String, String> body,
+                                                   @AuthenticationPrincipal User user) {
+        return diaryEntryRepository.findById(id)
+                .filter(e -> e.getUser().getId().equals(user.getId()))
+                .map(e -> {
+                    if (body.containsKey("content")) e.setContent(body.get("content"));
+                    if (body.containsKey("mood")) e.setMood(body.get("mood"));
+                    return ResponseEntity.ok(diaryEntryRepository.save(e));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
