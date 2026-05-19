@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 @Service
 @RequiredArgsConstructor
@@ -76,8 +77,52 @@ public class TimelineService {
         return timeline;
     }
 
+    @Transactional(readOnly = true)
+    public Map<String, List<TimelineItemDto>> getMonthTimeline(User user, int year, int month) {
+        LocalDate start = LocalDate.of(year, month, 1);
+        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
+        Map<String, List<TimelineItemDto>> calendar = new TreeMap<>();
+
+        taskRepository.findByUserIdOrderByCreatedAtDesc(user.getId())
+                .forEach(task -> addMonthItem(calendar, fromTask(task), start, end));
+
+        reminderRepository.findByUserIdOrderByRemindAtAsc(user.getId())
+                .forEach(reminder -> addMonthItem(calendar, fromReminder(reminder), start, end));
+
+        noteRepository.findByUserIdOrderByIsPinnedDescCreatedAtDesc(user.getId())
+                .forEach(note -> addMonthItem(calendar, fromNote(note), start, end));
+
+        foodLogRepository.findByUserIdOrderByLogDateDescLoggedAtDesc(user.getId())
+                .forEach(foodLog -> addMonthItem(calendar, fromFoodLog(foodLog), start, end));
+
+        diaryEntryRepository.findByUserIdOrderByEntryDateDesc(user.getId())
+                .forEach(diaryEntry -> addMonthItem(calendar, fromDiaryEntry(diaryEntry), start, end));
+
+        workoutSessionRepository.findByUserIdOrderBySessionDateDescCreatedAtDesc(user.getId())
+                .forEach(session -> addMonthItem(calendar, fromWorkoutSession(session), start, end));
+
+        calendar.values().forEach(items -> items.sort(
+                Comparator.comparing(TimelineItemDto::time, Comparator.nullsLast(String::compareTo))
+        ));
+
+        return calendar;
+    }
+
     private void addItem(Map<String, List<TimelineItemDto>> timeline, TimelineItemDto item) {
         timeline.get(bucketFor(item.date())).add(item);
+    }
+
+    private void addMonthItem(
+            Map<String, List<TimelineItemDto>> calendar,
+            TimelineItemDto item,
+            LocalDate start,
+            LocalDate end
+    ) {
+        LocalDate date = item.date();
+        if (date == null || date.isBefore(start) || date.isAfter(end)) {
+            return;
+        }
+        calendar.computeIfAbsent(date.toString(), key -> new ArrayList<>()).add(item);
     }
 
     private String bucketFor(LocalDate date) {
@@ -114,7 +159,7 @@ public class TimelineService {
     private TimelineItemDto fromReminder(Reminder reminder) {
         LocalDateTime remindAt = reminder.getRemindAt();
         Map<String, Object> metadata = new HashMap<>();
-        metadata.put("isDone", reminder.isDone());
+        metadata.put("done", reminder.isDone());
 
         return new TimelineItemDto(
                 reminder.getId(),

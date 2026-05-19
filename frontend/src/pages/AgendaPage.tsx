@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarDays, ChevronDown, ChevronRight, Pin } from 'lucide-react'
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Pin } from 'lucide-react'
+import { addMonths, eachDayOfInterval, endOfMonth, format, getDay, isSameDay, isToday, startOfMonth } from 'date-fns'
+import { fr } from 'date-fns/locale'
 import api from '../api/axios'
-import { fetchTimeline, TimelineItem, TimelineResponse } from '../api/timeline'
+import { fetchMonthCalendar, MonthCalendarResponse, fetchTimeline, TimelineItem, TimelineResponse } from '../api/timeline'
 
 type Panel = 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout'
 
@@ -127,6 +129,99 @@ function allItems(data?: TimelineResponse) {
   return sections.flatMap((section) => data[section.key] ?? [])
 }
 
+function dateKey(date: Date) {
+  return format(date, 'yyyy-MM-dd')
+}
+
+function monthTitle(date: Date) {
+  return capitalize(format(date, 'MMMM yyyy', { locale: fr }))
+}
+
+function MonthCalendar({
+  selectedDate,
+  viewMonth,
+  calendarData,
+  onSelectDate,
+  onChangeMonth,
+}: {
+  selectedDate: Date
+  viewMonth: Date
+  calendarData: MonthCalendarResponse
+  onSelectDate: (date: Date) => void
+  onChangeMonth: (date: Date) => void
+}) {
+  const monthStart = startOfMonth(viewMonth)
+  const days = eachDayOfInterval({ start: monthStart, end: endOfMonth(viewMonth) })
+  const leadingEmptyDays = (getDay(monthStart) + 6) % 7
+  const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+
+  return (
+    <div className="card mb-6 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <button
+          type="button"
+          onClick={() => onChangeMonth(addMonths(viewMonth, -1))}
+          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700 transition-colors"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100 capitalize">{monthTitle(viewMonth)}</h2>
+        <button
+          type="button"
+          onClick={() => onChangeMonth(addMonths(viewMonth, 1))}
+          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700 transition-colors"
+        >
+          <ChevronRight size={16} />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1">
+        {weekDays.map((day) => (
+          <div key={day} className="text-[10px] text-gray-400 font-medium text-center py-1">
+            {day}
+          </div>
+        ))}
+        {Array.from({ length: leadingEmptyDays }).map((_, index) => (
+          <div key={`empty-${index}`} />
+        ))}
+        {days.map((day) => {
+          const key = dateKey(day)
+          const items = calendarData[key] ?? []
+          const itemTypes = Array.from(new Set(items.map((item) => item.type))).slice(0, 3)
+          const selected = isSameDay(day, selectedDate)
+          const currentDay = isToday(day)
+
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onSelectDate(day)}
+              className="relative flex flex-col items-center py-1 rounded-xl transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <span
+                className={`w-8 h-8 rounded-full text-xs font-medium flex items-center justify-center transition-colors ${
+                  selected
+                    ? 'bg-primary-600 text-white'
+                    : currentDay
+                      ? 'border border-primary-600 text-primary-700 dark:text-primary-300'
+                      : 'text-gray-700 dark:text-gray-200'
+                }`}
+              >
+                {format(day, 'd')}
+              </span>
+              <span className="flex gap-0.5 mt-0.5 h-2">
+                {itemTypes.map((type) => (
+                  <span key={type} className={`w-1.5 h-1.5 rounded-full ${dotStyles[type as keyof typeof dotStyles] ?? dotStyles.NOTE}`} />
+                ))}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function metadataText(item: TimelineItem) {
   if (item.type === 'TASK') {
     const priority = getString(item.metadata.priority)
@@ -140,7 +235,7 @@ function metadataText(item: TimelineItem) {
   }
 
   if (item.type === 'REMINDER') {
-    return item.metadata.isDone === true ? 'Fait' : ''
+    return item.metadata.done === true ? 'Fait' : ''
   }
 
   return ''
@@ -225,6 +320,8 @@ function LoadingState() {
 
 export default function AgendaPage({ onNavigate }: AgendaPageProps) {
   const qc = useQueryClient()
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [viewMonth, setViewMonth] = useState<Date>(new Date())
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     new Set(['tomorrow', 'thisWeek', 'yesterday', 'past', 'noDate'])
   )
@@ -234,6 +331,10 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
     queryKey: ['timeline'],
     queryFn: fetchTimeline,
   })
+  const { data: calendarData = {} } = useQuery({
+    queryKey: ['timeline-month', viewMonth.getFullYear(), viewMonth.getMonth() + 1],
+    queryFn: () => fetchMonthCalendar(viewMonth.getFullYear(), viewMonth.getMonth() + 1),
+  })
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) =>
@@ -241,6 +342,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks'] })
       qc.invalidateQueries({ queryKey: ['timeline'] })
+      qc.invalidateQueries({ queryKey: ['timeline-month'] })
       setOpenMenu(null)
     },
   })
@@ -259,22 +361,23 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
       return next
     })
 
-  const today = data?.today ?? []
-  const tomorrow = data?.tomorrow ?? []
-  const tasks = [...today, ...(data?.noDate ?? [])].filter((item) => item.type === 'TASK')
-  const reminders = [...today, ...tomorrow].filter((item) => item.type === 'REMINDER')
-  const notes = allItems(data)
+  const selectedKey = dateKey(selectedDate)
+  const selectedIsToday = isToday(selectedDate)
+  const selectedDayItems = selectedIsToday ? (data?.today ?? []) : (calendarData[selectedKey] ?? [])
+  const tasks = [...selectedDayItems, ...(selectedIsToday ? (data?.noDate ?? []) : [])].filter((item) => item.type === 'TASK')
+  const reminders = (selectedIsToday ? [...selectedDayItems, ...(data?.tomorrow ?? [])] : selectedDayItems).filter((item) => item.type === 'REMINDER')
+  const notes = (selectedIsToday ? allItems(data) : selectedDayItems)
     .filter((item) => item.type === 'NOTE')
     .sort((a, b) => Number(getBoolean(b.metadata.isPinned) === true) - Number(getBoolean(a.metadata.isPinned) === true))
-  const foodItems = today
+  const foodItems = selectedDayItems
     .filter((item) => item.type === 'FOOD')
     .sort((a, b) => {
       const ai = mealOrder.indexOf(getString(a.metadata.mealType) ?? '')
       const bi = mealOrder.indexOf(getString(b.metadata.mealType) ?? '')
       return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
     })
-  const diaryItems = today.filter((item) => item.type === 'DIARY')
-  const workoutItems = today.filter((item) => item.type === 'WORKOUT')
+  const diaryItems = selectedDayItems.filter((item) => item.type === 'DIARY')
+  const workoutItems = selectedDayItems.filter((item) => item.type === 'WORKOUT')
   const calories = foodItems.reduce((total, item) => total + (getNumber(item.metadata.calories) ?? 0), 0)
   const caloriesBurned = workoutItems.reduce((total, item) => total + (getNumber(item.metadata.caloriesBurned) ?? 0), 0)
   const stats = [
@@ -306,14 +409,24 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
           style={{ fontFamily: 'Caveat, cursive' }}
           className="text-7xl font-bold text-gray-900 dark:text-gray-100 leading-none"
         >
-          {capitalize(formatDatePart('weekday'))}
+          {capitalize(format(selectedDate, 'EEEE', { locale: fr }))}
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-1 text-lg">{formatDatePart('date')}</p>
+        <p className="text-gray-500 dark:text-gray-400 mt-1 text-lg">
+          {format(selectedDate, 'd MMMM yyyy', { locale: fr })}
+        </p>
       </div>
       <div className="border-b-2 border-gray-900 dark:border-gray-100 mb-5" />
       {stats.length > 0 && (
         <p className="text-sm text-gray-400 dark:text-gray-500 italic mb-6">{stats.join(' · ')}</p>
       )}
+
+      <MonthCalendar
+        selectedDate={selectedDate}
+        viewMonth={viewMonth}
+        calendarData={calendarData}
+        onSelectDate={setSelectedDate}
+        onChangeMonth={setViewMonth}
+      />
 
       <JournalSection title="Tâches" empty="Aucune tâche" accent="border-blue-400">
         {tasks.length > 0 && (
@@ -393,7 +506,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
         {reminders.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {reminders.slice(0, 4).map((item) => {
-              const isDone = getBoolean(item.metadata.isDone) === true
+              const isDone = getBoolean(item.metadata.done) === true
               return (
                 <button
                   key={item.id}

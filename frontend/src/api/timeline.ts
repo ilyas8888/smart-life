@@ -19,6 +19,12 @@ export type TimelineResponse = {
   noDate: TimelineItem[]
 }
 
+export type MonthCalendarResponse = Record<string, TimelineItem[]>
+
 export function fetchTimeline() {
   return api.get<TimelineResponse>('/timeline').then((response) => response.data)
+}
+
+export function fetchMonthCalendar(year: number, month: number): Promise<MonthCalendarResponse> {
+  return api.get<MonthCalendarResponse>(`/timeline/month?year=${year}&month=${month}`).then((response) => response.data)
 }
