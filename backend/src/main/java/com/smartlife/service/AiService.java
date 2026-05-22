@@ -267,7 +267,7 @@ public class AiService {
                 foodLogRepository.save(log);
                 foodCacheService.upsert(log);
                 result.add(log);
-            } else if (isWeightUnit(unit) && quantity != null && !quantity.isBlank()) {
+            } else if (isWeightUnit(unit) && isSimpleIngredient(name) && quantity != null && !quantity.isBlank()) {
                 var apiResult = nutritionApiService.lookup(name);
                 if (apiResult.isPresent()) {
                     var nr = apiResult.get();
@@ -579,6 +579,10 @@ public class AiService {
 
     private boolean isWeightUnit(String unit) {
         return "g".equals(unit) || "ml".equals(unit) || "oz".equals(unit);
+    }
+
+    private boolean isSimpleIngredient(String name) {
+        return name != null && name.trim().split("\\s+").length == 1;
     }
 
     private BigDecimal scaleBD(BigDecimal v, double factor) {
