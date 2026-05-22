@@ -237,12 +237,16 @@ public class AiService {
             if (cached.isPresent()) {
                 var c = cached.get();
                 if ("ai".equals(c.getSource())) {
+                    Double servingG = extractServingG(c.getNutritionDetails());
+                    double scale = computeAiScale(quantity, unit, servingG);
                     var log = FoodLog.builder()
                             .user(user).logDate(LocalDate.now()).mealType(mealType)
                             .foodItem(c.getFoodName())
-                            .calories(c.getCalories() != null ? c.getCalories().intValue() : null)
-                            .proteinG(c.getProteinG()).carbsG(c.getCarbsG())
-                            .fatG(c.getFatG()).fiberG(c.getFiberG())
+                            .calories(scaleCalories(c.getCalories(), scale))
+                            .proteinG(scaleBigDecimal(c.getProteinG(), scale))
+                            .carbsG(scaleBigDecimal(c.getCarbsG(), scale))
+                            .fatG(scaleBigDecimal(c.getFatG(), scale))
+                            .fiberG(scaleBigDecimal(c.getFiberG(), scale))
                             .quantity(quantityWithUnit).nutritionDetails(c.getNutritionDetails())
                             .build();
                     foodLogRepository.save(log);
@@ -318,6 +322,11 @@ public class AiService {
                     if (Boolean.TRUE.equals(item.get("compute_directly"))) {
                         var nutrition = (Map<String, Object>) item.get("nutrition");
                         if (nutrition == null) continue;
+                        Map<String, Object> details = new HashMap<>();
+                        String servingSize = (String) nutrition.get("serving_size");
+                        Integer servingGrams = parseInteger(nutrition.get("serving_g"));
+                        if (servingSize != null) details.put("serving_size", servingSize);
+                        if (servingGrams != null) details.put("serving_g", servingGrams);
                         var log = FoodLog.builder()
                                 .user(user).logDate(LocalDate.now()).mealType(mealType)
                                 .foodItem((String) nutrition.getOrDefault("food_item", item.getOrDefault("original", "Aliment")))
@@ -327,6 +336,7 @@ public class AiService {
                                 .fatG(parseBigDecimal(nutrition.get("fat_g")))
                                 .fiberG(parseBigDecimal(nutrition.get("fiber_g")))
                                 .quantity(originalQuantities.get(normalizeKey((String) item.get("original"))))
+                                .nutritionDetails(details.isEmpty() ? null : details)
                                 .build();
                         foodLogRepository.save(log);
                         foodCacheService.upsert(log, "ai");
@@ -583,6 +593,25 @@ public class AiService {
 
     private boolean isSimpleIngredient(String name) {
         return name != null && name.trim().split("\\s+").length == 1;
+    }
+
+    private Double extractServingG(Map<String, Object> details) {
+        if (details == null) return null;
+        Object v = details.get("serving_g");
+        if (v instanceof Number n) return n.doubleValue();
+        if (v != null) try { return Double.parseDouble(v.toString()); } catch (Exception ignored) {}
+        return null;
+    }
+
+    private double computeAiScale(String quantity, String unit, Double servingG) {
+        if (quantity == null || quantity.isBlank() || servingG == null || servingG <= 0) return 1.0;
+        double qty;
+        try { qty = Double.parseDouble(quantity.trim()); } catch (Exception e) { return 1.0; }
+        if (isWeightUnit(unit)) {
+            double grams = "oz".equals(unit) ? qty * 28.35 : qty;
+            return grams / servingG;
+        }
+        return qty; // piece/bowl/cup/etc → quantity = nb de portions
     }
 
     private BigDecimal scaleBD(BigDecimal v, double factor) {
