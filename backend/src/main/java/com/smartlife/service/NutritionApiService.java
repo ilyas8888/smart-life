@@ -43,8 +43,15 @@ public class NutritionApiService {
         try {
             Map<String, Object> response = webClientBuilder.build()
                 .get()
-                .uri("https://api.nal.usda.gov/fdc/v1/foods/search?query={q}&api_key={k}&pageSize=1&dataType=Survey%20(FNDDS),Foundation",
-                    query, usdaApiKey)
+                .uri(uriBuilder -> uriBuilder
+                    .scheme("https")
+                    .host("api.nal.usda.gov")
+                    .path("/fdc/v1/foods/search")
+                    .queryParam("query", query)
+                    .queryParam("api_key", usdaApiKey)
+                    .queryParam("pageSize", "1")
+                    .queryParam("dataType", "Foundation,SR Legacy")
+                    .build())
                 .retrieve()
                 .bodyToMono(Map.class)
                 .block();
