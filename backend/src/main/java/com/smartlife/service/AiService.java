@@ -30,6 +30,7 @@ public class AiService {
     private final WorkoutSessionRepository workoutSessionRepository;
     private final PromptHistoryRepository promptHistoryRepository;
     private final FoodCacheService foodCacheService;
+    private final NutritionApiService nutritionApiService;
     private final AuditLogService auditLogService;
 
     @Value("${ai.service.url}")
@@ -244,7 +245,23 @@ public class AiService {
                 foodCacheService.upsert(log);
                 result.add(log);
             } else {
-                toAsk.add(food);
+                var apiResult = nutritionApiService.lookup(name);
+                if (apiResult.isPresent()) {
+                    var nr = apiResult.get();
+                    var log = FoodLog.builder()
+                            .user(user).logDate(LocalDate.now()).mealType(mealType)
+                            .foodItem(nr.foodName())
+                            .calories(nr.calories())
+                            .proteinG(nr.proteinG()).carbsG(nr.carbsG())
+                            .fatG(nr.fatG()).fiberG(nr.fiberG())
+                            .quantity(quantity)
+                            .build();
+                    foodLogRepository.save(log);
+                    foodCacheService.upsert(log, nr.source());
+                    result.add(log);
+                } else {
+                    toAsk.add(food);
+                }
             }
         }
 

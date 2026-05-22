@@ -19,6 +19,10 @@ public class FoodCacheService {
     private final FoodCacheRepository repo;
 
     public void upsert(FoodLog log) {
+        upsert(log, "ai");
+    }
+
+    public void upsert(FoodLog log, String source) {
         if (log.getFoodItem() == null) return;
         String normalized = normalize(log.getFoodItem());
         repo.findByFoodNameNormalized(normalized).ifPresentOrElse(
@@ -37,6 +41,7 @@ public class FoodCacheService {
                     entry.setFatG(log.getFatG());
                     entry.setFiberG(log.getFiberG());
                     entry.setNutritionDetails(log.getNutritionDetails());
+                    entry.setSource(source);
                     repo.save(entry);
                 }
         );

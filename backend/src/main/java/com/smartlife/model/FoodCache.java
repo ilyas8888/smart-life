@@ -44,6 +44,9 @@ public class FoodCache {
 
     private Integer hitCount = 1;
 
+    @Column(length = 50)
+    private String source = "ai";
+
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

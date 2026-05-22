@@ -50,6 +50,10 @@ ai:
   internal:
     secret: ${AI_INTERNAL_SECRET:}
 
+nutrition:
+  usda:
+    api-key: ${USDA_API_KEY:}
+
 app:
   otp:
     enabled: ${OTP_ENABLED:false}
