@@ -236,7 +236,7 @@ public class AiService {
             var cached = foodCacheService.findByName(name);
             if (cached.isPresent()) {
                 var c = cached.get();
-                if ("ai".equals(c.getSource())) {
+                if ("PREPARED_DISH".equals(c.getFoodType())) {
                     Double servingG = extractServingG(c.getNutritionDetails());
                     double scale = computeAiScale(quantity, unit, servingG);
                     var log = FoodLog.builder()

@@ -47,6 +47,9 @@ public class FoodCache {
     @Column(length = 50)
     private String source = "ai";
 
+    @Column(length = 20)
+    private String foodType = "SIMPLE_INGREDIENT";
+
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
