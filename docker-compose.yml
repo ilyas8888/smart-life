@@ -12,6 +12,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - smartlife-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.4
@@ -39,10 +44,13 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       AI_INTERNAL_SECRET: ${AI_INTERNAL_SECRET}
     ports:
-      - "8080:8080"
+      - "8080:7860"
     depends_on:
-      - postgres
-      - ai-service
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+
     networks:
       - smartlife-network
 
