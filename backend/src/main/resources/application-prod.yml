@@ -8,4 +8,5 @@ server:
 logging:
   level:
     com.smartlife: INFO
-    org.springframework.security: WARN
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2.client: DEBUG
