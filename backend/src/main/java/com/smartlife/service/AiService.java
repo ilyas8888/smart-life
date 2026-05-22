@@ -236,6 +236,20 @@ public class AiService {
             var cached = foodCacheService.findByName(name);
             if (cached.isPresent()) {
                 var c = cached.get();
+                if ("ai".equals(c.getSource())) {
+                    var log = FoodLog.builder()
+                            .user(user).logDate(LocalDate.now()).mealType(mealType)
+                            .foodItem(c.getFoodName())
+                            .calories(c.getCalories() != null ? c.getCalories().intValue() : null)
+                            .proteinG(c.getProteinG()).carbsG(c.getCarbsG())
+                            .fatG(c.getFatG()).fiberG(c.getFiberG())
+                            .quantity(quantityWithUnit).nutritionDetails(c.getNutritionDetails())
+                            .build();
+                    foodLogRepository.save(log);
+                    foodCacheService.upsert(log);
+                    result.add(log);
+                    continue;
+                }
                 Map<String, Double> portions = extractPortions(c.getNutritionDetails());
                 double scale = scaleFactor(quantity, unit, portions);
                 if (scale == -1.0) {
@@ -315,6 +329,7 @@ public class AiService {
                                 .quantity(originalQuantities.get(normalizeKey((String) item.get("original"))))
                                 .build();
                         foodLogRepository.save(log);
+                        foodCacheService.upsert(log, "ai");
                         result.add(log);
                         continue;
                     }

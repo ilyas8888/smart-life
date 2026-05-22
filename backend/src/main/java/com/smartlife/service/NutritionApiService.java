@@ -81,20 +81,33 @@ public class NutritionApiService {
                 }
             }
 
-            var rawPortions = (List<Map<String, Object>>) food.getOrDefault("foodPortions", List.of());
-            Map<String, Double> portions = new HashMap<>();
-            List<String> knownUnits = List.of("piece", "cup", "bowl", "tbsp", "tsp", "slice", "oz");
+            var rawPortions = new java.util.ArrayList<>((List<Map<String, Object>>) food.getOrDefault("foodPortions", List.of()));
+            rawPortions.sort(java.util.Comparator.comparingInt(p -> {
+                String d = String.valueOf(p.getOrDefault("portionDescription", "")).toLowerCase();
+                if (d.contains("medium") || d.contains("fruit") || d.contains("whole") ||
+                    (d.contains("piece") && !d.contains("pieces"))) return 0;
+                if (d.contains("large")) return 2;
+                if (d.contains("small")) return 3;
+                return 1;
+            }));
+            Map<String, Double> portions = new java.util.LinkedHashMap<>();
             for (var p : rawPortions) {
                 String desc = String.valueOf(p.getOrDefault("portionDescription", "")).toLowerCase();
                 Object gw = p.get("gramWeight");
                 if (gw == null) continue;
                 double gramWeight = ((Number) gw).doubleValue();
-                for (String u : knownUnits) {
-                    if (desc.contains(u)) {
-                        portions.put(u, gramWeight);
-                        break;
-                    }
-                }
+                String canonical = null;
+                if ((desc.contains("piece") && !desc.contains("pieces")) ||
+                    desc.contains("medium") || desc.contains("fruit") ||
+                    desc.contains("whole")  || desc.contains("large") || desc.contains("small")) {
+                    canonical = "piece";
+                } else if (desc.contains("cup"))                              { canonical = "cup";   }
+                else if (desc.contains("bowl"))                               { canonical = "bowl";  }
+                else if (desc.contains("tablespoon") || desc.contains("tbsp")){ canonical = "tbsp";  }
+                else if (desc.contains("teaspoon")   || desc.contains("tsp")) { canonical = "tsp";   }
+                else if (desc.contains("slice"))                              { canonical = "slice"; }
+                else if (desc.contains("oz"))                                 { canonical = "oz";    }
+                if (canonical != null) portions.putIfAbsent(canonical, gramWeight);
             }
 
             if (calories == null) return Optional.empty();
