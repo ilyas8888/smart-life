@@ -32,51 +32,10 @@ public class NutritionApiService {
     ) {}
 
     public Optional<NutritionResult> lookup(String foodName) {
-        var offResult = searchOpenFoodFacts(foodName);
-        if (offResult.isPresent()) return offResult;
         if (usdaApiKey != null && !usdaApiKey.isBlank()) {
             return searchUSDA(foodName);
         }
         return Optional.empty();
-    }
-
-    @SuppressWarnings("unchecked")
-    private Optional<NutritionResult> searchOpenFoodFacts(String query) {
-        try {
-            Map<String, Object> response = webClientBuilder.build()
-                .get()
-                .uri("https://world.openfoodfacts.org/cgi/search.pl?search_terms={q}&json=1&page_size=1&fields=product_name,nutriments",
-                    query)
-                .retrieve()
-                .bodyToMono(Map.class)
-                .block();
-
-            if (response == null) return Optional.empty();
-            var products = (List<Map<String, Object>>) response.getOrDefault("products", List.of());
-            if (products.isEmpty()) return Optional.empty();
-
-            var product = products.get(0);
-            var nutriments = (Map<String, Object>) product.getOrDefault("nutriments", Map.of());
-
-            String name = (String) product.getOrDefault("product_name", query);
-            if (name == null || name.isBlank()) name = query;
-
-            Integer calories = parseInteger(nutriments.get("energy-kcal_100g"));
-            if (calories == null) return Optional.empty();
-
-            return Optional.of(new NutritionResult(
-                name,
-                calories,
-                parseBigDecimal(nutriments.get("proteins_100g")),
-                parseBigDecimal(nutriments.get("carbohydrates_100g")),
-                parseBigDecimal(nutriments.get("fat_100g")),
-                parseBigDecimal(nutriments.get("fiber_100g")),
-                "open_food_facts"
-            ));
-        } catch (Exception e) {
-            log.warn("Open Food Facts lookup failed for '{}': {}", query, e.getMessage());
-            return Optional.empty();
-        }
     }
 
     @SuppressWarnings("unchecked")
