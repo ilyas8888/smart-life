@@ -27,7 +27,7 @@ public class OtpService {
     @Value("${app.otp.enabled:false}")
     private boolean otpEnabled;
 
-    @Value("${spring.mail.username:}")
+    @Value("${app.mail.from:${spring.mail.username:}}")
     private String fromEmail;
 
     public boolean isEnabled() {
@@ -46,6 +46,7 @@ public class OtpService {
         if (mailSender != null && !fromEmail.isBlank()) {
             try {
                 SimpleMailMessage msg = new SimpleMailMessage();
+                msg.setFrom(fromEmail);
                 msg.setTo(user.getEmail());
                 msg.setSubject("SmartLife — Code de vérification");
                 msg.setText("Votre code SmartLife : " + code + "\n\nValable 10 minutes. Ne le partagez pas.");
