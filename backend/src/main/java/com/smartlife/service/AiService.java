@@ -253,6 +253,29 @@ public class AiService {
                 foodLogRepository.save(log);
                 foodCacheService.upsert(log);
                 result.add(log);
+            } else if (isWeightUnit(unit) && quantity != null && !quantity.isBlank()) {
+                var apiResult = nutritionApiService.lookup(name);
+                if (apiResult.isPresent()) {
+                    var nr = apiResult.get();
+                    double scale = scaleFactor(quantity, unit, nr.portions());
+                    if (scale > 0) {
+                        var log = FoodLog.builder()
+                                .user(user).logDate(LocalDate.now()).mealType(mealType)
+                                .foodItem(nr.foodName())
+                                .calories(scaleCalories(nr.calories(), scale))
+                                .proteinG(scaleBD(nr.proteinG(), scale)).carbsG(scaleBD(nr.carbsG(), scale))
+                                .fatG(scaleBD(nr.fatG(), scale)).fiberG(scaleBD(nr.fiberG(), scale))
+                                .quantity(quantityWithUnit)
+                                .build();
+                        foodLogRepository.save(log);
+                        foodCacheService.upsert(log, nr.source(), nr.portions());
+                        result.add(log);
+                    } else {
+                        toDecompose.add(foodWithUnit(food, unit));
+                    }
+                } else {
+                    toDecompose.add(foodWithUnit(food, unit));
+                }
             } else {
                 toDecompose.add(foodWithUnit(food, unit));
             }
@@ -537,6 +560,10 @@ public class AiService {
 
     private BigDecimal nullToZero(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private boolean isWeightUnit(String unit) {
+        return "g".equals(unit) || "ml".equals(unit) || "oz".equals(unit);
     }
 
     private BigDecimal scaleBD(BigDecimal v, double factor) {

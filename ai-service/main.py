@@ -222,29 +222,47 @@ def _parse_ai_food_response(raw_text: str, meal_type: str | None = None) -> dict
     return result
 
 
-FOOD_DECOMPOSE_SYSTEM_PROMPT = """Tu es un expert en cuisine mondiale et nutrition. Pour chaque aliment saisi par l'utilisateur, transforme-le en termes recherchables dans USDA FoodData Central (en anglais).
+FOOD_DECOMPOSE_SYSTEM_PROMPT = """Tu es un expert en nutrition et cuisine mondiale.
 
-Règles:
-- Aliment simple (apple, chicken breast) → retourne-le tel quel dans terms
-- Plat traditionnel/culturel (Bissara, Tagine, Couscous) → décompose en ingrédients principaux avec grammes estimés
-- Plat de restaurant inconnu → estime les ingrédients probables
-- Si trop complexe ou très spécifique (impossible à décomposer proprement) → compute_directly: true et fournis la nutrition directement
-- Les noms dans terms doivent être en anglais simple pour USDA
+RÈGLE PRINCIPALE — compute_directly:
+- false : UNIQUEMENT pour un seul ingrédient brut non transformé qui existe tel quel dans USDA (fruit, légume, viande crue, grain, produit laitier simple). Ex: apple, chicken breast, broccoli, rice, banana, egg, salmon, milk, almonds.
+- true : TOUT le reste sans exception — soupe, plat cuisiné, recette, plat culturel, plat de restaurant, street food, sandwich, pizza, tajine, couscous, harira, bissara, burger, curry, etc.
+En cas de doute → compute_directly: true.
+
+Quand compute_directly: true, calcule la nutrition pour la quantité indiquée par l'utilisateur.
+Règles de cohérence OBLIGATOIRES:
+- calories ≈ (protein_g × 4) + (carbs_g × 4) + (fat_g × 9) — toujours vérifier
+- Portions réalistes (ne jamais dépasser ces ordres de grandeur):
+  • Soupe / bouillon 1 bol (300ml) : 100–300 kcal
+  • Plat principal 1 portion : 350–700 kcal
+  • Sandwich : 300–500 kcal
+  • Pizza 1 part : 250–400 kcal
+- Références cuisine marocaine et mondiale:
+  • Harira 1 bol = 180 kcal, P:10g, G:28g, L:4g, F:6g
+  • Bissara 1 bol = 220 kcal, P:12g, G:32g, L:6g, F:8g
+  • Couscous agneau 1 portion = 520 kcal, P:28g, G:68g, L:14g, F:6g
+  • Tagine poulet 1 portion = 380 kcal, P:32g, G:24g, L:16g, F:4g
+  • Msemen 1 pièce = 180 kcal, P:5g, G:28g, L:6g, F:1g
+  • Chakchouka 1 portion = 220 kcal, P:12g, G:14g, L:14g, F:3g
+  • Pad Thai 1 portion = 480 kcal, P:22g, G:60g, L:16g, F:3g
+  • Ramen 1 bol = 420 kcal, P:20g, G:56g, L:12g, F:2g
+
+Quand compute_directly: false, retourne exactement 1 terme USDA en anglais avec quantity_g estimé.
 
 Retourne UNIQUEMENT ce JSON valide:
 {
   "items": [
     {
-      "original": "texte original de l'utilisateur",
+      "original": "apple 1 piece",
       "compute_directly": false,
-      "terms": [{"name": "split peas", "quantity_g": 150}, {"name": "olive oil", "quantity_g": 20}],
+      "terms": [{"name": "apple", "quantity_g": 182}],
       "nutrition": null
     },
     {
-      "original": "plat mystère restaurant",
+      "original": "Moroccan Harira 1 bowl",
       "compute_directly": true,
       "terms": [],
-      "nutrition": {"food_item": "Plat poisson", "calories": 450, "protein_g": 35, "carbs_g": 30, "fat_g": 15, "fiber_g": 4}
+      "nutrition": {"food_item": "Moroccan Harira", "calories": 180, "protein_g": 10, "carbs_g": 28, "fat_g": 4, "fiber_g": 6}
     }
   ]
 }"""
