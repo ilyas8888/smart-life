@@ -19,6 +19,7 @@ import java.util.Optional;
 public class FoodCacheService {
 
     private final FoodCacheRepository repo;
+    private final EmbeddingService embeddingService;
 
     public void upsert(FoodLog log) {
         upsert(log, "ai");
@@ -45,6 +46,8 @@ public class FoodCacheService {
                     entry.setNutritionDetails(log.getNutritionDetails());
                     entry.setSource(source);
                     repo.save(entry);
+                    embeddingService.embed(normalized)
+                        .ifPresent(vec -> repo.updateEmbedding(normalized, vec));
                 }
         );
     }
@@ -79,7 +82,11 @@ public class FoodCacheService {
 
     public Optional<FoodCache> findByName(String name) {
         if (name == null) return Optional.empty();
-        return repo.findByFoodNameNormalized(normalize(name));
+        String normalized = normalize(name);
+        Optional<FoodCache> exact = repo.findByFoodNameNormalized(normalized);
+        if (exact.isPresent()) return exact;
+        return embeddingService.embed(normalized)
+            .flatMap(vec -> repo.findBySimilarity(vec, 0.85));
     }
 
     private String normalize(String name) {
