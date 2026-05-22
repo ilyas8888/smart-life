@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,6 +46,21 @@ public class FoodCacheService {
                     repo.save(entry);
                 }
         );
+    }
+
+    public void upsert(FoodLog log, String source, Map<String, Double> portions) {
+        upsert(log, source);
+        if (log.getFoodItem() == null || portions == null || portions.isEmpty()) return;
+
+        String normalized = normalize(log.getFoodItem());
+        repo.findByFoodNameNormalized(normalized).ifPresent(entry -> {
+            Map<String, Object> details = entry.getNutritionDetails() != null
+                    ? new HashMap<>(entry.getNutritionDetails())
+                    : new HashMap<>();
+            details.put("portions", portions);
+            entry.setNutritionDetails(details);
+            repo.save(entry);
+        });
     }
 
     public List<Map<String, Object>> getTopCachedFoods() {

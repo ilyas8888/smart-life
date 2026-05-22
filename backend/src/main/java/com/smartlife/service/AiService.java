@@ -234,12 +234,14 @@ public class AiService {
             String quantityWithUnit = quantity == null || quantity.isBlank() ? null : quantity + " " + unit;
             var cached = foodCacheService.findByName(name);
             if (cached.isPresent()) {
-                double scale = scaleFactor(quantity, unit);
+                var c = cached.get();
+                Map<String, Double> portions = extractPortions(c.getNutritionDetails());
+                double scale = scaleFactor(quantity, unit, portions);
                 if (scale == -1.0) {
+                    food.put("unit", unit);
                     toAsk.add(food);
                     continue;
                 }
-                var c = cached.get();
                 var log = FoodLog.builder()
                         .user(user).logDate(LocalDate.now()).mealType(mealType)
                         .foodItem(c.getFoodName())
@@ -254,24 +256,33 @@ public class AiService {
             } else {
                 var apiResult = nutritionApiService.lookup(name);
                 if (apiResult.isPresent()) {
-                    double scale = scaleFactor(quantity, unit);
+                    var nr = apiResult.get();
+                    double scale = scaleFactor(quantity, unit, nr.portions());
                     if (scale == -1.0) {
+                        food.put("unit", unit);
                         toAsk.add(food);
                         continue;
                     }
-                    var nr = apiResult.get();
                     var log = FoodLog.builder()
                             .user(user).logDate(LocalDate.now()).mealType(mealType)
                             .foodItem(nr.foodName())
-                            .calories(scaleCalories(nr.calories(), scale))
-                            .proteinG(scaleBigDecimal(nr.proteinG(), scale)).carbsG(scaleBigDecimal(nr.carbsG(), scale))
-                            .fatG(scaleBigDecimal(nr.fatG(), scale)).fiberG(scaleBigDecimal(nr.fiberG(), scale))
+                            .calories(nr.calories())
+                            .proteinG(nr.proteinG()).carbsG(nr.carbsG())
+                            .fatG(nr.fatG()).fiberG(nr.fiberG())
                             .quantity(quantityWithUnit)
                             .build();
+                    foodCacheService.upsert(log, nr.source(), nr.portions());
+                    if (scale != 1.0) {
+                        log.setCalories(scaleCalories(nr.calories(), scale));
+                        log.setProteinG(scaleBigDecimal(nr.proteinG(), scale));
+                        log.setCarbsG(scaleBigDecimal(nr.carbsG(), scale));
+                        log.setFatG(scaleBigDecimal(nr.fatG(), scale));
+                        log.setFiberG(scaleBigDecimal(nr.fiberG(), scale));
+                    }
                     foodLogRepository.save(log);
-                    foodCacheService.upsert(log, nr.source());
                     result.add(log);
                 } else {
+                    food.put("unit", unit);
                     toAsk.add(food);
                 }
             }
@@ -397,21 +408,41 @@ public class AiService {
         catch (Exception e) { return LocalDateTime.now().plusHours(1); }
     }
 
-    private double scaleFactor(String quantity, String unit) {
+    private double scaleFactor(String quantity, String unit, Map<String, Double> portions) {
         if (quantity == null) return 1.0;
-        double parsedQuantity;
-        try {
-            parsedQuantity = Double.parseDouble(quantity);
-        } catch (Exception e) {
-            return 1.0;
-        }
+        double qty;
+        try { qty = Double.parseDouble(quantity.trim()); }
+        catch (Exception e) { return 1.0; }
 
-        return switch (unit == null ? "" : unit.toLowerCase()) {
-            case "g", "ml" -> parsedQuantity / 100.0;
-            case "oz" -> parsedQuantity * 28.35 / 100.0;
-            case "piece", "bowl", "cup", "tbsp", "tsp" -> -1.0;
-            default -> 1.0;
+        return switch (unit == null ? "" : unit) {
+            case "g", "ml" -> qty / 100.0;
+            case "oz" -> qty * 28.35 / 100.0;
+            default -> {
+                Double gw = portions == null ? null : portions.get(unit);
+                yield gw != null ? (qty * gw) / 100.0 : -1.0;
+            }
         };
+    }
+
+    private Map<String, Double> extractPortions(Map<String, Object> nutritionDetails) {
+        if (nutritionDetails == null) return Map.of();
+        Object rawPortions = nutritionDetails.get("portions");
+        if (!(rawPortions instanceof Map<?, ?> rawMap)) return Map.of();
+
+        Map<String, Double> portions = new HashMap<>();
+        for (var entry : rawMap.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null) continue;
+            if (entry.getValue() instanceof Number number) {
+                portions.put(entry.getKey().toString(), number.doubleValue());
+                continue;
+            }
+            try {
+                portions.put(entry.getKey().toString(), Double.parseDouble(entry.getValue().toString()));
+            } catch (Exception ignored) {
+                // Ignore malformed cached portion values.
+            }
+        }
+        return portions;
     }
 
     private Integer scaleCalories(Number value, double scale) {

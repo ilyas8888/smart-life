@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +29,7 @@ public class NutritionApiService {
         BigDecimal carbsG,
         BigDecimal fatG,
         BigDecimal fiberG,
+        Map<String, Double> portions,
         String source
     ) {}
 
@@ -79,9 +81,25 @@ public class NutritionApiService {
                 }
             }
 
+            var rawPortions = (List<Map<String, Object>>) food.getOrDefault("foodPortions", List.of());
+            Map<String, Double> portions = new HashMap<>();
+            List<String> knownUnits = List.of("piece", "cup", "bowl", "tbsp", "tsp", "slice", "oz");
+            for (var p : rawPortions) {
+                String desc = String.valueOf(p.getOrDefault("portionDescription", "")).toLowerCase();
+                Object gw = p.get("gramWeight");
+                if (gw == null) continue;
+                double gramWeight = ((Number) gw).doubleValue();
+                for (String u : knownUnits) {
+                    if (desc.contains(u)) {
+                        portions.put(u, gramWeight);
+                        break;
+                    }
+                }
+            }
+
             if (calories == null) return Optional.empty();
 
-            return Optional.of(new NutritionResult(name, calories, protein, carbs, fat, fiber, "usda"));
+            return Optional.of(new NutritionResult(name, calories, protein, carbs, fat, fiber, portions, "usda"));
         } catch (Exception e) {
             log.warn("USDA lookup failed for '{}': {}", query, e.getMessage());
             return Optional.empty();
