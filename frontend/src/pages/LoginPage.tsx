@@ -13,7 +13,6 @@ export default function LoginPage() {
   const [otpUserId, setOtpUserId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const BACKEND_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
-  const isProd = !!import.meta.env.VITE_API_URL
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
