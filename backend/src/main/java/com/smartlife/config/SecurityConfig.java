@@ -75,11 +75,6 @@ public class SecurityConfig {
                         a.authorizationRequestRepository(cookieAuthRequestRepo);
                     }
                 });
-                if (cookieAuthRequestRepo != null) {
-                    oauth2.redirectionEndpoint(r ->
-                        r.authorizationRequestRepository(cookieAuthRequestRepo)
-                    );
-                }
             });
         }
 
