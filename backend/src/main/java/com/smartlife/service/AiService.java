@@ -234,13 +234,18 @@ public class AiService {
             String quantityWithUnit = quantity == null || quantity.isBlank() ? null : quantity + " " + unit;
             var cached = foodCacheService.findByName(name);
             if (cached.isPresent()) {
+                double scale = scaleFactor(quantity, unit);
+                if (scale == -1.0) {
+                    toAsk.add(food);
+                    continue;
+                }
                 var c = cached.get();
                 var log = FoodLog.builder()
                         .user(user).logDate(LocalDate.now()).mealType(mealType)
                         .foodItem(c.getFoodName())
-                        .calories(c.getCalories() != null ? c.getCalories().intValue() : null)
-                        .proteinG(c.getProteinG()).carbsG(c.getCarbsG())
-                        .fatG(c.getFatG()).fiberG(c.getFiberG())
+                        .calories(scaleCalories(c.getCalories(), scale))
+                        .proteinG(scaleBigDecimal(c.getProteinG(), scale)).carbsG(scaleBigDecimal(c.getCarbsG(), scale))
+                        .fatG(scaleBigDecimal(c.getFatG(), scale)).fiberG(scaleBigDecimal(c.getFiberG(), scale))
                         .quantity(quantityWithUnit).nutritionDetails(c.getNutritionDetails())
                         .build();
                 foodLogRepository.save(log);
@@ -249,13 +254,18 @@ public class AiService {
             } else {
                 var apiResult = nutritionApiService.lookup(name);
                 if (apiResult.isPresent()) {
+                    double scale = scaleFactor(quantity, unit);
+                    if (scale == -1.0) {
+                        toAsk.add(food);
+                        continue;
+                    }
                     var nr = apiResult.get();
                     var log = FoodLog.builder()
                             .user(user).logDate(LocalDate.now()).mealType(mealType)
                             .foodItem(nr.foodName())
-                            .calories(nr.calories())
-                            .proteinG(nr.proteinG()).carbsG(nr.carbsG())
-                            .fatG(nr.fatG()).fiberG(nr.fiberG())
+                            .calories(scaleCalories(nr.calories(), scale))
+                            .proteinG(scaleBigDecimal(nr.proteinG(), scale)).carbsG(scaleBigDecimal(nr.carbsG(), scale))
+                            .fatG(scaleBigDecimal(nr.fatG(), scale)).fiberG(scaleBigDecimal(nr.fiberG(), scale))
                             .quantity(quantityWithUnit)
                             .build();
                     foodLogRepository.save(log);
@@ -385,6 +395,31 @@ public class AiService {
         if (s == null || s.isBlank()) return LocalDateTime.now().plusHours(1);
         try { return LocalDateTime.parse(s); }
         catch (Exception e) { return LocalDateTime.now().plusHours(1); }
+    }
+
+    private double scaleFactor(String quantity, String unit) {
+        if (quantity == null) return 1.0;
+        double parsedQuantity;
+        try {
+            parsedQuantity = Double.parseDouble(quantity);
+        } catch (Exception e) {
+            return 1.0;
+        }
+
+        return switch (unit == null ? "" : unit.toLowerCase()) {
+            case "g", "ml" -> parsedQuantity / 100.0;
+            case "oz" -> parsedQuantity * 28.35 / 100.0;
+            case "piece", "bowl", "cup", "tbsp", "tsp" -> -1.0;
+            default -> 1.0;
+        };
+    }
+
+    private Integer scaleCalories(Number value, double scale) {
+        return value == null ? null : (int) Math.round(value.doubleValue() * scale);
+    }
+
+    private BigDecimal scaleBigDecimal(BigDecimal value, double scale) {
+        return value == null ? null : BigDecimal.valueOf(value.doubleValue() * scale);
     }
 
     private Integer parseInteger(Object value) {
