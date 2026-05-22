@@ -30,7 +30,7 @@ public interface FoodCacheRepository extends JpaRepository<FoodCache, Long> {
            nativeQuery = true)
     void updateEmbedding(@Param("normalized") String normalized, @Param("emb") String emb);
 
-    @Query(value = "SELECT * FROM food_cache WHERE nutrition_details->'aliases' @> to_jsonb(:alias::text) LIMIT 1",
+    @Query(value = "SELECT * FROM food_cache WHERE nutrition_details->'aliases' @> to_jsonb(CAST(:alias AS text)) LIMIT 1",
            nativeQuery = true)
     Optional<FoodCache> findByAlias(@Param("alias") String alias);
 }
