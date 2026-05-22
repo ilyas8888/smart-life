@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { useAuthStore } from './store/authStore'
 import { useThemeStore } from './store/themeStore'
 import LoginPage from './pages/LoginPage'
@@ -15,10 +16,20 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const isDark = useThemeStore((s) => s.isDark)
+  const navigate = useNavigate()
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark)
   }, [isDark])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('keycloak_error')) {
+      window.history.replaceState({}, '', window.location.pathname)
+      toast.error('Connexion Keycloak échouée. Vérifiez la configuration.')
+      navigate('/login', { replace: true })
+    }
+  }, [])
 
   return (
     <Routes>

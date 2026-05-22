@@ -49,7 +49,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**", "/login").permitAll()
                         .requestMatchers("/api/auth/refresh").permitAll()
                         .requestMatchers("/api/auth/logout").authenticated()
                         .requestMatchers("/api/auth/**").permitAll()
@@ -69,6 +69,10 @@ public class SecurityConfig {
         if (clientRegistrationRepository != null) {
             http.oauth2Login(oauth2 -> {
                 if (oauth2SuccessHandler != null) oauth2.successHandler(oauth2SuccessHandler);
+                oauth2.failureHandler((req, res, ex) -> {
+                    String frontendUrl = System.getenv("FRONTEND_URL") != null ? System.getenv("FRONTEND_URL") : "http://localhost:5173";
+                    res.sendRedirect(frontendUrl + "?keycloak_error=1");
+                });
                 oauth2.authorizationEndpoint(a -> {
                     a.authorizationRequestResolver(keycloakRequestResolver(clientRegistrationRepository));
                     if (cookieAuthRequestRepo != null) {
