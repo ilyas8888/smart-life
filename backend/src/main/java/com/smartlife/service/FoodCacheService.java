@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +83,8 @@ public class FoodCacheService {
     }
 
     private String normalize(String name) {
-        return name.trim().toLowerCase().replaceAll("\\s+", " ");
+        String[] words = name.trim().toLowerCase().replaceAll("[^a-z0-9 ]", " ").trim().split("\\s+");
+        Arrays.sort(words);
+        return String.join(" ", words);
     }
 }
