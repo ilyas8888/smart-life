@@ -13,7 +13,6 @@ export default function RegisterPage() {
   const [otpUserId, setOtpUserId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const BACKEND_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
-  const isProd = !!import.meta.env.VITE_API_URL
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -89,24 +88,20 @@ export default function RegisterPage() {
               </button>
             </form>
 
-            {!isProd && (
-              <>
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200 dark:border-gray-600" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white dark:bg-gray-800 px-2 text-gray-400">ou</span>
-                  </div>
-                </div>
-                <a
-                  href={`${BACKEND_URL}/oauth2/authorization/keycloak`}
-                  className="btn-primary w-full text-center block"
-                >
-                  S'inscrire avec Keycloak
-                </a>
-              </>
-            )}
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200 dark:border-gray-600" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white dark:bg-gray-800 px-2 text-gray-400">ou</span>
+              </div>
+            </div>
+            <a
+              href={`${BACKEND_URL}/oauth2/authorization/keycloak`}
+              className="btn-primary w-full text-center block"
+            >
+              S'inscrire avec Keycloak
+            </a>
 
             <p className="text-center text-sm text-gray-600 mt-6 dark:text-gray-400">
               Déjà un compte ?{' '}
