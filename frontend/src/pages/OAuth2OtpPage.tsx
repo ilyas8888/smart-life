@@ -24,7 +24,7 @@ export default function OAuth2OtpPage() {
     try {
       const { data } = await api.post('/auth/verify-otp', { userId: Number(userId), code: otp })
       setAuth(data.token, data.refreshToken ?? null, data.email, data.firstName, data.lastName)
-      window.location.replace('/')
+      window.location.replace(import.meta.env.BASE_URL)
     } catch {
       toast.error('Code OTP invalide ou expiré')
     } finally {

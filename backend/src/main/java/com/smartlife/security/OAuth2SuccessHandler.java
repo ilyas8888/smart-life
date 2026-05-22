@@ -4,6 +4,7 @@ import com.smartlife.model.RefreshToken;
 import com.smartlife.model.User;
 import com.smartlife.repository.RefreshTokenRepository;
 import com.smartlife.repository.UserRepository;
+import com.smartlife.service.OtpService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -25,6 +26,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     private final UserRepository userRepository;
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final OtpService otpService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -34,7 +36,9 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String email = oidcUser.getEmail();
         String firstName = oidcUser.getGivenName() != null ? oidcUser.getGivenName() : "";
         String lastName = oidcUser.getFamilyName() != null ? oidcUser.getFamilyName() : "";
+        String frontendUrl = System.getenv("FRONTEND_URL") != null ? System.getenv("FRONTEND_URL") : "http://localhost:5173";
 
+        boolean isNewUser = userRepository.findByEmail(email).isEmpty();
         User user = userRepository.findByEmail(email).orElseGet(() ->
                 userRepository.save(User.builder()
                         .email(email)
@@ -42,9 +46,16 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                         .firstName(firstName)
                         .lastName(lastName)
                         .provider("KEYCLOAK")
-                        .emailVerified(true)
+                        .emailVerified(false)
                         .build())
         );
+
+        if (isNewUser && otpService.isEnabled()) {
+            otpService.generateAndSend(user);
+            invalidateSession(request);
+            response.sendRedirect(frontendUrl + "/oauth2/otp?userId=" + user.getId());
+            return;
+        }
 
         if (!user.isEmailVerified()) {
             user.setEmailVerified(true);
@@ -58,7 +69,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 .token(refreshToken)
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .build());
-        String frontendUrl = System.getenv("FRONTEND_URL") != null ? System.getenv("FRONTEND_URL") : "http://localhost:5173";
         String redirectUrl = frontendUrl + "/oauth2/callback?token=" + accessToken
                 + "&refreshToken=" + refreshToken
                 + "&email=" + email
