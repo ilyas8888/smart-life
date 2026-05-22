@@ -35,6 +35,10 @@ class FoodExtractPayload(BaseModel):
     cached_foods: list[dict] | None = None
 
 
+class FoodDecomposePayload(BaseModel):
+    foods: list[dict]
+
+
 class FoodPromptPayload(BaseModel):
     prompt: str
     meal_type: str | None = None
@@ -216,6 +220,63 @@ def _parse_ai_food_response(raw_text: str, meal_type: str | None = None) -> dict
         for fl in result.get("food_logs", []):
             fl["meal_type"] = meal_type
     return result
+
+
+FOOD_DECOMPOSE_SYSTEM_PROMPT = """Tu es un expert en cuisine mondiale et nutrition. Pour chaque aliment saisi par l'utilisateur, transforme-le en termes recherchables dans USDA FoodData Central (en anglais).
+
+Règles:
+- Aliment simple (apple, chicken breast) → retourne-le tel quel dans terms
+- Plat traditionnel/culturel (Bissara, Tagine, Couscous) → décompose en ingrédients principaux avec grammes estimés
+- Plat de restaurant inconnu → estime les ingrédients probables
+- Si trop complexe ou très spécifique (impossible à décomposer proprement) → compute_directly: true et fournis la nutrition directement
+- Les noms dans terms doivent être en anglais simple pour USDA
+
+Retourne UNIQUEMENT ce JSON valide:
+{
+  "items": [
+    {
+      "original": "texte original de l'utilisateur",
+      "compute_directly": false,
+      "terms": [{"name": "split peas", "quantity_g": 150}, {"name": "olive oil", "quantity_g": 20}],
+      "nutrition": null
+    },
+    {
+      "original": "plat mystère restaurant",
+      "compute_directly": true,
+      "terms": [],
+      "nutrition": {"food_item": "Plat poisson", "calories": 450, "protein_g": 35, "carbs_g": 30, "fat_g": 15, "fiber_g": 4}
+    }
+  ]
+}"""
+
+
+@app.post("/decompose-foods")
+async def decompose_foods(payload: FoodDecomposePayload, x_internal_key: str = Header(default="")):
+    if not INTERNAL_SECRET or not secrets.compare_digest(x_internal_key, INTERNAL_SECRET):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    foods_text = "\n".join(
+        f"- {f.get('name','')}" + (f" {f.get('quantity')} {f.get('unit','')}" if f.get('quantity') else "")
+        for f in payload.foods
+    )
+    try:
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=1024,
+            system=FOOD_DECOMPOSE_SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": f"Aliments à analyser:\n{foods_text}"}],
+        )
+        raw = message.content[0].text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        if raw.endswith("```"):
+            raw = raw[:-3]
+        return json.loads(raw.strip())
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
+    except anthropic.APIError as e:
+        raise HTTPException(status_code=502, detail=f"Claude API error: {e}")
 
 
 @app.post("/extract-food")

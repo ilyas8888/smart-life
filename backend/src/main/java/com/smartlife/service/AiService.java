@@ -225,6 +225,7 @@ public class AiService {
     @SuppressWarnings("unchecked")
     public List<FoodLog> quickAddFoods(List<Map<String, Object>> foods, String mealType, User user) {
         List<FoodLog> result = new ArrayList<>();
+        List<Map<String, Object>> toDecompose = new ArrayList<>();
         List<Map<String, Object>> toAsk = new ArrayList<>();
 
         for (var food : foods) {
@@ -238,8 +239,7 @@ public class AiService {
                 Map<String, Double> portions = extractPortions(c.getNutritionDetails());
                 double scale = scaleFactor(quantity, unit, portions);
                 if (scale == -1.0) {
-                    food.put("unit", unit);
-                    toAsk.add(food);
+                    toDecompose.add(foodWithUnit(food, unit));
                     continue;
                 }
                 var log = FoodLog.builder()
@@ -254,36 +254,116 @@ public class AiService {
                 foodCacheService.upsert(log);
                 result.add(log);
             } else {
-                var apiResult = nutritionApiService.lookup(name);
-                if (apiResult.isPresent()) {
-                    var nr = apiResult.get();
-                    double scale = scaleFactor(quantity, unit, nr.portions());
-                    if (scale == -1.0) {
-                        food.put("unit", unit);
-                        toAsk.add(food);
+                toDecompose.add(foodWithUnit(food, unit));
+            }
+        }
+
+        if (!toDecompose.isEmpty()) {
+            Map<String, String> originalQuantities = new HashMap<>();
+            for (var food : toDecompose) {
+                String name = (String) food.get("name");
+                String quantity = (String) food.getOrDefault("quantity", null);
+                String unit = (String) food.getOrDefault("unit", "g");
+                originalQuantities.put(normalizeKey(name), quantity == null || quantity.isBlank() ? null : quantity + " " + unit);
+            }
+
+            Map<String, Object> decomposeBody = new HashMap<>();
+            decomposeBody.put("foods", toDecompose);
+
+            Map<String, Object> decomposeResult = webClientBuilder.build()
+                    .post().uri(aiServiceUrl + "/decompose-foods")
+                    .header("X-Internal-Key", aiInternalSecret)
+                    .bodyValue(decomposeBody).retrieve()
+                    .bodyToMono(Map.class).block();
+
+            if (decomposeResult != null) {
+                for (var item : (List<Map<String, Object>>) decomposeResult.getOrDefault("items", List.of())) {
+                    if (Boolean.TRUE.equals(item.get("compute_directly"))) {
+                        var nutrition = (Map<String, Object>) item.get("nutrition");
+                        if (nutrition == null) continue;
+                        var log = FoodLog.builder()
+                                .user(user).logDate(LocalDate.now()).mealType(mealType)
+                                .foodItem((String) nutrition.getOrDefault("food_item", item.getOrDefault("original", "Aliment")))
+                                .calories(parseInteger(nutrition.get("calories")))
+                                .proteinG(parseBigDecimal(nutrition.get("protein_g")))
+                                .carbsG(parseBigDecimal(nutrition.get("carbs_g")))
+                                .fatG(parseBigDecimal(nutrition.get("fat_g")))
+                                .fiberG(parseBigDecimal(nutrition.get("fiber_g")))
+                                .quantity(originalQuantities.get(normalizeKey((String) item.get("original"))))
+                                .build();
+                        foodLogRepository.save(log);
+                        result.add(log);
                         continue;
                     }
-                    var log = FoodLog.builder()
-                            .user(user).logDate(LocalDate.now()).mealType(mealType)
-                            .foodItem(nr.foodName())
-                            .calories(nr.calories())
-                            .proteinG(nr.proteinG()).carbsG(nr.carbsG())
-                            .fatG(nr.fatG()).fiberG(nr.fiberG())
-                            .quantity(quantityWithUnit)
-                            .build();
-                    foodCacheService.upsert(log, nr.source(), nr.portions());
-                    if (scale != 1.0) {
-                        log.setCalories(scaleCalories(nr.calories(), scale));
-                        log.setProteinG(scaleBigDecimal(nr.proteinG(), scale));
-                        log.setCarbsG(scaleBigDecimal(nr.carbsG(), scale));
-                        log.setFatG(scaleBigDecimal(nr.fatG(), scale));
-                        log.setFiberG(scaleBigDecimal(nr.fiberG(), scale));
+
+                    String original = (String) item.get("original");
+                    Integer calories = 0;
+                    BigDecimal protein = BigDecimal.ZERO;
+                    BigDecimal carbs = BigDecimal.ZERO;
+                    BigDecimal fat = BigDecimal.ZERO;
+                    BigDecimal fiber = BigDecimal.ZERO;
+                    boolean foundAny = false;
+
+                    for (var term : (List<Map<String, Object>>) item.getOrDefault("terms", List.of())) {
+                        String termName = (String) term.get("name");
+                        Integer quantityG = parseInteger(term.get("quantity_g"));
+                        if (termName == null || termName.isBlank() || quantityG == null) {
+                            Map<String, Object> fallback = new HashMap<>();
+                            fallback.put("name", termName != null ? termName : original);
+                            if (quantityG != null) fallback.put("quantity", String.valueOf(quantityG));
+                            fallback.put("unit", "g");
+                            toAsk.add(fallback);
+                            continue;
+                        }
+
+                        double scale = quantityG / 100.0;
+                        var cachedTerm = foodCacheService.findByName(termName);
+                        if (cachedTerm.isPresent()) {
+                            var c = cachedTerm.get();
+                            calories += scaleCalories(c.getCalories(), scale) != null ? scaleCalories(c.getCalories(), scale) : 0;
+                            protein = protein.add(nullToZero(scaleBD(c.getProteinG(), scale)));
+                            carbs = carbs.add(nullToZero(scaleBD(c.getCarbsG(), scale)));
+                            fat = fat.add(nullToZero(scaleBD(c.getFatG(), scale)));
+                            fiber = fiber.add(nullToZero(scaleBD(c.getFiberG(), scale)));
+                            foundAny = true;
+                            continue;
+                        }
+
+                        var apiResult = nutritionApiService.lookup(termName);
+                        if (apiResult.isPresent()) {
+                            var nr = apiResult.get();
+                            var cacheLog = FoodLog.builder()
+                                    .user(user).logDate(LocalDate.now()).mealType(mealType)
+                                    .foodItem(nr.foodName())
+                                    .calories(nr.calories())
+                                    .proteinG(nr.proteinG()).carbsG(nr.carbsG())
+                                    .fatG(nr.fatG()).fiberG(nr.fiberG())
+                                    .build();
+                            foodCacheService.upsert(cacheLog, nr.source(), nr.portions());
+                            calories += scaleCalories(nr.calories(), scale) != null ? scaleCalories(nr.calories(), scale) : 0;
+                            protein = protein.add(nullToZero(scaleBD(nr.proteinG(), scale)));
+                            carbs = carbs.add(nullToZero(scaleBD(nr.carbsG(), scale)));
+                            fat = fat.add(nullToZero(scaleBD(nr.fatG(), scale)));
+                            fiber = fiber.add(nullToZero(scaleBD(nr.fiberG(), scale)));
+                            foundAny = true;
+                        } else {
+                            toAsk.add(Map.of("name", termName, "quantity", String.valueOf(quantityG), "unit", "g"));
+                        }
                     }
-                    foodLogRepository.save(log);
-                    result.add(log);
-                } else {
-                    food.put("unit", unit);
-                    toAsk.add(food);
+
+                    if (foundAny) {
+                        var combined = FoodLog.builder()
+                                .user(user).logDate(LocalDate.now()).mealType(mealType)
+                                .foodItem(original != null ? original : "Aliment")
+                                .calories(calories)
+                                .proteinG(protein).carbsG(carbs)
+                                .fatG(fat).fiberG(fiber)
+                                .quantity(originalQuantities.get(normalizeKey(original)))
+                                .build();
+                        foodLogRepository.save(combined);
+                        foodCacheService.upsert(combined, "usda");
+                        result.add(combined);
+                    }
                 }
             }
         }
@@ -443,6 +523,24 @@ public class AiService {
             }
         }
         return portions;
+    }
+
+    private Map<String, Object> foodWithUnit(Map<String, Object> food, String unit) {
+        Map<String, Object> copy = new HashMap<>(food);
+        copy.put("unit", unit);
+        return copy;
+    }
+
+    private String normalizeKey(String value) {
+        return value == null ? "" : value.trim().toLowerCase().replaceAll("\\s+", " ");
+    }
+
+    private BigDecimal nullToZero(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private BigDecimal scaleBD(BigDecimal v, double factor) {
+        return v == null ? null : BigDecimal.valueOf(v.doubleValue() * factor);
     }
 
     private Integer scaleCalories(Number value, double scale) {
