@@ -230,6 +230,8 @@ public class AiService {
         for (var food : foods) {
             String name = (String) food.get("name");
             String quantity = (String) food.getOrDefault("quantity", null);
+            String unit = (String) food.getOrDefault("unit", "g");
+            String quantityWithUnit = quantity == null || quantity.isBlank() ? null : quantity + " " + unit;
             var cached = foodCacheService.findByName(name);
             if (cached.isPresent()) {
                 var c = cached.get();
@@ -239,7 +241,7 @@ public class AiService {
                         .calories(c.getCalories() != null ? c.getCalories().intValue() : null)
                         .proteinG(c.getProteinG()).carbsG(c.getCarbsG())
                         .fatG(c.getFatG()).fiberG(c.getFiberG())
-                        .quantity(quantity).nutritionDetails(c.getNutritionDetails())
+                        .quantity(quantityWithUnit).nutritionDetails(c.getNutritionDetails())
                         .build();
                 foodLogRepository.save(log);
                 foodCacheService.upsert(log);
@@ -254,7 +256,7 @@ public class AiService {
                             .calories(nr.calories())
                             .proteinG(nr.proteinG()).carbsG(nr.carbsG())
                             .fatG(nr.fatG()).fiberG(nr.fiberG())
-                            .quantity(quantity)
+                            .quantity(quantityWithUnit)
                             .build();
                     foodLogRepository.save(log);
                     foodCacheService.upsert(log, nr.source());

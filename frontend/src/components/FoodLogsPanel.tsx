@@ -37,6 +37,7 @@ const mealLabels: Record<string, string> = {
 const mealDots: Record<string, string> = {
   BREAKFAST: 'bg-yellow-400', LUNCH: 'bg-green-500', DINNER: 'bg-blue-500', SNACK: 'bg-gray-400',
 }
+const foodUnits = ['g', 'oz', 'ml', 'piece', 'cup', 'bowl', 'tbsp', 'tsp']
 const headerBg: Record<string, string> = {
   BREAKFAST: 'bg-yellow-50 dark:bg-yellow-900/20',
   LUNCH: 'bg-green-50 dark:bg-green-900/20',
@@ -365,15 +366,16 @@ function FoodLogRow({ log, onDelete }: { log: FoodLog; onDelete: (id: number) =>
 function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [mode, setMode] = useState<Mode>(null)
   const [mealType, setMealType] = useState<MealType>('LUNCH')
-  const [foodItems, setFoodItems] = useState<{ name: string; quantity: string }[]>([])
+  const [foodItems, setFoodItems] = useState<{ name: string; quantity: string; unit: string }[]>([])
   const [newFood, setNewFood] = useState('')
   const [newQty, setNewQty] = useState('')
+  const [newUnit, setNewUnit] = useState('g')
   const [promptText, setPromptText] = useState('')
   const foodInputRef = useRef<HTMLInputElement>(null)
 
   const quickAddMutation = useMutation({
     mutationFn: () => api.post('/food-logs/quick-add', {
-      foods: foodItems.map(f => ({ name: f.name, quantity: f.quantity || null })),
+      foods: foodItems.map(f => ({ name: f.name, quantity: f.quantity || null, unit: f.unit })),
       mealType,
     }),
     onSuccess: (res) => {
@@ -401,9 +403,10 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
 
   const addFoodItem = () => {
     if (!newFood.trim()) return
-    setFoodItems(prev => [...prev, { name: newFood.trim(), quantity: newQty.trim() }])
+    setFoodItems(prev => [...prev, { name: newFood.trim(), quantity: newQty.trim(), unit: newUnit }])
     setNewFood('')
     setNewQty('')
+    setNewUnit('g')
     setTimeout(() => foodInputRef.current?.focus(), 0)
   }
 
@@ -491,6 +494,9 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                   <input className="input w-24" value={newQty}
                     onChange={e => setNewQty(e.target.value)} onKeyDown={handleFoodKeyDown}
                     placeholder="Qté" />
+                  <select className="input w-auto" value={newUnit} onChange={e => setNewUnit(e.target.value)}>
+                    {foodUnits.map(unit => <option key={unit} value={unit}>{unit}</option>)}
+                  </select>
                   <button type="button" onClick={addFoodItem}
                     className="p-2.5 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors shrink-0">
                     <Plus size={18} />
@@ -506,7 +512,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                       <div>
                         <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{item.name}</span>
                         {item.quantity && (
-                          <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">· {item.quantity}</span>
+                          <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">· {item.quantity} {item.unit}</span>
                         )}
                       </div>
                       <button type="button" onClick={() => setFoodItems(prev => prev.filter((_, j) => j !== i))}
