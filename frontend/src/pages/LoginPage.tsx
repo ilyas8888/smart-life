@@ -91,24 +91,20 @@ export default function LoginPage() {
                 {loading ? 'Connexion...' : 'Se connecter'}
               </button>
             </form>
-            {!isProd && (
-              <>
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200 dark:border-gray-600" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white dark:bg-gray-800 px-2 text-gray-400">ou</span>
-                  </div>
-                </div>
-                <a
-                  href={`${BACKEND_URL}/oauth2/authorization/keycloak`}
-                  className="btn-primary w-full text-center block"
-                >
-                  Login with Keycloak
-                </a>
-              </>
-            )}
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200 dark:border-gray-600" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white dark:bg-gray-800 px-2 text-gray-400">ou</span>
+              </div>
+            </div>
+            <a
+              href={`${BACKEND_URL}/oauth2/authorization/keycloak`}
+              className="btn-primary w-full text-center block"
+            >
+              Login with Keycloak
+            </a>
             <p className="text-center text-sm text-gray-600 mt-6 dark:text-gray-400">
               Pas de compte ?{' '}
               <Link to="/register" className="text-primary-600 hover:underline font-medium dark:text-primary-400">

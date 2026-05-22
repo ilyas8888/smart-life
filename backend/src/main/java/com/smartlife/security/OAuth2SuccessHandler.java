@@ -58,7 +58,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                     .token(refreshToken)
                     .expiresAt(LocalDateTime.now().plusDays(7))
                     .build());
-            String redirectUrl = "http://localhost:5173/oauth2/callback?token=" + accessToken
+            String frontendUrl = System.getenv("FRONTEND_URL") != null ? System.getenv("FRONTEND_URL") : "http://localhost:5173";
+            String redirectUrl = frontendUrl + "/oauth2/callback?token=" + accessToken
                     + "&refreshToken=" + refreshToken
                     + "&email=" + email
                     + "&firstName=" + firstName
@@ -66,9 +67,10 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             invalidateSession(request);
             response.sendRedirect(redirectUrl);
         } else {
+            String frontendUrl = System.getenv("FRONTEND_URL") != null ? System.getenv("FRONTEND_URL") : "http://localhost:5173";
             otpService.generateAndSend(user);
             invalidateSession(request);
-            response.sendRedirect("http://localhost:5173/oauth2/otp?userId=" + user.getId());
+            response.sendRedirect(frontendUrl + "/oauth2/otp?userId=" + user.getId());
         }
     }
 
