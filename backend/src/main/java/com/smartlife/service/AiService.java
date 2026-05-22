@@ -327,6 +327,15 @@ public class AiService {
                         Integer servingGrams = parseInteger(nutrition.get("serving_g"));
                         if (servingSize != null) details.put("serving_size", servingSize);
                         if (servingGrams != null) details.put("serving_g", servingGrams);
+                        var rawAliases = nutrition.get("aliases");
+                        if (rawAliases instanceof List<?> aliasList && !aliasList.isEmpty()) {
+                            details.put("aliases", aliasList.stream()
+                                .filter(a -> a != null)
+                                .map(Object::toString)
+                                .map(a -> a.trim().toLowerCase().replaceAll("[^a-z0-9 ]", " ").trim().replaceAll("\\s+", " "))
+                                .filter(a -> !a.isBlank())
+                                .toList());
+                        }
                         var log = FoodLog.builder()
                                 .user(user).logDate(LocalDate.now()).mealType(mealType)
                                 .foodItem((String) nutrition.getOrDefault("food_item", item.getOrDefault("original", "Aliment")))

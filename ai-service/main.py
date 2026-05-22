@@ -249,7 +249,9 @@ Règles de cohérence OBLIGATOIRES:
 
 Quand compute_directly: false, retourne exactement 1 terme USDA en anglais avec quantity_g estimé.
 
-Pour compute_directly: true, inclure OBLIGATOIREMENT serving_size (ex: "1 bowl", "1 portion", "1 piece") et serving_g (poids en grammes de cette portion de référence).
+Pour compute_directly: true, inclure OBLIGATOIREMENT:
+- serving_size (ex: "1 bowl", "1 portion", "1 piece") et serving_g (poids en grammes de cette portion de référence)
+- aliases: liste de 2-4 noms alternatifs courants pour ce plat (variantes courtes, autres langues, orthographes fréquentes). Ex: ["harira", "harira marocaine", "harira soup"]
 
 Retourne UNIQUEMENT ce JSON valide:
 {
@@ -264,7 +266,7 @@ Retourne UNIQUEMENT ce JSON valide:
       "original": "Moroccan Harira 1 bowl",
       "compute_directly": true,
       "terms": [],
-      "nutrition": {"food_item": "Moroccan Harira", "calories": 180, "protein_g": 10, "carbs_g": 28, "fat_g": 4, "fiber_g": 6, "serving_size": "1 bowl", "serving_g": 300}
+      "nutrition": {"food_item": "Moroccan Harira", "calories": 180, "protein_g": 10, "carbs_g": 28, "fat_g": 4, "fiber_g": 6, "serving_size": "1 bowl", "serving_g": 300, "aliases": ["harira", "harira marocaine", "harira soup"]}
     }
   ]
 }"""

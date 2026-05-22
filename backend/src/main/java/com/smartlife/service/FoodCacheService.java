@@ -85,6 +85,8 @@ public class FoodCacheService {
         String normalized = normalize(name);
         Optional<FoodCache> exact = repo.findByFoodNameNormalized(normalized);
         if (exact.isPresent()) return exact;
+        Optional<FoodCache> byAlias = repo.findByAlias(normalized);
+        if (byAlias.isPresent()) return byAlias;
         return embeddingService.embed(normalized)
             .flatMap(vec -> repo.findBySimilarity(vec, 0.85));
     }

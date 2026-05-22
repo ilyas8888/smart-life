@@ -29,4 +29,8 @@ public interface FoodCacheRepository extends JpaRepository<FoodCache, Long> {
     @Query(value = "UPDATE food_cache SET name_embedding = CAST(:emb AS vector) WHERE food_name_normalized = :normalized",
            nativeQuery = true)
     void updateEmbedding(@Param("normalized") String normalized, @Param("emb") String emb);
+
+    @Query(value = "SELECT * FROM food_cache WHERE nutrition_details->'aliases' @> to_jsonb(:alias::text) LIMIT 1",
+           nativeQuery = true)
+    Optional<FoodCache> findByAlias(@Param("alias") String alias);
 }
