@@ -1,5 +1,6 @@
 package com.smartlife.config;
 
+import com.smartlife.security.CookieOAuth2AuthorizationRequestRepository;
 import com.smartlife.security.CustomUserDetailsService;
 import com.smartlife.security.JwtAuthFilter;
 import com.smartlife.security.OAuth2SuccessHandler;
@@ -39,6 +40,8 @@ public class SecurityConfig {
     private OAuth2SuccessHandler oauth2SuccessHandler;
     @Autowired(required = false)
     private ClientRegistrationRepository clientRegistrationRepository;
+    @Autowired(required = false)
+    private CookieOAuth2AuthorizationRequestRepository cookieAuthRequestRepo;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -66,9 +69,17 @@ public class SecurityConfig {
         if (clientRegistrationRepository != null) {
             http.oauth2Login(oauth2 -> {
                 if (oauth2SuccessHandler != null) oauth2.successHandler(oauth2SuccessHandler);
-                oauth2.authorizationEndpoint(a ->
-                    a.authorizationRequestResolver(keycloakRequestResolver(clientRegistrationRepository))
-                );
+                oauth2.authorizationEndpoint(a -> {
+                    a.authorizationRequestResolver(keycloakRequestResolver(clientRegistrationRepository));
+                    if (cookieAuthRequestRepo != null) {
+                        a.authorizationRequestRepository(cookieAuthRequestRepo);
+                    }
+                });
+                if (cookieAuthRequestRepo != null) {
+                    oauth2.redirectionEndpoint(r ->
+                        r.authorizationRequestRepository(cookieAuthRequestRepo)
+                    );
+                }
             });
         }
 
