@@ -6,11 +6,17 @@ import com.smartlife.dto.RegisterRequest;
 import com.smartlife.model.User;
 import com.smartlife.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 import java.util.Map;
 
@@ -20,6 +26,25 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+
+    @Value("${spring.security.oauth2.client.provider.keycloak.issuer-uri:}")
+    private String keycloakIssuerUri;
+
+    @Value("${spring.security.oauth2.client.registration.keycloak.client-id:smartlife-backend}")
+    private String keycloakClientId;
+
+    @GetMapping("/keycloak-register")
+    public void keycloakRegister(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String scheme = request.getHeader("X-Forwarded-Proto") != null ? request.getHeader("X-Forwarded-Proto") : request.getScheme();
+        String host = request.getHeader("X-Forwarded-Host") != null ? request.getHeader("X-Forwarded-Host") : request.getServerName();
+        String redirectUri = scheme + "://" + host + "/login/oauth2/code/keycloak";
+        String url = keycloakIssuerUri + "/protocol/openid-connect/registrations"
+                + "?response_type=code"
+                + "&client_id=" + URLEncoder.encode(keycloakClientId, StandardCharsets.UTF_8)
+                + "&scope=openid%20profile%20email"
+                + "&redirect_uri=" + URLEncoder.encode(redirectUri, StandardCharsets.UTF_8);
+        response.sendRedirect(url);
+    }
 
     @PostMapping("/register")
     public ResponseEntity<Object> register(@Valid @RequestBody RegisterRequest request, HttpServletRequest http) {
