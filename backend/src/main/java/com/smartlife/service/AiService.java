@@ -261,7 +261,7 @@ public class AiService {
                     if (scale > 0) {
                         var log = FoodLog.builder()
                                 .user(user).logDate(LocalDate.now()).mealType(mealType)
-                                .foodItem(nr.foodName())
+                                .foodItem(name)
                                 .calories(scaleCalories(nr.calories(), scale))
                                 .proteinG(scaleBD(nr.proteinG(), scale)).carbsG(scaleBD(nr.carbsG(), scale))
                                 .fatG(scaleBD(nr.fatG(), scale)).fiberG(scaleBD(nr.fiberG(), scale))
@@ -357,7 +357,7 @@ public class AiService {
                             var nr = apiResult.get();
                             var cacheLog = FoodLog.builder()
                                     .user(user).logDate(LocalDate.now()).mealType(mealType)
-                                    .foodItem(nr.foodName())
+                                    .foodItem(termName)
                                     .calories(nr.calories())
                                     .proteinG(nr.proteinG()).carbsG(nr.carbsG())
                                     .fatG(nr.fatG()).fiberG(nr.fiberG())
