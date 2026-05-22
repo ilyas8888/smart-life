@@ -4,7 +4,6 @@ import com.smartlife.model.RefreshToken;
 import com.smartlife.model.User;
 import com.smartlife.repository.RefreshTokenRepository;
 import com.smartlife.repository.UserRepository;
-import com.smartlife.service.OtpService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -24,7 +23,6 @@ import java.util.UUID;
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     private final UserRepository userRepository;
-    private final OtpService otpService;
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
 
@@ -37,8 +35,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String firstName = oidcUser.getGivenName() != null ? oidcUser.getGivenName() : "";
         String lastName = oidcUser.getFamilyName() != null ? oidcUser.getFamilyName() : "";
 
-        boolean isNewUser = !userRepository.existsByEmail(email);
-
         User user = userRepository.findByEmail(email).orElseGet(() ->
                 userRepository.save(User.builder()
                         .email(email)
@@ -46,32 +42,30 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                         .firstName(firstName)
                         .lastName(lastName)
                         .provider("KEYCLOAK")
-                        .emailVerified(false)
+                        .emailVerified(true)
                         .build())
         );
 
-        if (!isNewUser && user.isEmailVerified()) {
-            String accessToken = jwtService.generateToken(user);
-            String refreshToken = UUID.randomUUID().toString();
-            refreshTokenRepository.save(RefreshToken.builder()
-                    .user(user)
-                    .token(refreshToken)
-                    .expiresAt(LocalDateTime.now().plusDays(7))
-                    .build());
-            String frontendUrl = System.getenv("FRONTEND_URL") != null ? System.getenv("FRONTEND_URL") : "http://localhost:5173";
-            String redirectUrl = frontendUrl + "/oauth2/callback?token=" + accessToken
-                    + "&refreshToken=" + refreshToken
-                    + "&email=" + email
-                    + "&firstName=" + firstName
-                    + "&lastName=" + lastName;
-            invalidateSession(request);
-            response.sendRedirect(redirectUrl);
-        } else {
-            String frontendUrl = System.getenv("FRONTEND_URL") != null ? System.getenv("FRONTEND_URL") : "http://localhost:5173";
-            otpService.generateAndSend(user);
-            invalidateSession(request);
-            response.sendRedirect(frontendUrl + "/oauth2/otp?userId=" + user.getId());
+        if (!user.isEmailVerified()) {
+            user.setEmailVerified(true);
+            userRepository.save(user);
         }
+
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = UUID.randomUUID().toString();
+        refreshTokenRepository.save(RefreshToken.builder()
+                .user(user)
+                .token(refreshToken)
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .build());
+        String frontendUrl = System.getenv("FRONTEND_URL") != null ? System.getenv("FRONTEND_URL") : "http://localhost:5173";
+        String redirectUrl = frontendUrl + "/oauth2/callback?token=" + accessToken
+                + "&refreshToken=" + refreshToken
+                + "&email=" + email
+                + "&firstName=" + firstName
+                + "&lastName=" + lastName;
+        invalidateSession(request);
+        response.sendRedirect(redirectUrl);
     }
 
     private void invalidateSession(HttpServletRequest request) {
