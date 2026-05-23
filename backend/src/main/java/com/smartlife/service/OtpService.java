@@ -5,12 +5,13 @@ import com.smartlife.model.User;
 import com.smartlife.repository.OtpRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.util.Random;
 
@@ -21,14 +22,14 @@ public class OtpService {
 
     private final OtpRepository otpRepository;
 
-    @Autowired(required = false)
-    private JavaMailSender mailSender;
-
     @Value("${app.otp.enabled:false}")
     private boolean otpEnabled;
 
     @Value("${app.mail.from:${spring.mail.username:}}")
     private String fromEmail;
+
+    @Value("${brevo.api-key:}")
+    private String brevoApiKey;
 
     public boolean isEnabled() {
         return otpEnabled;
@@ -43,19 +44,37 @@ public class OtpService {
                 .expiresAt(LocalDateTime.now().plusMinutes(10))
                 .build());
 
-        if (mailSender != null && !fromEmail.isBlank()) {
-            try {
-                SimpleMailMessage msg = new SimpleMailMessage();
-                msg.setFrom(fromEmail);
-                msg.setTo(user.getEmail());
-                msg.setSubject("SmartLife — Code de vérification");
-                msg.setText("Votre code SmartLife : " + code + "\n\nValable 10 minutes. Ne le partagez pas.");
-                mailSender.send(msg);
-            } catch (Exception e) {
-                log.warn("Échec envoi email OTP: {}", e.getMessage());
-            }
+        if (!brevoApiKey.isBlank() && !fromEmail.isBlank()) {
+            sendViaBrevoApi(user.getEmail(), code);
         } else {
             log.info("OTP [DEV] {} → {}", user.getEmail(), code);
+        }
+    }
+
+    private void sendViaBrevoApi(String toEmail, String code) {
+        try {
+            String json = String.format(
+                "{\"sender\":{\"name\":\"SmartLife\",\"email\":\"%s\"}," +
+                "\"to\":[{\"email\":\"%s\"}]," +
+                "\"subject\":\"SmartLife - Code de verification\"," +
+                "\"textContent\":\"Votre code SmartLife : %s\\n\\nValable 10 minutes. Ne le partagez pas.\"}",
+                fromEmail, toEmail, code
+            );
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.brevo.com/v3/smtp/email"))
+                    .header("api-key", brevoApiKey)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 400) {
+                log.warn("Brevo API error {}: {}", response.statusCode(), response.body());
+            } else {
+                log.info("OTP email sent via Brevo to {}", toEmail);
+            }
+        } catch (Exception e) {
+            log.warn("Échec envoi email OTP via Brevo: {}", e.getMessage());
         }
     }
 
