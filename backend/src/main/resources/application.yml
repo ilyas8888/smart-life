@@ -22,7 +22,8 @@ spring:
     password: ${MAIL_PASSWORD:}
     properties:
       mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
+      mail.smtp.ssl.enable: true
+      mail.smtp.starttls.enable: false
   security:
     oauth2:
       client:
