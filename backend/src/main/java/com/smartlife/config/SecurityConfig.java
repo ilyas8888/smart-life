@@ -19,7 +19,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -87,17 +86,7 @@ public class SecurityConfig {
 
     @Bean
     public OAuth2AuthorizationRequestResolver keycloakRequestResolver(ClientRegistrationRepository repo) {
-        DefaultOAuth2AuthorizationRequestResolver resolver =
-                new DefaultOAuth2AuthorizationRequestResolver(repo, "/oauth2/authorization");
-        resolver.setAuthorizationRequestCustomizer(customizer ->
-            customizer.additionalParameters(params -> {
-                if ("register".equals(params.get("kc_action"))) {
-                    params.put("prompt", "create");
-                    params.remove("kc_action");
-                }
-            })
-        );
-        return resolver;
+        return new com.smartlife.security.KeycloakRegistrationAwareRequestResolver(repo);
     }
 
     @Bean
