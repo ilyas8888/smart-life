@@ -92,9 +92,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        List<String> origins = new java.util.ArrayList<>(List.of("http://localhost:5173", "http://localhost:3000"));
+        List<String> origins = new java.util.ArrayList<>(List.of(
+                "http://localhost:5173",
+                "http://localhost:3000",
+                "https://ilyas8888.github.io"
+        ));
         String prodOrigin = System.getenv("FRONTEND_URL");
-        if (prodOrigin != null && !prodOrigin.isBlank()) origins.add(prodOrigin);
+        if (prodOrigin != null && !prodOrigin.isBlank() && !origins.contains(prodOrigin)) origins.add(prodOrigin);
         config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
