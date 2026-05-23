@@ -17,6 +17,7 @@ public class RevokedToken {
     @Column(nullable = false, unique = true)
     private String tokenHash;
 
+    @Builder.Default
     @Column(nullable = false)
     private LocalDateTime revokedAt = LocalDateTime.now();
 }

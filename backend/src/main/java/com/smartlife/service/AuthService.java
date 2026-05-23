@@ -54,10 +54,14 @@ public class AuthService {
     }
 
     public Object login(AuthRequest request, String ip) {
+        var user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Email ou mot de passe incorrect"));
+        if ("KEYCLOAK".equals(user.getProvider())) {
+            throw new IllegalArgumentException("Ce compte est lié à Keycloak. Utilisez le bouton 'Login with Keycloak'.");
+        }
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
-        var user = userRepository.findByEmail(request.getEmail()).orElseThrow();
         auditLogService.log(user.getId(), "LOGIN", "USER", user.getId(), ip);
         return authResponse(user);
     }
