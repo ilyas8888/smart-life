@@ -1,20 +1,6 @@
 spring:
   flyway:
     validate-on-migrate: false
-  security:
-    oauth2:
-      client:
-        provider:
-          keycloak:
-            # Discovery depuis localhost (évite le loopback réseau au démarrage)
-            issuer-uri: http://localhost:8180/realms/smartlife
-            # Public URL — redirection navigateur utilisateur uniquement
-            authorization-uri: https://ilyas8888-smartlife-backend.hf.space/realms/smartlife/protocol/openid-connect/auth
-            # Internal URLs — échanges serveur-à-serveur sans loopback
-            token-uri: http://localhost:8180/realms/smartlife/protocol/openid-connect/token
-            user-info-uri: http://localhost:8180/realms/smartlife/protocol/openid-connect/userinfo
-            jwk-set-uri: http://localhost:8180/realms/smartlife/protocol/openid-connect/certs
-            user-name-attribute: sub
 
 server:
   forward-headers-strategy: FRAMEWORK
