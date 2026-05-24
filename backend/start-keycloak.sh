@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e
+
+# Inject client secret into realm template before import
+sed "s/__KC_CLIENT_SECRET__/${KEYCLOAK_CLIENT_SECRET:-change-me}/g" \
+    /opt/keycloak/data/import/realm-template.json \
+    > /opt/keycloak/data/import/realm-export.json
+
+echo "[Keycloak] Starting on port 8180..."
+
+exec /opt/keycloak/bin/kc.sh start --optimized \
+    --import-realm \
+    --http-enabled=true \
+    --http-port=8180 \
+    --hostname="${KC_HOSTNAME:-ilyas8888-smartlife-backend.hf.space}" \
+    --hostname-strict=false \
+    --proxy=edge
