@@ -36,7 +36,7 @@ public class KeycloakClientConfig {
                 .clientSecret(clientSecret)
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
+                .redirectUri("https://" + kcHostname + "/login/oauth2/code/keycloak")
                 .scope("openid", "profile", "email")
                 // Public URL — navigateur utilisateur
                 .authorizationUri("https://" + kcHostname + "/realms/smartlife/protocol/openid-connect/auth")
