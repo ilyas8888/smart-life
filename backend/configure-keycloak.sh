@@ -1,6 +1,7 @@
 #!/bin/bash
-# Runs after Keycloak starts. Forces the client secret from env via kcadm,
-# because --import-realm silently skips existing realms on restart.
+# Runs after Keycloak starts.
+# 1. Creates bootstrap admin via welcome page if none exists (KC allows from localhost)
+# 2. Forces the client secret from env via kcadm
 
 MAX_WAIT=120
 ELAPSED=0
@@ -16,6 +17,17 @@ done
 
 ADMIN="${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}"
 PASS="${KC_BOOTSTRAP_ADMIN_PASSWORD:-admin}"
+
+# Create admin via welcome page only when no admin exists (localhost only endpoint)
+echo "[KC-Configure] Attempting admin creation via welcome page..."
+HTTP_CODE=$(curl -s -o /tmp/kc-welcome.log -w "%{http_code}" \
+    -X POST "http://localhost:8180/" \
+    -H "Content-Type: application/x-www-form-urlencoded" \
+    -d "username=${ADMIN}&password=${PASS}&passwordConfirmation=${PASS}")
+echo "[KC-Configure] Welcome page POST: ${HTTP_CODE}"
+cat /tmp/kc-welcome.log 2>/dev/null
+
+sleep 5
 
 /opt/keycloak/bin/kcadm.sh config credentials \
     --server http://localhost:8180 \
