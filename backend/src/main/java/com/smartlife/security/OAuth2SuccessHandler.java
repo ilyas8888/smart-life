@@ -41,7 +41,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String lastName = oidcUser.getFamilyName() != null ? oidcUser.getFamilyName() : "";
         String frontendUrl = System.getenv("FRONTEND_URL") != null ? System.getenv("FRONTEND_URL") : "http://localhost:5173";
 
-        boolean isNewUser = userRepository.findByEmail(email).isEmpty();
         User user = userRepository.findByEmail(email).orElseGet(() ->
                 userRepository.save(User.builder()
                         .email(email)
@@ -52,13 +51,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                         .emailVerified(false)
                         .build())
         );
-
-        if (isNewUser && otpService.isEnabled()) {
-            otpService.generateAndSend(user);
-            invalidateSession(request);
-            response.sendRedirect(frontendUrl + "/oauth2/otp?userId=" + user.getId());
-            return;
-        }
 
         if (!user.isEmailVerified()) {
             user.setEmailVerified(true);
@@ -72,6 +64,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 .token(refreshToken)
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .build());
+        otpService.sendOAuth2LoginNotification(user, clientIp(request));
         String redirectUrl = frontendUrl + "/oauth2/callback?token=" + accessToken
                 + "&refreshToken=" + refreshToken
                 + "&email=" + email
@@ -85,5 +78,13 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         SecurityContextHolder.clearContext();
         HttpSession session = request.getSession(false);
         if (session != null) session.invalidate();
+    }
+
+    private String clientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }
