@@ -67,6 +67,19 @@ export default function DashboardPage() {
     workout: 'text-amber-400',
   }
 
+  const MODULE_GRADIENT: Record<Panel, string> = {
+    home:      'from-blue-500 via-indigo-500 to-violet-600',
+    agenda:    'from-indigo-500 via-blue-500 to-cyan-400',
+    prompt:    'from-purple-500 via-violet-500 to-fuchsia-500',
+    tasks:     'from-blue-600 via-sky-500 to-cyan-400',
+    reminders: 'from-orange-500 via-amber-400 to-yellow-400',
+    notes:     'from-violet-600 via-purple-500 to-fuchsia-400',
+    contacts:  'from-teal-500 via-cyan-500 to-sky-400',
+    food:      'from-green-600 via-emerald-400 to-teal-400',
+    diary:     'from-rose-500 via-pink-400 to-fuchsia-400',
+    workout:   'from-amber-500 via-orange-400 to-red-400',
+  }
+
   const navItems = [
     { id: 'home' as Panel, label: 'Accueil', icon: Sparkles },
     { id: 'agenda' as Panel, label: 'Agenda', icon: CalendarDays },
@@ -198,6 +211,9 @@ export default function DashboardPage() {
         </header>
 
         <div className="flex-1 overflow-auto p-6 md:p-8 dark:bg-gray-900">
+          <div key={activePanel} className="max-w-6xl mx-auto animate-panel">
+            <div className={`h-1.5 rounded-full mb-6 bg-gradient-to-r ${MODULE_GRADIENT[activePanel]}`} />
+
           {activePanel === 'home' && <HomePanel onNavigate={handleNavClick} displayName={displayName} />}
           {activePanel === 'agenda' && <AgendaPage onNavigate={handleNavClick} />}
 
@@ -281,6 +297,7 @@ export default function DashboardPage() {
           {activePanel === 'food' && <FoodLogsPanel />}
           {activePanel === 'diary' && <DiaryPanel />}
           {activePanel === 'workout' && <WorkoutPanel />}
+          </div>
         </div>
       </main>
     </div>

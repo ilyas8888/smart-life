@@ -284,7 +284,7 @@ export default function DiaryPanel() {
   if (isLoading) return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement...</div>
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="w-full">
       <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
         <BookOpen className="text-primary-600" />
         Journal Personnel

@@ -1871,7 +1871,7 @@ export default function WorkoutPanel() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="w-full">
       <div className="flex items-center justify-between gap-3 mb-5">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <Dumbbell className="text-amber-500" /> Sport & Entraînement

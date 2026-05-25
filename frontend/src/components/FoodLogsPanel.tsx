@@ -731,7 +731,7 @@ export default function FoodLogsPanel() {
             goals={dailyGoals}
           />
 
-          <div className="max-w-4xl">
+          <div className="w-full">
             {mealOrder.map(mealType => {
               const logs = selectedLogs.filter(l => (l.mealType ?? 'SNACK') === mealType)
               if (logs.length === 0) return null

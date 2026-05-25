@@ -184,7 +184,7 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
   const quote = getDailyQuote()
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="w-full">
       {/* Hero */}
       <div className="card mb-6 bg-gradient-to-br from-primary-600 to-blue-700 text-white border-0">
         <div className="flex items-start justify-between">
