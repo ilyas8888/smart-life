@@ -73,6 +73,7 @@ public class AuthService {
         user.setEmailVerified(true);
         userRepository.save(user);
         auditLogService.log(userId, "OTP_VERIFIED", "USER", userId, ip);
+        otpService.sendOAuth2LoginNotification(user, ip);
         return authResponse(user);
     }
 
