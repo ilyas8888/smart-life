@@ -8,6 +8,11 @@ on:
       - "backend/**"
   workflow_dispatch:
 
+# Hugging Face rejects simultaneous force pushes to the same Space branch.
+concurrency:
+  group: deploy-backend-hf-space
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
