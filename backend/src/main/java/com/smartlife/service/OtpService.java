@@ -1,5 +1,7 @@
 package com.smartlife.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartlife.model.OtpCode;
 import com.smartlife.model.User;
 import com.smartlife.repository.OtpRepository;
@@ -12,7 +14,10 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 @Service
@@ -21,6 +26,7 @@ import java.util.Random;
 public class OtpService {
 
     private final OtpRepository otpRepository;
+    private final ObjectMapper objectMapper;
 
     @Value("${app.otp.enabled:false}")
     private boolean otpEnabled;
@@ -30,6 +36,9 @@ public class OtpService {
 
     @Value("${brevo.api-key:}")
     private String brevoApiKey;
+
+    @Value("${app.mail.security-alert-recipient:}")
+    private String securityAlertRecipient;
 
     public boolean isEnabled() {
         return otpEnabled;
@@ -53,13 +62,8 @@ public class OtpService {
 
     private void sendViaBrevoApi(String toEmail, String code) {
         try {
-            String json = String.format(
-                "{\"sender\":{\"name\":\"SmartLife\",\"email\":\"%s\"}," +
-                "\"to\":[{\"email\":\"%s\"}]," +
-                "\"subject\":\"SmartLife - Code de verification\"," +
-                "\"textContent\":\"Votre code SmartLife : %s\\n\\nValable 10 minutes. Ne le partagez pas.\"}",
-                fromEmail, toEmail, code
-            );
+            String json = mailPayload(toEmail, "SmartLife - Code de verification",
+                    "Votre code SmartLife : " + code + "\n\nValable 10 minutes. Ne le partagez pas.");
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.brevo.com/v3/smtp/email"))
@@ -89,5 +93,36 @@ public class OtpService {
         }
         otp.setUsed(true);
         otpRepository.save(otp);
+    }
+
+    public void sendOAuth2LoginNotification(User user, String ip) {
+        if (brevoApiKey.isBlank() || fromEmail.isBlank() || securityAlertRecipient.isBlank()) return;
+        try {
+            String content = "Connexion OAuth2 validee.\n\nEmail utilisateur : " + user.getEmail()
+                    + "\nDate/heure (UTC) : " + Instant.now()
+                    + "\nAdresse IP : " + ip;
+            String json = mailPayload(securityAlertRecipient, "[SmartLife] Connexion detectee", content);
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.brevo.com/v3/smtp/email"))
+                    .header("api-key", brevoApiKey)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+            HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 400) {
+                log.warn("Brevo security alert API error {}: {}", response.statusCode(), response.body());
+            }
+        } catch (Exception e) {
+            log.warn("Echec envoi notification de connexion OAuth2 via Brevo: {}", e.getMessage());
+        }
+    }
+
+    private String mailPayload(String toEmail, String subject, String textContent) throws JsonProcessingException {
+        return objectMapper.writeValueAsString(Map.of(
+                "sender", Map.of("name", "SmartLife", "email", fromEmail),
+                "to", List.of(Map.of("email", toEmail)),
+                "subject", subject,
+                "textContent", textContent
+        ));
     }
 }

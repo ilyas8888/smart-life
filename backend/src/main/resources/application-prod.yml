@@ -2,6 +2,10 @@ spring:
   flyway:
     validate-on-migrate: false
 
+app:
+  mail:
+    security-alert-recipient: ilyassboulouiz@gmail.com
+
 server:
   forward-headers-strategy: FRAMEWORK
 
