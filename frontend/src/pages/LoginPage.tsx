@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Brain } from 'lucide-react'
+import { Brain, Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
 import { useAuthStore } from '../store/authStore'
@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('')
   const [otpUserId, setOtpUserId] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const BACKEND_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -77,14 +78,24 @@ export default function LoginPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Mot de passe</label>
-                <input
-                  className="input"
-                  type="password"
-                  autoComplete="current-password"
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  required
-                />
+                <div className="relative">
+                  <input
+                    className="input pr-11"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
               <button type="submit" className="btn-primary w-full" disabled={loading}>
                 {loading ? 'Connexion...' : 'Se connecter'}
