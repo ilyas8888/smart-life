@@ -27,10 +27,10 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @Value("${spring.security.oauth2.client.provider.keycloak.issuer-uri:}")
-    private String keycloakIssuerUri;
+    @Value("${KC_HOSTNAME:ilyas8888-smartlife-backend.hf.space}")
+    private String kcHostname;
 
-    @Value("${spring.security.oauth2.client.registration.keycloak.client-id:smartlife-backend}")
+    @Value("${KEYCLOAK_CLIENT_ID:smartlife-backend}")
     private String keycloakClientId;
 
     @GetMapping("/keycloak-register")
@@ -38,7 +38,8 @@ public class AuthController {
         String scheme = request.getHeader("X-Forwarded-Proto") != null ? request.getHeader("X-Forwarded-Proto") : request.getScheme();
         String host = request.getHeader("X-Forwarded-Host") != null ? request.getHeader("X-Forwarded-Host") : request.getServerName();
         String redirectUri = scheme + "://" + host + "/login/oauth2/code/keycloak";
-        String url = keycloakIssuerUri + "/protocol/openid-connect/registrations"
+        String issuerBase = kcHostname.startsWith("localhost") ? "http://" + kcHostname : "https://" + kcHostname;
+        String url = issuerBase + "/realms/smartlife/protocol/openid-connect/registrations"
                 + "?response_type=code"
                 + "&client_id=" + URLEncoder.encode(keycloakClientId, StandardCharsets.UTF_8)
                 + "&scope=openid%20profile%20email"

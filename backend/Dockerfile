@@ -30,9 +30,10 @@ COPY nginx.conf /etc/nginx/nginx.conf
 COPY supervisord.conf /etc/supervisor/conf.d/smartlife.conf
 COPY start-keycloak.sh /opt/start-keycloak.sh
 COPY start-springboot.sh /opt/start-springboot.sh
+COPY configure-keycloak.sh /opt/configure-keycloak.sh
 COPY realm-template.json /opt/keycloak/data/import/realm-template.json
 
-RUN chmod +x /opt/start-keycloak.sh /opt/start-springboot.sh \
+RUN chmod +x /opt/start-keycloak.sh /opt/start-springboot.sh /opt/configure-keycloak.sh \
     && mkdir -p /var/log/supervisor /run/nginx /opt/keycloak/data/import
 
 EXPOSE 7860

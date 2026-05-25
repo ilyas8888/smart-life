@@ -1,8 +1,9 @@
 #!/bin/bash
 set -e
 
-# Inject client secret into realm template before import
-sed "s/__KC_CLIENT_SECRET__/${KEYCLOAK_CLIENT_SECRET:-change-me}/g" \
+# Escape /, & and \ in the secret before using as sed replacement string
+ESCAPED=$(printf '%s' "${KEYCLOAK_CLIENT_SECRET:-change-me}" | sed 's/[&/\]/\\&/g')
+sed "s/__KC_CLIENT_SECRET__/${ESCAPED}/g" \
     /opt/keycloak/data/import/realm-template.json \
     > /opt/keycloak/data/import/realm-export.json
 

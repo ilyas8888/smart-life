@@ -4,11 +4,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
+import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
+import org.springframework.security.oauth2.jwt.JwtValidators;
 
 /**
  * Active uniquement en prod. Construit le ClientRegistration manuellement
@@ -48,5 +51,16 @@ public class KeycloakClientConfig {
                 .clientName("Keycloak")
                 .build();
         return new InMemoryClientRegistrationRepository(registration);
+    }
+
+    @Bean
+    public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory() {
+        OidcIdTokenDecoderFactory factory = new OidcIdTokenDecoderFactory();
+        factory.setJwtValidatorFactory(reg ->
+            JwtValidators.createDefaultWithIssuer(
+                "https://" + kcHostname + "/realms/smartlife"
+            )
+        );
+        return factory;
     }
 }
