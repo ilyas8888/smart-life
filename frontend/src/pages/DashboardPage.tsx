@@ -54,6 +54,19 @@ export default function DashboardPage() {
 
   const displayName = firstName ? `${firstName} ${lastName ?? ''}`.trim() : (email ?? 'Utilisateur')
 
+  const MODULE_ACCENT: Record<string, string> = {
+    home: 'text-blue-400',
+    agenda: 'text-indigo-400',
+    prompt: 'text-purple-400',
+    tasks: 'text-blue-400',
+    reminders: 'text-orange-400',
+    notes: 'text-violet-400',
+    contacts: 'text-teal-400',
+    food: 'text-green-400',
+    diary: 'text-rose-400',
+    workout: 'text-amber-400',
+  }
+
   const navItems = [
     { id: 'home' as Panel, label: 'Accueil', icon: Sparkles },
     { id: 'agenda' as Panel, label: 'Agenda', icon: CalendarDays },
@@ -130,7 +143,7 @@ export default function DashboardPage() {
                   : 'text-gray-400 hover:bg-gray-800 hover:text-white'
               }`}
             >
-              <Icon size={18} />
+              <Icon size={18} className={activePanel === id ? MODULE_ACCENT[id] : ''} />
               {label}
             </button>
           ))}
