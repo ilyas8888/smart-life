@@ -62,6 +62,8 @@ brevo:
   api-key: ${BREVO_API_KEY:}
 
 app:
+  mail:
+    security-alert-recipient: ${SECURITY_ALERT_EMAIL:}
   otp:
     enabled: ${OTP_ENABLED:false}
 

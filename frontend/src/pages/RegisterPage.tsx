@@ -97,7 +97,7 @@ export default function RegisterPage() {
               </div>
             </div>
             <a
-              href={`${BACKEND_URL}/oauth2/authorization/keycloak?action=register`}
+              href={`${BACKEND_URL}/oauth2/authorization/keycloak`}
               className="btn-primary w-full text-center block"
             >
               S'inscrire avec Keycloak

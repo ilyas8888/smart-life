@@ -40,6 +40,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean emailVerified = false;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean localLoginAllowed = false;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

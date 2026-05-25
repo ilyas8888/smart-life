@@ -60,6 +60,9 @@ public class AuthService {
         if ("KEYCLOAK".equals(user.getProvider())) {
             throw new IllegalArgumentException("Ce compte est lié à Keycloak. Utilisez le bouton 'Login with Keycloak'.");
         }
+        if (!user.isLocalLoginAllowed()) {
+            throw new IllegalArgumentException("Connexion locale non autorisee. Utilisez Keycloak.");
+        }
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
