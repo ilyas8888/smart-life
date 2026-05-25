@@ -41,6 +41,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String lastName = oidcUser.getFamilyName() != null ? oidcUser.getFamilyName() : "";
         String frontendUrl = System.getenv("FRONTEND_URL") != null ? System.getenv("FRONTEND_URL") : "http://localhost:5173";
 
+        boolean isNewUser = userRepository.findByEmail(email).isEmpty();
         User user = userRepository.findByEmail(email).orElseGet(() ->
                 userRepository.save(User.builder()
                         .email(email)
@@ -51,6 +52,13 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                         .emailVerified(false)
                         .build())
         );
+
+        if (isNewUser && otpService.isEnabled()) {
+            otpService.generateAndSend(user);
+            invalidateSession(request);
+            response.sendRedirect(frontendUrl + "/oauth2/otp?userId=" + user.getId());
+            return;
+        }
 
         if (!user.isEmailVerified()) {
             user.setEmailVerified(true);
