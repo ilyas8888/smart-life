@@ -32,6 +32,7 @@ public class AuthService {
     private final RevokedTokenRepository revokedTokenRepository;
     private final AuditLogService auditLogService;
     private final OtpService otpService;
+    private final KeycloakAdminService keycloakAdminService;
 
     public Object register(RegisterRequest request, String ip) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -71,6 +72,7 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouve"));
         otpService.verify(userId, code);
         user.setEmailVerified(true);
+        keycloakAdminService.markEmailVerified(user.getEmail());
         userRepository.save(user);
         auditLogService.log(userId, "OTP_VERIFIED", "USER", userId, ip);
         otpService.sendOAuth2LoginNotification(user, ip);

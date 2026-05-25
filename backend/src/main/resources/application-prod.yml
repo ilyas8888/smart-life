@@ -6,6 +6,10 @@ app:
   mail:
     security-alert-recipient: ilyassboulouiz@gmail.com
 
+keycloak:
+  admin:
+    password: ${KC_BOOTSTRAP_ADMIN_PASSWORD:}
+
 server:
   forward-headers-strategy: FRAMEWORK
 
