@@ -484,7 +484,7 @@ function MonthOverview({
 
 function LoadingState() {
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8 animate-pulse">
+    <div className="w-full px-6 py-8 animate-pulse">
       <div className="h-12 w-full bg-gray-100 dark:bg-gray-800 rounded-xl mb-6" />
       <div className="grid lg:grid-cols-[320px_1fr] gap-6">
         <div className="h-96 bg-gray-100 dark:bg-gray-800 rounded-xl" />
@@ -583,7 +583,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-gray-900" onClick={() => setOpenMenu(null)}>
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="w-full px-6 py-8">
         <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between mb-6">
           <div>
             <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Agenda</p>
