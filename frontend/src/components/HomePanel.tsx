@@ -29,6 +29,10 @@ function getDailyQuote() {
   return QUOTES[dayOfYear % QUOTES.length]
 }
 
+function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1)
+}
+
 function computeStreak(dates: string[]): number {
   if (!dates.length) return 0
   const sorted = [...new Set(dates)].sort().reverse()
@@ -71,8 +75,17 @@ function StatCard({ icon: Icon, label, value, sub, color, onClick }: StatCardPro
   )
 }
 
-interface Task { status: string }
-interface Reminder { isDone: boolean; remindAt: string | null }
+interface Task {
+  status: string
+  title: string
+  priority: string
+  dueDate: string | null
+}
+interface Reminder {
+  isDone: boolean
+  title: string
+  remindAt: string
+}
 interface FoodSummary { totalCalories: number; mealCount: number }
 interface WorkoutSession { sessionDate: string; caloriesBurned: number | null; durationMinutes: number | null }
 interface Note { id: number }
@@ -138,6 +151,19 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
   const pendingReminders = reminders.filter(
     (r) => !r.isDone && r.remindAt && r.remindAt >= today
   ).length
+  const priorityRank: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 }
+  const priorityStyle: Record<string, { dot: string; badge: string; label: string }> = {
+    HIGH: { dot: 'bg-red-500', badge: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300', label: 'Haute' },
+    MEDIUM: { dot: 'bg-orange-500', badge: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300', label: 'Moyenne' },
+    LOW: { dot: 'bg-gray-400', badge: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300', label: 'Basse' },
+  }
+  const activeTasks = tasks
+    .filter((task) => task.status !== 'DONE')
+    .sort((a, b) => (priorityRank[a.priority] ?? 3) - (priorityRank[b.priority] ?? 3))
+    .slice(0, 3)
+  const nextReminder = reminders
+    .filter((reminder) => !reminder.isDone && reminder.remindAt >= today)
+    .sort((a, b) => a.remindAt.localeCompare(b.remindAt))[0]
 
   const weekWorkouts = workouts.filter((w) => w.sessionDate >= weekStart)
   const weekCaloriesBurned = weekWorkouts.reduce((sum, w) => sum + (w.caloriesBurned ?? 0), 0)
@@ -158,7 +184,7 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
   const quote = getDailyQuote()
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       {/* Hero */}
       <div className="card mb-6 bg-gradient-to-br from-primary-600 to-blue-700 text-white border-0">
         <div className="flex items-start justify-between">
@@ -183,7 +209,7 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
         <StatCard
           icon={CheckSquare}
           label="Tâches à faire"
@@ -230,6 +256,55 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
           color="bg-rose-500"
           onClick={() => onNavigate('diary')}
         />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 mb-6">
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <CheckSquare size={18} className="text-blue-500" />
+              <h2 className="font-semibold text-gray-900 dark:text-gray-100">À faire aujourd'hui</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate('tasks')}
+              className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
+            >
+              Voir toutes
+            </button>
+          </div>
+          {activeTasks.length === 0 ? (
+            <p className="text-sm font-medium text-green-600 dark:text-green-400">Tout est à jour ✓</p>
+          ) : (
+            <div className="space-y-3">
+              {activeTasks.map((task, index) => {
+                const style = priorityStyle[task.priority] ?? priorityStyle.LOW
+                return (
+                  <div key={`${task.title}-${index}`} className="flex items-center gap-3">
+                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${style.dot}`} />
+                    <span className="text-sm text-gray-700 dark:text-gray-200 truncate flex-1">{task.title}</span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${style.badge}`}>
+                      {style.label}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {nextReminder && (
+          <div className="card">
+            <div className="flex items-center gap-2 mb-4">
+              <Bell size={18} className="text-orange-500" />
+              <h2 className="font-semibold text-gray-900 dark:text-gray-100">Prochain rappel</h2>
+            </div>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{nextReminder.title}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {capitalize(format(parseISO(nextReminder.remindAt), "EEEE d MMMM 'à' HH'h'mm", { locale: fr }))}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="card bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 border-primary-100 dark:border-primary-800">
