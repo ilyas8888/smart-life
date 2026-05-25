@@ -113,21 +113,21 @@ export default function DashboardPage() {
       )}
 
       <aside className={`
-        fixed md:static inset-y-0 left-0 z-30 w-64 bg-slate-900 text-white flex flex-col border-r border-slate-700
+        fixed md:static inset-y-0 left-0 z-30 w-72 bg-slate-900 text-white flex flex-col border-r border-slate-700
         transform transition-transform duration-200
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <div className="p-5 border-b border-gray-700">
           <div className="flex items-center gap-3">
-            <div className="p-1.5 bg-gradient-to-br from-blue-500 to-violet-600 rounded-lg">
-              <Brain size={20} />
+            <div className="p-2 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl">
+              <Brain size={22} />
             </div>
-            <span className="font-bold text-lg">SmartLife</span>
+            <span className="font-bold text-xl">SmartLife</span>
             <button
               onClick={() => setSidebarOpen(false)}
               className="ml-auto p-1 text-gray-400 hover:text-white md:hidden"
             >
-              <X size={18} />
+              <X size={20} />
             </button>
           </div>
         </div>
@@ -137,13 +137,13 @@ export default function DashboardPage() {
             <button
               key={id}
               onClick={() => handleNavClick(id)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
                 activePanel === id
                   ? 'bg-slate-700 text-white'
                   : 'text-gray-400 hover:bg-gray-800 hover:text-white'
               }`}
             >
-              <Icon size={18} className={activePanel === id ? MODULE_ACCENT[id] : ''} />
+              <Icon size={20} className={activePanel === id ? MODULE_ACCENT[id] : ''} />
               {label}
             </button>
           ))}
@@ -151,18 +151,19 @@ export default function DashboardPage() {
 
         <div className="p-4 border-t border-gray-700">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-sm font-bold">
+            <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-base font-bold shrink-0">
               {(firstName ?? email ?? '?')[0].toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{displayName}</p>
+              <p className="text-sm font-semibold truncate">{displayName}</p>
+              <p className="text-xs text-gray-400 truncate">{email}</p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
           >
-            <LogOut size={16} />
+            <LogOut size={18} />
             Déconnexion
           </button>
         </div>
@@ -196,7 +197,7 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-6 dark:bg-gray-900">
+        <div className="flex-1 overflow-auto p-6 md:p-8 dark:bg-gray-900">
           {activePanel === 'home' && <HomePanel onNavigate={handleNavClick} displayName={displayName} />}
           {activePanel === 'agenda' && <AgendaPage onNavigate={handleNavClick} />}
 

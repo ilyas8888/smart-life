@@ -60,17 +60,17 @@ function StatCard({ icon: Icon, label, value, sub, color, onClick }: StatCardPro
   return (
     <button
       onClick={onClick}
-      className="card text-left hover:shadow-md transition-shadow group w-full"
+      className="card text-left hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group w-full"
     >
-      <div className="flex items-start justify-between">
-        <div className={`p-2.5 rounded-xl ${color}`}>
-          <Icon size={20} className="text-white" />
+      <div className="flex items-start justify-between mb-4">
+        <div className={`p-3.5 rounded-2xl ${color} shadow-sm`}>
+          <Icon size={26} className="text-white" />
         </div>
-        <ChevronRight size={16} className="text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition-colors mt-1" />
+        <ChevronRight size={18} className="text-gray-300 dark:text-gray-600 group-hover:text-primary-500 dark:group-hover:text-primary-400 transition-colors mt-1" />
       </div>
-      <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-3">{value}</p>
-      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{label}</p>
-      {sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{sub}</p>}
+      <p className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-1">{value}</p>
+      <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">{label}</p>
+      {sub && <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{sub}</p>}
     </button>
   )
 }
@@ -189,19 +189,19 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
       <div className="card mb-6 bg-gradient-to-br from-primary-600 to-blue-700 text-white border-0">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-primary-200 text-sm mb-1">
-              {format(new Date(), "EEEE dd MMMM yyyy", { locale: fr })}
+            <p className="text-primary-200 text-base mb-1 font-medium">
+              {capitalize(format(new Date(), "EEEE dd MMMM yyyy", { locale: fr }))}
             </p>
-            <h1 className="text-2xl font-bold mb-0.5">
+            <h1 className="text-3xl font-bold mb-1">
               {emoji} {greeting}, {firstName} !
             </h1>
-            <p className="text-primary-100 text-sm italic">"{quote}"</p>
+            <p className="text-primary-100 text-base italic opacity-90">"{quote}"</p>
           </div>
           {streak > 0 && (
-            <div className="flex flex-col items-center bg-white/15 rounded-2xl px-4 py-2 min-w-[64px]">
-              <span className="text-2xl">🔥</span>
-              <span className="text-xl font-bold leading-none">{streak}</span>
-              <span className="text-[10px] text-primary-100 uppercase tracking-wide">
+            <div className="flex flex-col items-center bg-white/15 rounded-2xl px-5 py-3 min-w-[72px]">
+              <span className="text-3xl">🔥</span>
+              <span className="text-3xl font-bold leading-none">{streak}</span>
+              <span className="text-xs text-primary-100 uppercase tracking-widest mt-1">
                 {streak === 1 ? 'jour' : 'jours'}
               </span>
             </div>
@@ -262,8 +262,8 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <CheckSquare size={18} className="text-blue-500" />
-              <h2 className="font-semibold text-gray-900 dark:text-gray-100">À faire aujourd'hui</h2>
+              <CheckSquare size={20} className="text-blue-500" />
+              <h2 className="font-bold text-gray-900 dark:text-gray-100">À faire aujourd'hui</h2>
             </div>
             <button
               type="button"
@@ -274,16 +274,16 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
             </button>
           </div>
           {activeTasks.length === 0 ? (
-            <p className="text-sm font-medium text-green-600 dark:text-green-400">Tout est à jour ✓</p>
+            <p className="text-base font-medium text-green-600 dark:text-green-400">Tout est à jour ✓</p>
           ) : (
             <div className="space-y-3">
               {activeTasks.map((task, index) => {
                 const style = priorityStyle[task.priority] ?? priorityStyle.LOW
                 return (
                   <div key={`${task.title}-${index}`} className="flex items-center gap-3">
-                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${style.dot}`} />
-                    <span className="text-sm text-gray-700 dark:text-gray-200 truncate flex-1">{task.title}</span>
-                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${style.badge}`}>
+                    <span className={`w-3 h-3 rounded-full shrink-0 ${style.dot}`} />
+                    <span className="text-base text-gray-700 dark:text-gray-200 truncate flex-1">{task.title}</span>
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 ${style.badge}`}>
                       {style.label}
                     </span>
                   </div>
@@ -296,11 +296,11 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
         {nextReminder && (
           <div className="card">
             <div className="flex items-center gap-2 mb-4">
-              <Bell size={18} className="text-orange-500" />
-              <h2 className="font-semibold text-gray-900 dark:text-gray-100">Prochain rappel</h2>
+              <Bell size={20} className="text-orange-500" />
+              <h2 className="font-bold text-gray-900 dark:text-gray-100">Prochain rappel</h2>
             </div>
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{nextReminder.title}</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{nextReminder.title}</p>
+            <p className="text-base text-gray-500 dark:text-gray-400">
               {capitalize(format(parseISO(nextReminder.remindAt), "EEEE d MMMM 'à' HH'h'mm", { locale: fr }))}
             </p>
           </div>
@@ -308,20 +308,20 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
       </div>
 
       <div className="card bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 border-primary-100 dark:border-primary-800">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-1.5 bg-primary-600 rounded-lg">
-            <Flame size={16} className="text-white" />
+        <div className="flex items-center gap-3 mb-3">
+          <div className="p-2 bg-primary-600 rounded-lg">
+            <Flame size={20} className="text-white" />
           </div>
-          <p className="font-semibold text-primary-900 dark:text-primary-200">Prompt IA</p>
+          <p className="font-bold text-lg text-primary-900 dark:text-primary-200">Prompt IA</p>
         </div>
-        <p className="text-sm text-primary-700 dark:text-primary-300 mb-3">
+        <p className="text-base text-primary-700 dark:text-primary-300 mb-4">
           Décrivez votre journée en langage naturel — l'IA extrait tâches, repas, sport, journal et plus.
         </p>
         <button
           onClick={() => onNavigate('prompt')}
-          className="btn-primary text-sm flex items-center gap-2"
+          className="btn-primary flex items-center gap-2"
         >
-          <Flame size={14} />
+          <Flame size={16} />
           Utiliser le Prompt IA
         </button>
       </div>
