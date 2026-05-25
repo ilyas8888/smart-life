@@ -15,4 +15,6 @@ exec /opt/keycloak/bin/kc.sh start --optimized \
     --http-port=8180 \
     --hostname="${KC_HOSTNAME:-ilyas8888-smartlife-backend.hf.space}" \
     --hostname-strict=false \
-    --proxy=edge
+    --proxy=edge \
+    --bootstrap-admin-username="${KC_BOOTSTRAP_ADMIN_USERNAME:-admin}" \
+    --bootstrap-admin-password="${KC_BOOTSTRAP_ADMIN_PASSWORD:-admin}"
