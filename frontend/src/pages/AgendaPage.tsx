@@ -41,6 +41,15 @@ const dotStyles = {
   WORKOUT: 'bg-amber-500',
 }
 
+const rowBorderStyles = {
+  TASK: 'border-blue-500',
+  REMINDER: 'border-orange-500',
+  NOTE: 'border-violet-500',
+  FOOD: 'border-green-500',
+  DIARY: 'border-rose-500',
+  WORKOUT: 'border-amber-500',
+}
+
 const badgeStyles = {
   TASK: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
   REMINDER: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
@@ -196,10 +205,10 @@ function MonthCalendar({
               key={key}
               type="button"
               onClick={() => onSelectDate(day)}
-              className="relative flex flex-col items-center py-1 rounded-xl transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="relative flex min-h-14 flex-col items-center justify-center py-1 rounded-xl transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <span
-                className={`w-8 h-8 rounded-full text-xs font-medium flex items-center justify-center transition-colors ${
+                className={`w-9 h-9 rounded-full text-sm font-medium flex items-center justify-center transition-colors ${
                   selected
                     ? 'bg-primary-600 text-white'
                     : currentDay
@@ -254,6 +263,7 @@ function statLabel(count: number, singular: string, plural: string) {
 function AgendaRow({ item, onNavigate }: { item: TimelineItem; onNavigate: (panel: Panel) => void }) {
   const panel = typeToPanel[item.type]
   const dotClass = dotStyles[item.type as keyof typeof dotStyles] ?? dotStyles.NOTE
+  const borderClass = rowBorderStyles[item.type as keyof typeof rowBorderStyles] ?? rowBorderStyles.NOTE
   const badgeClass = badgeStyles[item.type as keyof typeof badgeStyles] ?? badgeStyles.NOTE
   const label = typeLabels[item.type as keyof typeof typeLabels] ?? item.type
   const meta = metadataText(item)
@@ -262,7 +272,7 @@ function AgendaRow({ item, onNavigate }: { item: TimelineItem; onNavigate: (pane
     <button
       type="button"
       onClick={() => panel && onNavigate(panel)}
-      className="w-full flex items-center gap-3 py-2 pl-8 text-left hover:bg-stone-100/60 dark:hover:bg-gray-800 transition-colors"
+      className={`w-full flex items-center gap-3 py-2 pl-8 border-l-2 text-left hover:bg-stone-100/60 dark:hover:bg-gray-800 transition-colors ${borderClass}`}
     >
       <span className="w-12 text-right text-xs text-stone-400 dark:text-stone-500 font-mono shrink-0">{item.time ?? '—'}</span>
       <span className={`w-2 h-2 rounded-full shrink-0 ${dotClass}`} />
@@ -286,10 +296,7 @@ function JournalSection({
 }) {
   return (
     <div className={`mb-6 pl-3 border-l-2 ${accent}`}>
-      <h2
-        style={{ fontFamily: 'Caveat, cursive' }}
-        className="text-2xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 pb-1 mb-3"
-      >
+      <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-100 dark:border-gray-700 pb-1 mb-3">
         {title}
       </h2>
       {children ?? <p className="text-sm text-gray-400 dark:text-gray-500 italic">{empty}</p>}
@@ -299,7 +306,7 @@ function JournalSection({
 
 function LoadingState() {
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8 bg-white dark:bg-gray-900 min-h-full animate-pulse">
+    <div className="max-w-5xl mx-auto px-6 py-8 bg-white dark:bg-gray-900 min-h-full animate-pulse">
       <div className="h-3 w-24 bg-gray-100 rounded mb-4" />
       <div className="h-16 w-56 bg-gray-100 rounded mb-3" />
       <div className="h-6 w-32 bg-gray-100 rounded mb-5" />
@@ -400,7 +407,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
 
   return (
     <div
-      className="max-w-2xl mx-auto px-6 py-8 bg-white dark:bg-gray-900 min-h-full"
+      className="max-w-5xl mx-auto px-6 py-8 bg-white dark:bg-gray-900 min-h-full"
       onClick={() => setOpenMenu(null)}
     >
       <div className="mb-6">
@@ -642,10 +649,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
       <div className="border-t-4 border-double border-gray-900 dark:border-gray-100 my-8" />
 
       <div className="flex items-center justify-between mb-4">
-        <h2
-          style={{ fontFamily: 'Caveat, cursive' }}
-          className="text-4xl font-bold text-gray-700 dark:text-gray-300"
-        >
+        <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-300">
           Semaine
         </h2>
         <button
