@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { CheckSquare, Trash2, Clock, Plus, Flag, Edit2, X, Search, AlertTriangle, Play, RotateCcw, Check } from 'lucide-react'
+import { EmptyPanel, IllustrationTasks } from './EmptyState'
 import { format, isPast } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
@@ -348,11 +349,28 @@ export default function TasksPanel() {
       )}
 
       {tasks.length === 0 ? (
-        <div className="text-center py-16">
-          <CheckSquare size={56} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-          <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Aucune tâche</h3>
-          <p className="text-gray-400 text-sm">Ajoute une tâche pour organiser ta journée.</p>
-        </div>
+        <EmptyPanel
+          illustration={<IllustrationTasks />}
+          gradient="from-blue-600 to-cyan-400"
+          headline="Prêt à conquérir ta journée ?"
+          description="Organise tes priorités, suis ta progression et coche chaque victoire — grande ou petite."
+          preview={
+            <div className="card border-l-4 border-l-red-500">
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">🚩 Haute</span>
+                    <span className="text-[10px] font-semibold text-yellow-600 dark:text-yellow-400">En cours</span>
+                  </div>
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">Finaliser le rapport de stage</p>
+                  <div className="flex items-center gap-1.5 text-xs mt-2 text-gray-400"><Clock size={12} /><span>Vendredi 30 mai 2026 à 18:00</span></div>
+                </div>
+              </div>
+            </div>
+          }
+          primaryLabel="+ Créer ma première tâche"
+          onPrimary={() => setFormExpanded(true)}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>

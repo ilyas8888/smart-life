@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Users, Trash2, Phone, Mail, MapPin, Search, Plus, X, Edit2, FileText } from 'lucide-react'
+import { EmptyPanel, IllustrationContacts } from './EmptyState'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
 
@@ -458,16 +459,26 @@ export default function ContactsPanel() {
       </div>
 
       {contacts.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="w-16 h-16 rounded-2xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-300 mx-auto mb-4 flex items-center justify-center">
-            <Users size={30} />
-          </div>
-          <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Aucun contact</h3>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mb-4">Ajoutez vos contacts pour les retrouver facilement.</p>
-          <button type="button" onClick={() => setShowAddModal(true)} className="btn-primary inline-flex items-center gap-2">
-            <Plus size={16} /> Ajouter votre premier contact
-          </button>
-        </div>
+        <EmptyPanel
+          illustration={<IllustrationContacts />}
+          gradient="from-teal-600 to-cyan-400"
+          headline="Ton cercle de confiance"
+          description="Centralise tes contacts importants avec téléphone, email et notes personnalisées."
+          preview={
+            <div className="card flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full bg-rose-500 flex items-center justify-center text-white font-bold text-lg shrink-0">SA</div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 dark:text-gray-100">Dr. Samira Alaoui</p>
+                <div className="flex items-center gap-3 mt-1 flex-wrap">
+                  <span className="flex items-center gap-1 text-xs text-gray-500"><Phone size={11} />+213 555 123 456</span>
+                  <span className="flex items-center gap-1 text-xs text-gray-500"><Mail size={11} />samira@clinique.dz</span>
+                </div>
+              </div>
+            </div>
+          }
+          primaryLabel="+ Ajouter mon premier contact"
+          onPrimary={() => setShowAddModal(true)}
+        />
       ) : filteredContacts.length === 0 ? (
         <div className="text-center py-16">
           <Search size={34} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />

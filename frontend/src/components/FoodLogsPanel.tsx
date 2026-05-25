@@ -8,7 +8,7 @@ import { addDays, format, startOfWeek, subDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
-import { EmptyState, IllustrationFood } from './EmptyState'
+import { EmptyPanel, IllustrationFood } from './EmptyState'
 
 interface FoodLog {
   id: number
@@ -699,15 +699,30 @@ export default function FoodLogsPanel() {
       </div>
 
       {foodLogs.length === 0 && (
-        <EmptyState
+        <EmptyPanel
           illustration={<IllustrationFood />}
-          title="Aucun repas enregistré"
-          subtitle="Commencez à tracker votre alimentation pour suivre vos macros et calories."
-          action={
-            <button type="button" onClick={() => setShowModal(true)} className="btn-primary inline-flex items-center gap-2">
-              <Plus size={16} /> Ajouter votre premier repas
-            </button>
+          gradient="from-green-600 to-teal-400"
+          headline="Prends soin de ton alimentation"
+          description="Suis tes calories, protéines, glucides et lipides. SmartLife calcule tout automatiquement."
+          preview={
+            <div className="card">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-base">☀️</span>
+                <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wide">Déjeuner</span>
+                <span className="ml-auto text-xs text-gray-400">500 kcal</span>
+              </div>
+              <div className="space-y-2">
+                {[['Poulet grillé', '320 kcal'], ['Riz basmati', '180 kcal']].map(([name, cal]) => (
+                  <div key={name} className="flex items-center justify-between rounded-lg bg-green-50 dark:bg-green-900/20 px-3 py-1.5">
+                    <span className="text-sm text-green-800 dark:text-green-300">{name}</span>
+                    <span className="text-xs text-green-600 dark:text-green-400">{cal}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           }
+          primaryLabel="+ Enregistrer mon premier repas"
+          onPrimary={() => setShowModal(true)}
         />
       )}
 

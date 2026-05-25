@@ -4,6 +4,7 @@ import {
   Activity, ArrowLeft, Check, ChevronDown, ChevronUp, Clock, Dumbbell,
   Flame, MessageSquareText, Play, Plus, SkipForward, Timer, Trash2, X,
 } from 'lucide-react'
+import { EmptyPanel, IllustrationWorkout, IllustrationPrograms } from './EmptyState'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
@@ -1921,12 +1922,31 @@ export default function WorkoutPanel() {
           )}
 
           {sessions.length === 0 ? (
-            <div className="text-center py-12">
-              <img src={imgUrl('images/empty/no-sessions.png')} alt="Aucune séance"
-                className="w-48 h-auto mx-auto mb-4 opacity-90" />
-              <p className="font-semibold text-gray-700 dark:text-gray-300 mb-1">Aucune séance enregistrée</p>
-              <p className="text-sm text-gray-400 dark:text-gray-500">Commence par enregistrer ta première séance</p>
-            </div>
+            <EmptyPanel
+              illustration={<IllustrationWorkout />}
+              gradient="from-amber-500 to-orange-400"
+              headline="Commence à t'entraîner"
+              description="Enregistre tes séances, suis ta progression et bats tes records semaine après semaine."
+              preview={
+                <div className="card border-l-4 border-l-amber-500">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">Push Day — Pectoraux & Épaules</p>
+                    <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">45 min · 380 kcal</span>
+                  </div>
+                  <div className="space-y-1">
+                    {[['Développé couché', '80 kg × 4×10'], ['Dips lestés', '20 kg × 3×12']].map(([ex, detail]) => (
+                      <div key={ex} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                        <span>{ex}</span>
+                        <span className="ml-auto text-xs text-gray-400">{detail}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              }
+              primaryLabel="+ Enregistrer ma première séance"
+              onPrimary={() => setShowAddModal(true)}
+            />
           ) : (
             <>
               {sortedMonths.map(month => {
@@ -1963,15 +1983,30 @@ export default function WorkoutPanel() {
 
       {activeTab === 'programs' && (
         plans.length === 0 ? (
-          <div className="text-center py-12">
-            <img src={imgUrl('images/empty/no-programs.png')} alt="Aucun programme"
-              className="w-48 h-auto mx-auto mb-4 opacity-90" />
-            <p className="font-semibold text-gray-700 dark:text-gray-300 mb-1">Aucun programme créé</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500">Crée ton premier programme d'entraînement</p>
-            <button type="button" onClick={() => setShowCreatePlan(true)} className="btn-primary mt-4 inline-flex items-center gap-2">
-              <Plus size={16} /> Créer un programme
-            </button>
-          </div>
+          <EmptyPanel
+            illustration={<IllustrationPrograms />}
+            gradient="from-red-500 to-amber-400"
+            headline="Structure ton entraînement"
+            description="Programmes sur mesure — objectif, durée, jours par semaine. L'IA génère ton plan complet."
+            preview={
+              <div className="card">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-xl">💪</div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">Programme Prise de masse</p>
+                    <p className="text-xs text-gray-400">12 semaines · 4 jours/sem · Intermédiaire</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {['Lun', 'Mer', 'Ven', 'Sam'].map((d) => (
+                    <span key={d} className="px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-xs font-medium text-amber-700 dark:text-amber-300">{d}</span>
+                  ))}
+                </div>
+              </div>
+            }
+            primaryLabel="+ Créer mon programme"
+            onPrimary={() => setShowCreatePlan(true)}
+          />
         ) : (
           <div className="grid grid-cols-2 gap-4">
             {plans.map(plan => (

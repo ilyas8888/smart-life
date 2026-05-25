@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Bell, Check, Trash2, Plus, AlertTriangle, Clock, Calendar, ChevronDown, Edit2, X, Flag } from 'lucide-react'
+import { EmptyPanel, IllustrationReminders } from './EmptyState'
 import { format, isPast, isToday, isTomorrow, isThisWeek, formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
@@ -307,11 +308,31 @@ export default function RemindersPanel() {
       </form>
 
       {normalizedReminders.length === 0 ? (
-        <div className="text-center py-16">
-          <Bell size={56} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-          <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Aucun rappel</h3>
-          <p className="text-gray-400 text-sm">Ajoute un rappel pour ne rien oublier.</p>
-        </div>
+        <EmptyPanel
+          illustration={<IllustrationReminders />}
+          gradient="from-orange-500 to-amber-400"
+          headline="Ne rate plus aucun rendez-vous"
+          description="Rappels horodatés avec priorité — SmartLife te prévient au bon moment, pour que tu n'oublies jamais rien."
+          preview={
+            <div className="card border-l-4 border-l-orange-500">
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">Appeler le médecin</p>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">🚩 Haute</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                    <Calendar size={12} /><span>Demain 09:00</span>
+                    <span>·</span>
+                    <Clock size={12} /><span>dans 18 heures</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+          primaryLabel="+ Créer mon premier rappel"
+          onPrimary={() => setFormExpanded(true)}
+        />
       ) : (
         <div className="max-w-2xl space-y-6">
           <Section title="En retard" items={overdue} icon={<AlertTriangle size={15} className="text-red-500" />} tone="text-red-600 dark:text-red-400" />

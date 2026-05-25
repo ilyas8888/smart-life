@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   BookMarked, BookOpen, ChevronLeft, ChevronRight, Edit2, Flame,
   Search, Send, Tag, Trash2, TrendingUp, X,
 } from 'lucide-react'
+import { EmptyPanel, IllustrationDiary } from './EmptyState'
 import { format, getDay, getDaysInMonth, parseISO, startOfMonth } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
@@ -185,6 +186,7 @@ function EntryContent({ entry }: { entry: DiaryEntry }) {
 
 export default function DiaryPanel() {
   const qc = useQueryClient()
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [content, setContent] = useState('')
   const [mood, setMood] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
@@ -337,6 +339,7 @@ export default function DiaryPanel() {
         </div>
 
         <textarea
+          ref={textareaRef}
           className="w-full resize-none border-0 outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-transparent text-[15px] leading-relaxed min-h-[160px]"
           placeholder="Comment s'est passée ta journée ? Tes pensées, tes émotions..."
           value={content}
@@ -385,13 +388,26 @@ export default function DiaryPanel() {
       {entries.length >= 3 && <MoodTrend entries={entries} />}
 
       {entries.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="text-6xl mb-4"></div>
-          <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Ton journal t'attend</h3>
-          <p className="text-gray-400 text-sm max-w-xs mx-auto">
-            Prends 5 minutes pour noter ta journée. L'écriture régulière aide à mieux te connaître.
-          </p>
-        </div>
+        <EmptyPanel
+          illustration={<IllustrationDiary />}
+          gradient="from-rose-500 to-fuchsia-500"
+          headline="Ton journal t'attend"
+          description="5 minutes par jour pour mieux te connaître. Humeur, pensées, accomplissements — tout compte."
+          preview={
+            <div className="card border-l-4 border-l-blue-400">
+              <div className="flex items-start gap-3 mb-3">
+                <div className="text-2xl">🙂</div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 dark:text-gray-100">Lundi 25 mai 2026</p>
+                  <p className="text-xs text-gray-400">Bonne humeur · 124 mots</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 italic">"Bonne journée aujourd'hui. J'ai terminé le rapport de stage et préparé la soutenance. Je me sens prêt..."</p>
+            </div>
+          }
+          primaryLabel="✍️ Écrire ma première entrée"
+          onPrimary={() => { textareaRef.current?.scrollIntoView({ behavior: 'smooth' }); textareaRef.current?.focus() }}
+        />
       ) : (
         <>
           <MoodCalendar entries={filteredEntries} />

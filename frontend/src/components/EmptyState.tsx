@@ -16,6 +16,41 @@ export function EmptyState({ illustration, title, subtitle, action }: EmptyState
   )
 }
 
+interface EmptyPanelProps {
+  illustration: React.ReactNode
+  gradient: string
+  headline: string
+  description: string
+  preview: React.ReactNode
+  primaryLabel: string
+  onPrimary: () => void
+}
+
+export function EmptyPanel({ illustration, gradient, headline, description, preview, primaryLabel, onPrimary }: EmptyPanelProps) {
+  return (
+    <div className="max-w-lg mx-auto pt-4 pb-12">
+      <div className={`bg-gradient-to-br ${gradient} rounded-2xl p-8 text-center mb-6 shadow-lg`}>
+        <div className="w-20 h-20 mx-auto text-white/90 mb-4">{illustration}</div>
+        <h2 className="text-2xl font-bold text-white mb-2">{headline}</h2>
+        <p className="text-sm text-white/75 max-w-xs mx-auto leading-relaxed">{description}</p>
+      </div>
+      <div className="mb-7">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+          <span className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Aperçu</span>
+          <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+        </div>
+        <div className="opacity-50 pointer-events-none select-none">{preview}</div>
+      </div>
+      <div className="text-center">
+        <button type="button" onClick={onPrimary} className="btn-primary inline-flex items-center gap-2 px-6 py-3 text-base">
+          {primaryLabel}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export const IllustrationTasks = () => (
   <svg viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
     <rect x="15" y="10" width="70" height="80" rx="8" />

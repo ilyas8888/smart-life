@@ -4,6 +4,7 @@ import {
   BookMarked, Edit2, FileText, Palette, Pin, Plus,
   Search, Tag, Trash2, X,
 } from 'lucide-react'
+import { EmptyPanel, IllustrationNotes } from './EmptyState'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
@@ -459,11 +460,25 @@ export default function NotesPanel() {
       </div>
 
       {filteredNotes.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="text-6xl mb-4"></div>
-          <h3 className="text-xl font-bold text-gray-700 dark:text-gray-300 mb-2">Aucune note</h3>
-          <p className="text-gray-400 text-sm">Clique sur "Prendre une note" pour commencer</p>
-        </div>
+        <EmptyPanel
+          illustration={<IllustrationNotes />}
+          gradient="from-violet-600 to-fuchsia-400"
+          headline="Tes idées méritent d'être capturées"
+          description="Notes colorées, épinglées, étiquetées. Retrouve n'importe quelle idée en quelques secondes."
+          preview={
+            <div className="card border border-yellow-300 bg-yellow-50 dark:bg-yellow-800/40 dark:border-yellow-600">
+              <div className="flex items-center gap-2 mb-2">
+                <Pin size={13} className="text-yellow-600 dark:text-yellow-400" />
+                <span className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-widest">Épinglée</span>
+                <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">#PFE</span>
+              </div>
+              <p className="font-semibold text-gray-900 dark:text-gray-100 mb-1">Architecture SmartLife</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">Spring Boot + React + Keycloak + Neon PostgreSQL. Déploiement HF Spaces avec supervisord...</p>
+            </div>
+          }
+          primaryLabel="+ Prendre une note"
+          onPrimary={() => setFormExpanded(true)}
+        />
       ) : (
         <>
           {pinnedNotes.length > 0 && (
