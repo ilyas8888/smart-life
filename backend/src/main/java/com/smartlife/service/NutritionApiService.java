@@ -56,7 +56,7 @@ public class NutritionApiService {
             Set<String> resultNames = new LinkedHashSet<>();
 
             appendResults(results, resultNames,
-                fetchUsdaFoods(query, candidateLimit, "Foundation,SR Legacy"), queryLower, limit);
+                fetchUsdaFoods(query, candidateLimit, "Foundation,SR Legacy,Survey (FNDDS)"), queryLower, limit);
 
             // Brand products are useful for precise searches, but must not drown basic foods.
             if (results.size() < limit && queryLower.length() >= 4) {
@@ -114,14 +114,17 @@ public class NutritionApiService {
         Integer calories = null;
         BigDecimal protein = null, carbs = null, fat = null, fiber = null;
         for (var nutrient : nutrients) {
-            String nutrientName = (String) nutrient.getOrDefault("nutrientName", "");
-            Object value = nutrient.get("value");
-            switch (nutrientName) {
-                case "Energy"                      -> calories = parseInteger(value);
-                case "Protein"                     -> protein  = parseBigDecimal(value);
-                case "Carbohydrate, by difference" -> carbs    = parseBigDecimal(value);
-                case "Total lipid (fat)"           -> fat      = parseBigDecimal(value);
-                case "Fiber, total dietary"        -> fiber    = parseBigDecimal(value);
+            String nutrientName = nutrientName(nutrient);
+            Object value = nutrientValue(nutrient);
+            if (isCalorieEnergy(nutrient, nutrientName)) {
+                calories = parseInteger(value);
+            } else {
+                switch (nutrientName) {
+                    case "Protein"                     -> protein = parseBigDecimal(value);
+                    case "Carbohydrate, by difference" -> carbs   = parseBigDecimal(value);
+                    case "Total lipid (fat)"           -> fat     = parseBigDecimal(value);
+                    case "Fiber, total dietary"        -> fiber   = parseBigDecimal(value);
+                }
             }
         }
         return calories == null
@@ -146,6 +149,41 @@ public class NutritionApiService {
     }
 
     @SuppressWarnings("unchecked")
+    private String nutrientName(Map<String, Object> nutrient) {
+        Object directName = nutrient.get("nutrientName");
+        if (directName != null) return String.valueOf(directName);
+        Object name = nutrient.get("name");
+        if (name != null) return String.valueOf(name);
+        Object nested = nutrient.get("nutrient");
+        if (nested instanceof Map<?, ?> nestedMap) {
+            return String.valueOf(((Map<String, Object>) nestedMap).getOrDefault("name", ""));
+        }
+        return "";
+    }
+
+    @SuppressWarnings("unchecked")
+    private String nutrientUnit(Map<String, Object> nutrient) {
+        Object directUnit = nutrient.get("unitName");
+        if (directUnit != null) return String.valueOf(directUnit);
+        Object nested = nutrient.get("nutrient");
+        if (nested instanceof Map<?, ?> nestedMap) {
+            return String.valueOf(((Map<String, Object>) nestedMap).getOrDefault("unitName", ""));
+        }
+        return "";
+    }
+
+    private Object nutrientValue(Map<String, Object> nutrient) {
+        return nutrient.containsKey("value") ? nutrient.get("value") : nutrient.get("amount");
+    }
+
+    private boolean isCalorieEnergy(Map<String, Object> nutrient, String nutrientName) {
+        String name = nutrientName.toLowerCase(Locale.ROOT);
+        String unit = nutrientUnit(nutrient).toLowerCase(Locale.ROOT);
+        boolean energyName = name.equals("energy") || name.contains("metabolizable energy");
+        return energyName && (unit.isBlank() || unit.equals("kcal"));
+    }
+
+    @SuppressWarnings("unchecked")
     private Optional<NutritionResult> searchUSDA(String query) {
         try {
             Map<String, Object> response = webClientBuilder.build()
@@ -157,7 +195,7 @@ public class NutritionApiService {
                     .queryParam("query", query)
                     .queryParam("api_key", usdaApiKey)
                     .queryParam("pageSize", "1")
-                    .queryParam("dataType", "Foundation,SR Legacy")
+                    .queryParam("dataType", "Foundation,SR Legacy,Survey (FNDDS)")
                     .build())
                 .retrieve()
                 .bodyToMono(Map.class)
@@ -174,15 +212,18 @@ public class NutritionApiService {
             Integer calories = null;
             BigDecimal protein = null, carbs = null, fat = null, fiber = null;
 
-            for (var n : nutrients) {
-                String nutrientName = (String) n.getOrDefault("nutrientName", "");
-                Object value = n.get("value");
-                switch (nutrientName) {
-                    case "Energy"                        -> calories = parseInteger(value);
-                    case "Protein"                       -> protein  = parseBigDecimal(value);
-                    case "Carbohydrate, by difference"   -> carbs    = parseBigDecimal(value);
-                    case "Total lipid (fat)"             -> fat      = parseBigDecimal(value);
-                    case "Fiber, total dietary"          -> fiber    = parseBigDecimal(value);
+            for (var nutrient : nutrients) {
+                String nutrientName = nutrientName(nutrient);
+                Object value = nutrientValue(nutrient);
+                if (isCalorieEnergy(nutrient, nutrientName)) {
+                    calories = parseInteger(value);
+                } else {
+                    switch (nutrientName) {
+                        case "Protein"                     -> protein = parseBigDecimal(value);
+                        case "Carbohydrate, by difference" -> carbs   = parseBigDecimal(value);
+                        case "Total lipid (fat)"           -> fat     = parseBigDecimal(value);
+                        case "Fiber, total dietary"        -> fiber   = parseBigDecimal(value);
+                    }
                 }
             }
 
