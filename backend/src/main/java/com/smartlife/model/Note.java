@@ -31,6 +31,7 @@ public class Note {
     private boolean isPinned = false;
 
     @Column(length = 20)
+    @Builder.Default
     private String color = "default";
 
     @Column(nullable = false, updatable = false)
