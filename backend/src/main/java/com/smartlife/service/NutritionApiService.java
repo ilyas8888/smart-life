@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -61,6 +62,22 @@ public class NutritionApiService {
 
             if (response == null) return List.of();
             var foods = (List<Map<String, Object>>) response.getOrDefault("foods", List.of());
+            String queryLower = query.toLowerCase();
+            foods = foods.stream()
+                .filter(f -> {
+                    String desc = ((String) f.getOrDefault("description", "")).toLowerCase();
+                    return desc.contains(queryLower);
+                })
+                .sorted((a, b) -> {
+                    String da = ((String) a.getOrDefault("description", "")).toLowerCase();
+                    String db = ((String) b.getOrDefault("description", "")).toLowerCase();
+                    boolean aStarts = da.startsWith(queryLower);
+                    boolean bStarts = db.startsWith(queryLower);
+                    if (aStarts && !bStarts) return -1;
+                    if (!aStarts && bStarts) return 1;
+                    return da.compareTo(db);
+                })
+                .collect(Collectors.toList());
 
             return foods.stream()
                 .map(food -> {
