@@ -21,6 +21,7 @@ logging:
 
 sentry:
   dsn: ${SENTRY_DSN:}
+  enabled: false
   traces-sample-rate: 0.1
   environment: production
 
