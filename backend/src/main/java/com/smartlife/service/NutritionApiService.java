@@ -155,8 +155,12 @@ public class NutritionApiService {
     }
 
     private int suggestionRank(Map<String, Object> food, String queryLower) {
-        boolean startsDescription = descriptionOf(food).toLowerCase(Locale.ROOT).startsWith(queryLower);
-        return startsDescription ? 0 : 1;
+        String description = descriptionOf(food).toLowerCase(Locale.ROOT);
+        if (description.equals(queryLower)) return 0;
+        if (description.startsWith(queryLower + ",")) return 1;
+        if (description.startsWith(queryLower + " ")) return 2;
+        if (description.startsWith(queryLower)) return 3;
+        return 4;
     }
 
     private String descriptionOf(Map<String, Object> food) {

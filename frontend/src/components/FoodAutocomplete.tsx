@@ -212,8 +212,22 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
 
           {inputSettled && !isFetching && allItems.length === 0 && (
             <div className="px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400">
-              Aucun aliment correspondant. Vous pouvez ajouter "{value}" manuellement.
+              Aucune variante nutritionnelle trouvée.
             </div>
+          )}
+
+          {inputSettled && !isFetching && onEnter && (
+            <button type="button"
+              className="w-full px-3 py-2.5 text-left border-b border-gray-100 dark:border-gray-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+              onMouseDown={event => event.preventDefault()}
+              onClick={() => { setOpen(false); onEnter() }}>
+              <span className="block text-sm font-semibold text-primary-600 dark:text-primary-400">
+                Ajouter "{value.trim()}" tel quel
+              </span>
+              <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                SmartLife estimera les valeurs nutritionnelles
+              </span>
+            </button>
           )}
 
           {inputSettled && !isFetching && data?.frequent && data.frequent.length > 0 && (
