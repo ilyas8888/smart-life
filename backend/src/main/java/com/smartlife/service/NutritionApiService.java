@@ -41,6 +41,56 @@ public class NutritionApiService {
     }
 
     @SuppressWarnings("unchecked")
+    public List<NutritionResult> searchMultiple(String query, int limit) {
+        if (usdaApiKey == null || usdaApiKey.isBlank()) return List.of();
+        try {
+            Map<String, Object> response = webClientBuilder.build()
+                .get()
+                .uri(uriBuilder -> uriBuilder
+                    .scheme("https")
+                    .host("api.nal.usda.gov")
+                    .path("/fdc/v1/foods/search")
+                    .queryParam("query", query)
+                    .queryParam("api_key", usdaApiKey)
+                    .queryParam("pageSize", String.valueOf(limit))
+                    .queryParam("dataType", "Foundation,SR Legacy")
+                    .build())
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+
+            if (response == null) return List.of();
+            var foods = (List<Map<String, Object>>) response.getOrDefault("foods", List.of());
+
+            return foods.stream()
+                .map(food -> {
+                    String name = (String) food.getOrDefault("description", query);
+                    var nutrients = (List<Map<String, Object>>) food.getOrDefault("foodNutrients", List.of());
+                    Integer calories = null;
+                    BigDecimal protein = null, carbs = null, fat = null, fiber = null;
+                    for (var n : nutrients) {
+                        String nutrientName = (String) n.getOrDefault("nutrientName", "");
+                        Object value = n.get("value");
+                        switch (nutrientName) {
+                            case "Energy"                      -> calories = parseInteger(value);
+                            case "Protein"                     -> protein  = parseBigDecimal(value);
+                            case "Carbohydrate, by difference" -> carbs    = parseBigDecimal(value);
+                            case "Total lipid (fat)"           -> fat      = parseBigDecimal(value);
+                            case "Fiber, total dietary"        -> fiber    = parseBigDecimal(value);
+                        }
+                    }
+                    if (calories == null) return null;
+                    return new NutritionResult(name, calories, protein, carbs, fat, fiber, Map.of(), "usda");
+                })
+                .filter(result -> result != null)
+                .toList();
+        } catch (Exception e) {
+            log.warn("USDA searchMultiple failed for '{}': {}", query, e.getMessage());
+            return List.of();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
     private Optional<NutritionResult> searchUSDA(String query) {
         try {
             Map<String, Object> response = webClientBuilder.build()

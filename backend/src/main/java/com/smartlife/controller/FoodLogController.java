@@ -3,8 +3,10 @@ package com.smartlife.controller;
 import com.smartlife.dto.NutritionSummaryDto;
 import com.smartlife.model.FoodLog;
 import com.smartlife.model.User;
+import com.smartlife.repository.FoodCacheRepository;
 import com.smartlife.repository.FoodLogRepository;
 import com.smartlife.service.AiService;
+import com.smartlife.service.NutritionApiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/food-logs")
@@ -21,7 +24,9 @@ import java.util.Map;
 public class FoodLogController {
 
     private final FoodLogRepository foodLogRepository;
+    private final FoodCacheRepository foodCacheRepository;
     private final AiService aiService;
+    private final NutritionApiService nutritionApiService;
 
     @GetMapping
     public List<FoodLog> getFoodLogs(@AuthenticationPrincipal User user) {
@@ -82,6 +87,52 @@ public class FoodLogController {
         String prompt = (String) body.get("prompt");
         String mealType = (String) body.getOrDefault("mealType", null);
         return ResponseEntity.ok(aiService.addFoodsFromPrompt(prompt, mealType, user));
+    }
+
+    @GetMapping("/suggestions")
+    public ResponseEntity<Map<String, Object>> getSuggestions(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "8") int limit,
+            @AuthenticationPrincipal User user) {
+        if (q == null || q.trim().length() < 2) {
+            return ResponseEntity.ok(Map.of("frequent", List.of(), "catalog", List.of()));
+        }
+        String query = q.trim();
+        int boundedLimit = Math.max(1, Math.min(limit, 20));
+
+        var cacheResults = foodCacheRepository.searchByFoodNamePrefix(query, Math.min(boundedLimit, 5));
+        var frequent = cacheResults.stream()
+            .map(c -> Map.<String, Object>of(
+                "name",     c.getFoodName(),
+                "calories", c.getCalories()  != null ? c.getCalories().intValue()    : 0,
+                "proteinG", c.getProteinG()  != null ? c.getProteinG().doubleValue() : 0.0,
+                "carbsG",   c.getCarbsG()    != null ? c.getCarbsG().doubleValue()   : 0.0,
+                "fatG",     c.getFatG()      != null ? c.getFatG().doubleValue()     : 0.0,
+                "source",   "cache",
+                "hitCount", c.getHitCount()  != null ? c.getHitCount()              : 1
+            ))
+            .toList();
+
+        var cacheNames = cacheResults.stream()
+            .map(c -> c.getFoodName().toLowerCase())
+            .collect(Collectors.toSet());
+
+        int catalogLimit = Math.max(0, boundedLimit - frequent.size());
+        var catalog = nutritionApiService.searchMultiple(query, boundedLimit)
+            .stream()
+            .filter(r -> !cacheNames.contains(r.foodName().toLowerCase()))
+            .limit(catalogLimit)
+            .map(r -> Map.<String, Object>of(
+                "name",     r.foodName(),
+                "calories", r.calories()  != null ? r.calories()               : 0,
+                "proteinG", r.proteinG()  != null ? r.proteinG().doubleValue() : 0.0,
+                "carbsG",   r.carbsG()    != null ? r.carbsG().doubleValue()   : 0.0,
+                "fatG",     r.fatG()      != null ? r.fatG().doubleValue()     : 0.0,
+                "source",   "usda"
+            ))
+            .toList();
+
+        return ResponseEntity.ok(Map.of("frequent", frequent, "catalog", catalog));
     }
 
     @DeleteMapping("/{id}")

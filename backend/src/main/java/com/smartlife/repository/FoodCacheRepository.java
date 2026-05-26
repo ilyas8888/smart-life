@@ -33,4 +33,13 @@ public interface FoodCacheRepository extends JpaRepository<FoodCache, Long> {
     @Query(value = "SELECT * FROM food_cache WHERE nutrition_details->'aliases' @> to_jsonb(CAST(:alias AS text)) LIMIT 1",
            nativeQuery = true)
     Optional<FoodCache> findByAlias(@Param("alias") String alias);
+
+    @Query(value = """
+        SELECT * FROM food_cache
+        WHERE lower(food_name) LIKE lower(:query || '%')
+           OR lower(food_name) LIKE lower('% ' || :query || '%')
+        ORDER BY hit_count DESC, last_used_at DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<FoodCache> searchByFoodNamePrefix(@Param("query") String query, @Param("limit") int limit);
 }
