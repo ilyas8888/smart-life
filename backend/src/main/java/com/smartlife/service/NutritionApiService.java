@@ -53,7 +53,7 @@ public class NutritionApiService {
                     .queryParam("query", query)
                     .queryParam("api_key", usdaApiKey)
                     .queryParam("pageSize", String.valueOf(limit))
-                    .queryParam("dataType", "Foundation,SR Legacy")
+                    .queryParam("dataType", "Foundation,SR Legacy,Branded")
                     .build())
                 .retrieve()
                 .bodyToMono(Map.class)
