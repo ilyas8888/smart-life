@@ -51,23 +51,13 @@ public class NutritionApiService {
         if (usdaApiKey == null || usdaApiKey.isBlank()) return List.of();
         try {
             String queryLower = query.trim().toLowerCase(Locale.ROOT);
-            int candidateLimit = 5;
+            int candidateLimit = Math.min(limit, 8);
             List<NutritionResult> results = new ArrayList<>();
             Set<String> resultNames = new LinkedHashSet<>();
 
             appendResults(results, resultNames,
-                fetchUsdaFoods(query, candidateLimit, "Survey (FNDDS)"),
+                fetchUsdaFoods(query, candidateLimit, "Survey (FNDDS)", "SR Legacy", "Foundation"),
                 queryLower, limit);
-            if (results.size() < limit) {
-                appendResults(results, resultNames,
-                    fetchUsdaFoods(query, candidateLimit, "SR Legacy"),
-                    queryLower, limit);
-            }
-            if (results.size() < limit) {
-                appendResults(results, resultNames,
-                    fetchUsdaFoods(query, candidateLimit, "Foundation"),
-                    queryLower, limit);
-            }
 
             // Brand products are useful for precise searches, but must not drown basic foods.
             if (results.size() < limit && queryLower.length() >= 4) {
@@ -85,23 +75,31 @@ public class NutritionApiService {
 
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> fetchUsdaFoods(String query, int limit, String... dataTypes) {
-        Map<String, Object> response = webClientBuilder.build()
-            .get()
-            .uri(uriBuilder -> uriBuilder
-                .scheme("https")
-                .host("api.nal.usda.gov")
-                .path("/fdc/v1/foods/search")
-                .queryParam("query", query)
-                .queryParam("api_key", usdaApiKey)
-                .queryParam("pageSize", String.valueOf(limit))
-                .queryParam("dataType", (Object[]) dataTypes)
-                .build())
-            .retrieve()
-            .bodyToMono(Map.class)
-            .block();
-        return response == null
-            ? List.of()
-            : (List<Map<String, Object>>) response.getOrDefault("foods", List.of());
+        try {
+            Map<String, Object> response = webClientBuilder.build()
+                .post()
+                .uri(uriBuilder -> uriBuilder
+                    .scheme("https")
+                    .host("api.nal.usda.gov")
+                    .path("/fdc/v1/foods/search")
+                    .queryParam("api_key", usdaApiKey)
+                    .build())
+                .bodyValue(Map.of(
+                    "query", query,
+                    "pageSize", limit,
+                    "dataType", Arrays.asList(dataTypes)
+                ))
+                .retrieve()
+                .bodyToMono(Map.class)
+                .block();
+            return response == null
+                ? List.of()
+                : (List<Map<String, Object>>) response.getOrDefault("foods", List.of());
+        } catch (Exception e) {
+            log.warn("USDA source search failed for '{}' types {}: {}: {}", query,
+                Arrays.toString(dataTypes), e.getClass().getSimpleName(), e.getMessage());
+            return List.of();
+        }
     }
 
     private void appendResults(List<NutritionResult> results, Set<String> resultNames,
@@ -203,23 +201,7 @@ public class NutritionApiService {
     @SuppressWarnings("unchecked")
     private Optional<NutritionResult> searchUSDA(String query) {
         try {
-            Map<String, Object> response = webClientBuilder.build()
-                .get()
-                .uri(uriBuilder -> uriBuilder
-                    .scheme("https")
-                    .host("api.nal.usda.gov")
-                    .path("/fdc/v1/foods/search")
-                    .queryParam("query", query)
-                    .queryParam("api_key", usdaApiKey)
-                    .queryParam("pageSize", "1")
-                    .queryParam("dataType", "Foundation", "SR Legacy", "Survey (FNDDS)")
-                    .build())
-                .retrieve()
-                .bodyToMono(Map.class)
-                .block();
-
-            if (response == null) return Optional.empty();
-            var foods = (List<Map<String, Object>>) response.getOrDefault("foods", List.of());
+            var foods = fetchUsdaFoods(query, 1, "Survey (FNDDS)", "SR Legacy", "Foundation");
             if (foods.isEmpty()) return Optional.empty();
 
             var food = foods.get(0);
