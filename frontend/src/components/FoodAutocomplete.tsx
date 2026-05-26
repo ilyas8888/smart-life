@@ -1,4 +1,5 @@
-import { forwardRef, useEffect, useId, useState, type KeyboardEvent } from 'react'
+import { forwardRef, useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
 import api from '../api/axios'
 
@@ -52,6 +53,8 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
   const [debouncedQuery, setDebouncedQuery] = useState('')
+  const [dropdownStyle, setDropdownStyle] = useState<CSSProperties>({})
+  const containerRef = useRef<HTMLDivElement>(null)
   const listboxId = useId()
 
   useEffect(() => {
@@ -113,8 +116,70 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
   const inputSettled = value.trim() === debouncedQuery.trim()
   const showDropdown = open && value.trim().length >= 2
 
+  useEffect(() => {
+    if (!showDropdown) return
+
+    const positionDropdown = () => {
+      const container = containerRef.current
+      if (!container) return
+
+      const rect = container.getBoundingClientRect()
+      const margin = 12
+      const gap = 8
+      const preferredWidth = 340
+      const minimumSideWidth = 270
+      const roomRight = window.innerWidth - rect.right - margin - gap
+      const roomLeft = rect.left - margin - gap
+
+      if (roomRight >= minimumSideWidth) {
+        const width = Math.min(preferredWidth, roomRight)
+        const top = Math.max(margin, Math.min(rect.top, window.innerHeight - 332))
+        setDropdownStyle({
+          left: rect.right + gap,
+          top,
+          width,
+          maxHeight: Math.min(360, window.innerHeight - top - margin),
+        })
+        return
+      }
+
+      if (roomLeft >= minimumSideWidth) {
+        const width = Math.min(preferredWidth, roomLeft)
+        const top = Math.max(margin, Math.min(rect.top, window.innerHeight - 332))
+        setDropdownStyle({
+          left: rect.left - gap - width,
+          top,
+          width,
+          maxHeight: Math.min(360, window.innerHeight - top - margin),
+        })
+        return
+      }
+
+      const roomBelow = window.innerHeight - rect.bottom - margin - gap
+      const roomAbove = rect.top - margin - gap
+      const placeBelow = roomBelow >= roomAbove
+      const width = Math.min(preferredWidth, window.innerWidth - margin * 2)
+      const left = Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin))
+      const maxHeight = Math.max(96, Math.min(288, placeBelow ? roomBelow : roomAbove))
+      setDropdownStyle({
+        left,
+        top: placeBelow ? rect.bottom + gap : rect.top - gap - maxHeight,
+        width,
+        maxHeight,
+      })
+    }
+
+    positionDropdown()
+    window.addEventListener('resize', positionDropdown)
+    window.addEventListener('scroll', positionDropdown, true)
+    return () => {
+      window.removeEventListener('resize', positionDropdown)
+      window.removeEventListener('scroll', positionDropdown, true)
+    }
+  }, [showDropdown])
+
   return (
-    <div className="relative w-full sm:flex-1 sm:w-auto" onBlur={event => {
+    <div ref={containerRef} className="relative w-full sm:flex-1 sm:w-auto" onBlur={event => {
       if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false)
     }}>
       <input
@@ -135,9 +200,10 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
         aria-autocomplete="list"
       />
 
-      {showDropdown && (
+      {showDropdown && createPortal(
         <div id={listboxId} role="listbox"
-          className="absolute z-50 left-0 right-0 bottom-full mb-1 max-h-72 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl">
+          style={dropdownStyle}
+          className="fixed z-[70] overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl">
           {(!inputSettled || isFetching) && (
             <div className="px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400">
               Recherche nutritionnelle...
@@ -194,7 +260,8 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
               })}
             </>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
@@ -210,6 +277,7 @@ function SuggestionRow({ item, query, active, onHover, onClick }: {
   return (
     <button type="button" role="option" aria-selected={active}
       className={`w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${active ? 'bg-gray-50 dark:bg-gray-700/50' : ''}`}
+      onMouseDown={event => event.preventDefault()}
       onMouseEnter={onHover} onClick={onClick}>
       <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
         {highlight(item.name, query)}
