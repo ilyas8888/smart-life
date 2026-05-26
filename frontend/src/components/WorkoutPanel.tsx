@@ -1727,10 +1727,13 @@ function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSucces
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bibliothèque</p>
                   <div className="flex flex-wrap gap-2">
                     {EXERCISE_LIBRARY[currentDay.label].map(ex => (
-                      <button key={ex.name} type="button" onClick={() => addExerciseToDay(currentDay.dayNumber, ex)}
-                        className="rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-3 py-1.5 text-xs font-medium hover:bg-amber-100">
-                        + {ex.name}
-                      </button>
+                      <div key={ex.name} className="flex items-center gap-1">
+                        <button type="button" onClick={() => addExerciseToDay(currentDay.dayNumber, ex)}
+                          className="rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-3 py-1.5 text-xs font-medium hover:bg-amber-100">
+                          + {ex.name}
+                        </button>
+                        <ExerciseInfoButton exerciseName={ex.name} sets={ex.sets} reps={ex.reps} weightKg={ex.weightKg} />
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -1747,6 +1750,7 @@ function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSucces
                   <div key={`${ex.name}-${index}`} className="rounded-xl border border-gray-100 dark:border-gray-700 p-3">
                     <div className="flex gap-2 mb-2">
                       <input className="input flex-1" value={ex.name} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'name', e.target.value)} />
+                      <ExerciseInfoButton exerciseName={ex.name} sets={ex.sets} reps={ex.reps} weightKg={planExerciseWeight(ex)} />
                       <button type="button" onClick={() => removeExerciseFromDay(currentDay.dayNumber, index)}
                         className="p-2 text-gray-300 hover:text-red-400"><X size={14} /></button>
                     </div>
