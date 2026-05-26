@@ -9,8 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.util.retry.Retry;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -47,14 +49,7 @@ public class AiService {
         requestBody.put("cached_foods", foodCacheService.getTopCachedFoods());
 
         // Call Python AI service
-        Map<String, Object> aiResult = webClientBuilder.build()
-                .post()
-                .uri(aiServiceUrl + "/process")
-                .header("X-Internal-Key", aiInternalSecret)
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(Map.class)
-                .block();
+        Map<String, Object> aiResult = callAiService("/process", requestBody);
 
         if (aiResult == null) {
             throw new RuntimeException("AI service returned no response");
@@ -311,11 +306,7 @@ public class AiService {
             Map<String, Object> decomposeBody = new HashMap<>();
             decomposeBody.put("foods", toDecompose);
 
-            Map<String, Object> decomposeResult = webClientBuilder.build()
-                    .post().uri(aiServiceUrl + "/decompose-foods")
-                    .header("X-Internal-Key", aiInternalSecret)
-                    .bodyValue(decomposeBody).retrieve()
-                    .bodyToMono(Map.class).block();
+            Map<String, Object> decomposeResult = callAiService("/decompose-foods", decomposeBody);
 
             if (decomposeResult != null) {
                 for (var item : (List<Map<String, Object>>) decomposeResult.getOrDefault("items", List.of())) {
@@ -431,11 +422,7 @@ public class AiService {
             requestBody.put("meal_type", mealType);
             requestBody.put("cached_foods", foodCacheService.getTopCachedFoods());
 
-            Map<String, Object> aiResult = webClientBuilder.build()
-                    .post().uri(aiServiceUrl + "/extract-food")
-                    .header("X-Internal-Key", aiInternalSecret)
-                    .bodyValue(requestBody).retrieve()
-                    .bodyToMono(Map.class).block();
+            Map<String, Object> aiResult = callAiService("/extract-food", requestBody);
 
             if (aiResult != null) {
                 for (var f : (List<Map<String, Object>>) aiResult.getOrDefault("food_logs", List.of())) {
@@ -456,11 +443,7 @@ public class AiService {
         if (mealType != null) requestBody.put("meal_type", mealType);
         requestBody.put("cached_foods", foodCacheService.getTopCachedFoods());
 
-        Map<String, Object> aiResult = webClientBuilder.build()
-                .post().uri(aiServiceUrl + "/extract-food-from-prompt")
-                .header("X-Internal-Key", aiInternalSecret)
-                .bodyValue(requestBody).retrieve()
-                .bodyToMono(Map.class).block();
+        Map<String, Object> aiResult = callAiService("/extract-food-from-prompt", requestBody);
 
         if (aiResult == null) throw new RuntimeException("AI service returned no response");
 
@@ -496,11 +479,7 @@ public class AiService {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("prompt", prompt);
 
-        Map<String, Object> aiResult = webClientBuilder.build()
-                .post().uri(aiServiceUrl + "/extract-workout-from-prompt")
-                .header("X-Internal-Key", aiInternalSecret)
-                .bodyValue(requestBody).retrieve()
-                .bodyToMono(Map.class).block();
+        Map<String, Object> aiResult = callAiService("/extract-workout-from-prompt", requestBody);
 
         if (aiResult == null) throw new RuntimeException("AI service returned no response");
 
@@ -532,6 +511,19 @@ public class AiService {
                     .build());
         }
         return workoutSessionRepository.save(session);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> callAiService(String path, Map<String, Object> body) {
+        return webClientBuilder.build()
+                .post()
+                .uri(aiServiceUrl + path)
+                .header("X-Internal-Key", aiInternalSecret)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(Map.class)
+                .retryWhen(Retry.fixedDelay(2, Duration.ofSeconds(8)))
+                .block();
     }
 
     private Task.Priority parsePriority(String p) {
