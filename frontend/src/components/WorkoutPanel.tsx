@@ -9,6 +9,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
+import { ExerciseInfoButton, getExerciseMedia } from './ExerciseGuide'
 
 interface PlanExercise { name: string; sets: number | null; reps: number | null; weightKg: number | null; notes: string }
 interface PlanDay { id: number; dayNumber: number; label: string; exercises: PlanExercise[] }
@@ -990,6 +991,21 @@ function AddWorkoutModal({
 }
 
 const REST_SECONDS = 90
+const MUSCLE_LABELS_INLINE: Record<string, string> = {
+  chest: 'Pecto',
+  shoulders: 'Épaules',
+  biceps: 'Biceps',
+  triceps: 'Triceps',
+  forearms: 'Avant-bras',
+  core: 'Abdos',
+  quads: 'Quadri',
+  lats: 'Dorsaux',
+  traps: 'Trapèzes',
+  'lower-back': 'Lombaires',
+  glutes: 'Fessiers',
+  hamstrings: 'Ischios',
+  calves: 'Mollets',
+}
 
 function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
   plan: WorkoutPlan; day: PlanDay
@@ -1185,7 +1201,15 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
                   <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">
                     Exercice {currentExIdx + 1}/{exercises.length}
                   </p>
-                  <h3 className="text-xl font-bold">{currentEx.exercise.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-bold">{currentEx.exercise.name}</h3>
+                    <ExerciseInfoButton
+                      exerciseName={currentEx.exercise.name}
+                      sets={targetSets}
+                      reps={currentEx.exercise.reps}
+                      weightKg={planExerciseWeight(currentEx.exercise)}
+                    />
+                  </div>
                   <p className="text-sm text-gray-400 mt-0.5">
                     {targetSets} séries
                     {currentEx.exercise.reps ? ` × ${currentEx.exercise.reps} reps` : ''}
@@ -1215,6 +1239,32 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
                       Série {currentSetNum}/{targetSets}
                     </span>
                   </div>
+                  {(() => {
+                    const media = getExerciseMedia(currentEx.exercise.name)
+                    if (!media) return null
+                    return (
+                      <div className="rounded-xl overflow-hidden bg-gray-800 mb-4 relative">
+                        <img
+                          src={media.imageUrl}
+                          alt={currentEx.exercise.name}
+                          className="w-full object-contain max-h-32"
+                          onError={event => {
+                            const container = event.currentTarget.parentElement
+                            if (container) container.style.display = 'none'
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2">
+                          <div className="flex gap-1 flex-wrap">
+                            {media.muscles.primary.map(muscle => (
+                              <span key={muscle} className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/80 text-black font-bold">
+                                {MUSCLE_LABELS_INLINE[muscle] ?? muscle}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="bg-gray-800 rounded-xl p-4">
                       <p className="text-xs text-gray-500 uppercase tracking-widest mb-2 text-center">Poids (kg)</p>
@@ -1511,6 +1561,7 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange }: {
                           </span>
                           <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{ex.name}</span>
                           {parts.length > 0 && <span className="text-xs text-gray-400 shrink-0">{parts.join(' · ')}</span>}
+                          <ExerciseInfoButton exerciseName={ex.name} sets={ex.sets} reps={ex.reps} weightKg={weight} />
                         </div>
                       )
                     })}
@@ -1905,6 +1956,7 @@ function TodaySessionBanner({ plans, onStartSession, onViewProgram }: {
             <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">{index + 1}</span>
             <span className="truncate">{exercise.name}</span>
             {exercise.sets && exercise.reps && <span className="text-xs text-gray-400 ml-auto shrink-0">{exercise.sets}×{exercise.reps}</span>}
+            <ExerciseInfoButton exerciseName={exercise.name} sets={exercise.sets} reps={exercise.reps} weightKg={exercise.weightKg} />
           </div>
         ))}
         {today.exercises.length > 4 && (
