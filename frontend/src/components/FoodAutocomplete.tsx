@@ -15,6 +15,7 @@ interface Suggestion {
 interface SuggestionsResponse {
   frequent: Suggestion[]
   catalog: Suggestion[]
+  related?: Suggestion[]
 }
 
 interface Props {
@@ -58,7 +59,7 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
     return () => window.clearTimeout(timeoutId)
   }, [value])
 
-  const { data } = useQuery<SuggestionsResponse>({
+  const { data, isFetching } = useQuery<SuggestionsResponse>({
     queryKey: ['food-suggestions', debouncedQuery],
     queryFn: () => api.get(`/food-logs/suggestions?q=${encodeURIComponent(debouncedQuery)}&limit=8`).then(response => response.data),
     enabled: debouncedQuery.trim().length >= 2,
@@ -68,6 +69,7 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
   const allItems = [
     ...(data?.frequent ?? []),
     ...(data?.catalog ?? []),
+    ...(data?.related ?? []),
   ]
 
   useEffect(() => {
@@ -85,7 +87,7 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
       setOpen(false)
       return
     }
-    if (open && allItems.length > 0) {
+    if (inputSettled && !isFetching && open && allItems.length > 0) {
       if (event.key === 'ArrowDown') {
         event.preventDefault()
         setActiveIndex(index => Math.min(index + 1, allItems.length - 1))
@@ -108,7 +110,8 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
     }
   }
 
-  const showDropdown = open && debouncedQuery.trim().length >= 2 && allItems.length > 0
+  const inputSettled = value.trim() === debouncedQuery.trim()
+  const showDropdown = open && value.trim().length >= 2
 
   return (
     <div className="relative w-full sm:flex-1 sm:w-auto" onBlur={event => {
@@ -135,7 +138,19 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
       {showDropdown && (
         <div id={listboxId} role="listbox"
           className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden">
-          {data?.frequent && data.frequent.length > 0 && (
+          {(!inputSettled || isFetching) && (
+            <div className="px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400">
+              Recherche nutritionnelle...
+            </div>
+          )}
+
+          {inputSettled && !isFetching && allItems.length === 0 && (
+            <div className="px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400">
+              Aucun aliment correspondant. Vous pouvez ajouter "{value}" manuellement.
+            </div>
+          )}
+
+          {inputSettled && !isFetching && data?.frequent && data.frequent.length > 0 && (
             <>
               <div className="px-3 py-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-b border-gray-100 dark:border-gray-700">
                 Vos habitudes
@@ -148,7 +163,7 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
             </>
           )}
 
-          {data?.catalog && data.catalog.length > 0 && (
+          {inputSettled && !isFetching && data?.catalog && data.catalog.length > 0 && (
             <>
               <div className="px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-b border-t border-gray-100 dark:border-gray-700">
                 Résultats nutritionnels
@@ -157,6 +172,22 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
                 const itemIndex = (data.frequent?.length ?? 0) + index
                 return (
                   <SuggestionRow key={`catalog-${item.name}-${index}`} item={item} query={debouncedQuery}
+                    active={activeIndex === itemIndex} onHover={() => setActiveIndex(itemIndex)}
+                    onClick={() => selectItem(item)} />
+                )
+              })}
+            </>
+          )}
+
+          {inputSettled && !isFetching && data?.related && data.related.length > 0 && (
+            <>
+              <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 border-b border-t border-gray-100 dark:border-gray-700">
+                Habitudes associées
+              </div>
+              {data.related.map((item, index) => {
+                const itemIndex = (data.frequent?.length ?? 0) + (data.catalog?.length ?? 0) + index
+                return (
+                  <SuggestionRow key={`related-${item.name}-${index}`} item={item} query={debouncedQuery}
                     active={activeIndex === itemIndex} onHover={() => setActiveIndex(itemIndex)}
                     onClick={() => selectItem(item)} />
                 )

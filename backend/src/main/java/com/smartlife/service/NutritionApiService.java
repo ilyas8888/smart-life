@@ -7,13 +7,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -47,62 +50,83 @@ public class NutritionApiService {
     public List<NutritionResult> searchMultiple(String query, int limit) {
         if (usdaApiKey == null || usdaApiKey.isBlank()) return List.of();
         try {
-            int candidateLimit = Math.min(Math.max(limit * 8, 40), 100);
-            String dataTypes = query.trim().length() < 4
-                ? "Foundation,SR Legacy"
-                : "Foundation,SR Legacy,Branded";
-            Map<String, Object> response = webClientBuilder.build()
-                .get()
-                .uri(uriBuilder -> uriBuilder
-                    .scheme("https")
-                    .host("api.nal.usda.gov")
-                    .path("/fdc/v1/foods/search")
-                    .queryParam("query", query)
-                    .queryParam("api_key", usdaApiKey)
-                    .queryParam("pageSize", String.valueOf(candidateLimit))
-                    .queryParam("dataType", dataTypes)
-                    .build())
-                .retrieve()
-                .bodyToMono(Map.class)
-                .block();
+            String queryLower = query.trim().toLowerCase(Locale.ROOT);
+            int candidateLimit = Math.min(Math.max(limit * 6, 30), 100);
+            List<NutritionResult> results = new ArrayList<>();
+            Set<String> resultNames = new LinkedHashSet<>();
 
-            if (response == null) return List.of();
-            var foods = (List<Map<String, Object>>) response.getOrDefault("foods", List.of());
-            String queryLower = query.toLowerCase(Locale.ROOT);
-            foods = foods.stream()
-                .filter(food -> startsWithQueryOrWord(food, queryLower))
-                .sorted(Comparator
-                    .comparingInt((Map<String, Object> food) -> suggestionRank(food, queryLower))
-                    .thenComparing(food -> descriptionOf(food).toLowerCase(Locale.ROOT)))
-                .limit(limit)
-                .toList();
+            appendResults(results, resultNames,
+                fetchUsdaFoods(query, candidateLimit, "Foundation,SR Legacy"), queryLower, limit);
 
-            return foods.stream()
-                .map(food -> {
-                    String name = (String) food.getOrDefault("description", query);
-                    var nutrients = (List<Map<String, Object>>) food.getOrDefault("foodNutrients", List.of());
-                    Integer calories = null;
-                    BigDecimal protein = null, carbs = null, fat = null, fiber = null;
-                    for (var n : nutrients) {
-                        String nutrientName = (String) n.getOrDefault("nutrientName", "");
-                        Object value = n.get("value");
-                        switch (nutrientName) {
-                            case "Energy"                      -> calories = parseInteger(value);
-                            case "Protein"                     -> protein  = parseBigDecimal(value);
-                            case "Carbohydrate, by difference" -> carbs    = parseBigDecimal(value);
-                            case "Total lipid (fat)"           -> fat      = parseBigDecimal(value);
-                            case "Fiber, total dietary"        -> fiber    = parseBigDecimal(value);
-                        }
-                    }
-                    if (calories == null) return null;
-                    return new NutritionResult(name, calories, protein, carbs, fat, fiber, Map.of(), "usda");
-                })
-                .filter(result -> result != null)
-                .toList();
+            // Brand products are useful for precise searches, but must not drown basic foods.
+            if (results.size() < limit && queryLower.length() >= 4) {
+                appendResults(results, resultNames,
+                    fetchUsdaFoods(query, candidateLimit, "Branded"), queryLower, limit);
+            }
+
+            return results;
         } catch (Exception e) {
             log.warn("USDA searchMultiple failed for '{}': {}", query, e.getMessage());
             return List.of();
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> fetchUsdaFoods(String query, int limit, String dataTypes) {
+        Map<String, Object> response = webClientBuilder.build()
+            .get()
+            .uri(uriBuilder -> uriBuilder
+                .scheme("https")
+                .host("api.nal.usda.gov")
+                .path("/fdc/v1/foods/search")
+                .queryParam("query", query)
+                .queryParam("api_key", usdaApiKey)
+                .queryParam("pageSize", String.valueOf(limit))
+                .queryParam("dataType", dataTypes)
+                .build())
+            .retrieve()
+            .bodyToMono(Map.class)
+            .block();
+        return response == null
+            ? List.of()
+            : (List<Map<String, Object>>) response.getOrDefault("foods", List.of());
+    }
+
+    private void appendResults(List<NutritionResult> results, Set<String> resultNames,
+                               List<Map<String, Object>> foods, String queryLower, int limit) {
+        foods.stream()
+            .filter(food -> startsWithQueryOrWord(food, queryLower))
+            .sorted(Comparator
+                .comparingInt((Map<String, Object> food) -> suggestionRank(food, queryLower))
+                .thenComparing(food -> descriptionOf(food).toLowerCase(Locale.ROOT)))
+            .map(this::toNutritionResult)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .filter(result -> resultNames.add(result.foodName().toLowerCase(Locale.ROOT)))
+            .limit(Math.max(0, limit - results.size()))
+            .forEach(results::add);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Optional<NutritionResult> toNutritionResult(Map<String, Object> food) {
+        String name = descriptionOf(food);
+        var nutrients = (List<Map<String, Object>>) food.getOrDefault("foodNutrients", List.of());
+        Integer calories = null;
+        BigDecimal protein = null, carbs = null, fat = null, fiber = null;
+        for (var nutrient : nutrients) {
+            String nutrientName = (String) nutrient.getOrDefault("nutrientName", "");
+            Object value = nutrient.get("value");
+            switch (nutrientName) {
+                case "Energy"                      -> calories = parseInteger(value);
+                case "Protein"                     -> protein  = parseBigDecimal(value);
+                case "Carbohydrate, by difference" -> carbs    = parseBigDecimal(value);
+                case "Total lipid (fat)"           -> fat      = parseBigDecimal(value);
+                case "Fiber, total dietary"        -> fiber    = parseBigDecimal(value);
+            }
+        }
+        return calories == null
+            ? Optional.empty()
+            : Optional.of(new NutritionResult(name, calories, protein, carbs, fat, fiber, Map.of(), "usda"));
     }
 
     private boolean startsWithQueryOrWord(Map<String, Object> food, String queryLower) {
@@ -114,9 +138,7 @@ public class NutritionApiService {
 
     private int suggestionRank(Map<String, Object> food, String queryLower) {
         boolean startsDescription = descriptionOf(food).toLowerCase(Locale.ROOT).startsWith(queryLower);
-        boolean branded = "Branded".equalsIgnoreCase(String.valueOf(food.getOrDefault("dataType", "")));
-        if (startsDescription) return branded ? 1 : 0;
-        return branded ? 3 : 2;
+        return startsDescription ? 0 : 1;
     }
 
     private String descriptionOf(Map<String, Object> food) {

@@ -1,6 +1,7 @@
 package com.smartlife.controller;
 
 import com.smartlife.dto.NutritionSummaryDto;
+import com.smartlife.model.FoodCache;
 import com.smartlife.model.FoodLog;
 import com.smartlife.model.User;
 import com.smartlife.repository.FoodCacheRepository;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -99,28 +101,22 @@ public class FoodLogController {
         }
         String query = q.trim();
         int boundedLimit = Math.max(1, Math.min(limit, 20));
+        String queryLower = query.toLowerCase(Locale.ROOT);
 
-        var cacheResults = foodCacheRepository.searchByFoodNamePrefix(query, Math.min(boundedLimit, 5));
+        var cacheResults = foodCacheRepository.searchByFoodNamePrefix(query, boundedLimit);
         var frequent = cacheResults.stream()
-            .map(c -> Map.<String, Object>of(
-                "name",     c.getFoodName(),
-                "calories", c.getCalories()  != null ? c.getCalories().intValue()    : 0,
-                "proteinG", c.getProteinG()  != null ? c.getProteinG().doubleValue() : 0.0,
-                "carbsG",   c.getCarbsG()    != null ? c.getCarbsG().doubleValue()   : 0.0,
-                "fatG",     c.getFatG()      != null ? c.getFatG().doubleValue()     : 0.0,
-                "source",   "cache",
-                "hitCount", c.getHitCount()  != null ? c.getHitCount()              : 1
-            ))
+            .filter(c -> c.getFoodName().toLowerCase(Locale.ROOT).startsWith(queryLower))
+            .map(this::toCacheSuggestion)
             .toList();
 
         var cacheNames = cacheResults.stream()
-            .map(c -> c.getFoodName().toLowerCase())
+            .map(c -> c.getFoodName().toLowerCase(Locale.ROOT))
             .collect(Collectors.toSet());
 
         int catalogLimit = Math.max(0, boundedLimit - frequent.size());
         var catalog = nutritionApiService.searchMultiple(query, boundedLimit)
             .stream()
-            .filter(r -> !cacheNames.contains(r.foodName().toLowerCase()))
+            .filter(r -> !cacheNames.contains(r.foodName().toLowerCase(Locale.ROOT)))
             .limit(catalogLimit)
             .map(r -> Map.<String, Object>of(
                 "name",     r.foodName(),
@@ -132,7 +128,26 @@ public class FoodLogController {
             ))
             .toList();
 
-        return ResponseEntity.ok(Map.of("frequent", frequent, "catalog", catalog));
+        int relatedLimit = Math.max(0, boundedLimit - frequent.size() - catalog.size());
+        var related = cacheResults.stream()
+            .filter(c -> !c.getFoodName().toLowerCase(Locale.ROOT).startsWith(queryLower))
+            .limit(relatedLimit)
+            .map(this::toCacheSuggestion)
+            .toList();
+
+        return ResponseEntity.ok(Map.of("frequent", frequent, "catalog", catalog, "related", related));
+    }
+
+    private Map<String, Object> toCacheSuggestion(FoodCache food) {
+        return Map.of(
+            "name",     food.getFoodName(),
+            "calories", food.getCalories() != null ? food.getCalories().intValue() : 0,
+            "proteinG", food.getProteinG() != null ? food.getProteinG().doubleValue() : 0.0,
+            "carbsG",   food.getCarbsG() != null ? food.getCarbsG().doubleValue() : 0.0,
+            "fatG",     food.getFatG() != null ? food.getFatG().doubleValue() : 0.0,
+            "source",   "cache",
+            "hitCount", food.getHitCount() != null ? food.getHitCount() : 1
+        );
     }
 
     @DeleteMapping("/{id}")
