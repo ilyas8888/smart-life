@@ -18,3 +18,8 @@ logging:
     com.smartlife: INFO
     org.springframework.security: DEBUG
     org.springframework.security.oauth2.client: DEBUG
+
+sentry:
+  dsn: ${SENTRY_DSN:}
+  traces-sample-rate: 0.1
+  environment: production
