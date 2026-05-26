@@ -137,7 +137,7 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
 
       {showDropdown && (
         <div id={listboxId} role="listbox"
-          className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden">
+          className="absolute z-50 left-0 right-0 bottom-full mb-1 max-h-72 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl">
           {(!inputSettled || isFetching) && (
             <div className="px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400">
               Recherche nutritionnelle...
