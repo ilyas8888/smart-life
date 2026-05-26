@@ -20,6 +20,9 @@
     <properties>
         <java.version>17</java.version>
         <jjwt.version>0.11.5</jjwt.version>
+        <sonar.organization>ilyas8888</sonar.organization>
+        <sonar.projectKey>ilyas8888_smart-life</sonar.projectKey>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
     <dependencies>
