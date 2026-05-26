@@ -38,7 +38,7 @@ jobs:
         run: |
           mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -DskipTests \
-            -Dsonar.projectKey=ilyas8888_smart-life \
+            -Dsonar.projectKey=smart-life \
             -Dsonar.organization=ilyas8888 \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
