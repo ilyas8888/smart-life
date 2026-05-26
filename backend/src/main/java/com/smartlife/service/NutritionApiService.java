@@ -51,12 +51,13 @@ public class NutritionApiService {
         if (usdaApiKey == null || usdaApiKey.isBlank()) return List.of();
         try {
             String queryLower = query.trim().toLowerCase(Locale.ROOT);
-            int candidateLimit = Math.min(Math.max(limit * 6, 30), 100);
+            int candidateLimit = Math.min(limit * 4, 50);
             List<NutritionResult> results = new ArrayList<>();
             Set<String> resultNames = new LinkedHashSet<>();
 
             appendResults(results, resultNames,
-                fetchUsdaFoods(query, candidateLimit, "Foundation,SR Legacy,Survey (FNDDS)"), queryLower, limit);
+                fetchUsdaFoods(query, candidateLimit, "Foundation", "SR Legacy"),
+                queryLower, limit);
 
             // Brand products are useful for precise searches, but must not drown basic foods.
             if (results.size() < limit && queryLower.length() >= 4) {
@@ -72,7 +73,7 @@ public class NutritionApiService {
     }
 
     @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> fetchUsdaFoods(String query, int limit, String dataTypes) {
+    private List<Map<String, Object>> fetchUsdaFoods(String query, int limit, String... dataTypes) {
         Map<String, Object> response = webClientBuilder.build()
             .get()
             .uri(uriBuilder -> uriBuilder
@@ -82,7 +83,7 @@ public class NutritionApiService {
                 .queryParam("query", query)
                 .queryParam("api_key", usdaApiKey)
                 .queryParam("pageSize", String.valueOf(limit))
-                .queryParam("dataType", dataTypes)
+                .queryParam("dataType", (Object[]) dataTypes)
                 .build())
             .retrieve()
             .bodyToMono(Map.class)
@@ -94,8 +95,14 @@ public class NutritionApiService {
 
     private void appendResults(List<NutritionResult> results, Set<String> resultNames,
                                List<Map<String, Object>> foods, String queryLower, int limit) {
+        // Try strict prefix filter first; fall back to contains if nothing matches.
+        boolean anyStrict = foods.stream().anyMatch(f -> startsWithQueryOrWord(f, queryLower));
+        java.util.function.Predicate<Map<String, Object>> filter = anyStrict
+            ? food -> startsWithQueryOrWord(food, queryLower)
+            : food -> descriptionOf(food).toLowerCase(Locale.ROOT).contains(queryLower);
+
         foods.stream()
-            .filter(food -> startsWithQueryOrWord(food, queryLower))
+            .filter(filter)
             .sorted(Comparator
                 .comparingInt((Map<String, Object> food) -> suggestionRank(food, queryLower))
                 .thenComparing(food -> descriptionOf(food).toLowerCase(Locale.ROOT)))
@@ -127,9 +134,8 @@ public class NutritionApiService {
                 }
             }
         }
-        return calories == null
-            ? Optional.empty()
-            : Optional.of(new NutritionResult(name, calories, protein, carbs, fat, fiber, Map.of(), "usda"));
+        int kcal = calories != null ? calories : 0;
+        return Optional.of(new NutritionResult(name, kcal, protein, carbs, fat, fiber, Map.of(), "usda"));
     }
 
     private boolean startsWithQueryOrWord(Map<String, Object> food, String queryLower) {
@@ -195,7 +201,7 @@ public class NutritionApiService {
                     .queryParam("query", query)
                     .queryParam("api_key", usdaApiKey)
                     .queryParam("pageSize", "1")
-                    .queryParam("dataType", "Foundation,SR Legacy,Survey (FNDDS)")
+                    .queryParam("dataType", "Foundation", "SR Legacy", "Survey (FNDDS)")
                     .build())
                 .retrieve()
                 .bodyToMono(Map.class)
