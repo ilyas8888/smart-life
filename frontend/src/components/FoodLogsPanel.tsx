@@ -9,6 +9,7 @@ import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
 import { EmptyPanel, IllustrationFood } from './EmptyState'
+import { FoodAutocomplete } from './FoodAutocomplete'
 
 interface FoodLog {
   id: number
@@ -370,6 +371,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
   const [newFood, setNewFood] = useState('')
   const [newQty, setNewQty] = useState('')
   const [newUnit, setNewUnit] = useState('g')
+  const [selectedMacros, setSelectedMacros] = useState<{ calories: number; proteinG: number; carbsG: number; fatG: number } | null>(null)
   const [promptText, setPromptText] = useState('')
   const foodInputRef = useRef<HTMLInputElement>(null)
 
@@ -407,6 +409,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     setNewFood('')
     setNewQty('')
     setNewUnit('g')
+    setSelectedMacros(null)
     setTimeout(() => foodInputRef.current?.focus(), 0)
   }
 
@@ -488,9 +491,16 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                   Ajouter un aliment
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  <input ref={foodInputRef} className="input w-full sm:flex-1 sm:w-auto" value={newFood}
-                    onChange={e => setNewFood(e.target.value)} onKeyDown={handleFoodKeyDown}
-                    placeholder="Ex: Poulet grillé" />
+                  <FoodAutocomplete
+                    ref={foodInputRef}
+                    value={newFood}
+                    onChange={value => { setNewFood(value); setSelectedMacros(null) }}
+                    onSelect={item => {
+                      setNewFood(item.name)
+                      setSelectedMacros({ calories: item.calories, proteinG: item.proteinG, carbsG: item.carbsG, fatG: item.fatG })
+                    }}
+                    onEnter={addFoodItem}
+                  />
                   <input className="input flex-1 sm:flex-none sm:w-24" value={newQty}
                     onChange={e => setNewQty(e.target.value)} onKeyDown={handleFoodKeyDown}
                     placeholder="Qté" />
@@ -502,6 +512,15 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                     <Plus size={18} />
                   </button>
                 </div>
+                {selectedMacros && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                    ≈ {Math.round(selectedMacros.calories * (parseFloat(newQty) || 100) / 100)} kcal
+                    {' · '}P {(selectedMacros.proteinG * (parseFloat(newQty) || 100) / 100).toFixed(1)}g
+                    {' · '}G {(selectedMacros.carbsG * (parseFloat(newQty) || 100) / 100).toFixed(1)}g
+                    {' · '}L {(selectedMacros.fatG * (parseFloat(newQty) || 100) / 100).toFixed(1)}g
+                    {' '}(pour {newQty || 100}{newUnit})
+                  </p>
+                )}
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Appuyez sur Entrée pour ajouter rapidement</p>
               </div>
 
