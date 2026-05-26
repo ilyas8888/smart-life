@@ -51,13 +51,23 @@ public class NutritionApiService {
         if (usdaApiKey == null || usdaApiKey.isBlank()) return List.of();
         try {
             String queryLower = query.trim().toLowerCase(Locale.ROOT);
-            int candidateLimit = Math.min(limit * 4, 50);
+            int candidateLimit = 5;
             List<NutritionResult> results = new ArrayList<>();
             Set<String> resultNames = new LinkedHashSet<>();
 
             appendResults(results, resultNames,
-                fetchUsdaFoods(query, candidateLimit, "Foundation", "SR Legacy"),
+                fetchUsdaFoods(query, candidateLimit, "Survey (FNDDS)"),
                 queryLower, limit);
+            if (results.size() < limit) {
+                appendResults(results, resultNames,
+                    fetchUsdaFoods(query, candidateLimit, "SR Legacy"),
+                    queryLower, limit);
+            }
+            if (results.size() < limit) {
+                appendResults(results, resultNames,
+                    fetchUsdaFoods(query, candidateLimit, "Foundation"),
+                    queryLower, limit);
+            }
 
             // Brand products are useful for precise searches, but must not drown basic foods.
             if (results.size() < limit && queryLower.length() >= 4) {
@@ -67,7 +77,8 @@ public class NutritionApiService {
 
             return results;
         } catch (Exception e) {
-            log.warn("USDA searchMultiple failed for '{}': {}", query, e.getMessage());
+            log.warn("USDA searchMultiple failed for '{}': {}: {}", query,
+                e.getClass().getSimpleName(), e.getMessage(), e);
             return List.of();
         }
     }
