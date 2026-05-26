@@ -38,7 +38,8 @@ public interface FoodCacheRepository extends JpaRepository<FoodCache, Long> {
         SELECT * FROM food_cache
         WHERE lower(food_name) LIKE lower(:query || '%')
            OR lower(food_name) LIKE lower('% ' || :query || '%')
-        ORDER BY hit_count DESC, last_used_at DESC
+        ORDER BY CASE WHEN lower(food_name) LIKE lower(:query || '%') THEN 0 ELSE 1 END,
+                 hit_count DESC, last_used_at DESC
         LIMIT :limit
         """, nativeQuery = true)
     List<FoodCache> searchByFoodNamePrefix(@Param("query") String query, @Param("limit") int limit);

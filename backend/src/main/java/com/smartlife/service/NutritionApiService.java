@@ -7,11 +7,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +47,10 @@ public class NutritionApiService {
     public List<NutritionResult> searchMultiple(String query, int limit) {
         if (usdaApiKey == null || usdaApiKey.isBlank()) return List.of();
         try {
+            int candidateLimit = Math.min(Math.max(limit * 8, 40), 100);
+            String dataTypes = query.trim().length() < 4
+                ? "Foundation,SR Legacy"
+                : "Foundation,SR Legacy,Branded";
             Map<String, Object> response = webClientBuilder.build()
                 .get()
                 .uri(uriBuilder -> uriBuilder
@@ -53,8 +59,8 @@ public class NutritionApiService {
                     .path("/fdc/v1/foods/search")
                     .queryParam("query", query)
                     .queryParam("api_key", usdaApiKey)
-                    .queryParam("pageSize", String.valueOf(limit))
-                    .queryParam("dataType", "Foundation,SR Legacy,Branded")
+                    .queryParam("pageSize", String.valueOf(candidateLimit))
+                    .queryParam("dataType", dataTypes)
                     .build())
                 .retrieve()
                 .bodyToMono(Map.class)
@@ -62,22 +68,14 @@ public class NutritionApiService {
 
             if (response == null) return List.of();
             var foods = (List<Map<String, Object>>) response.getOrDefault("foods", List.of());
-            String queryLower = query.toLowerCase();
+            String queryLower = query.toLowerCase(Locale.ROOT);
             foods = foods.stream()
-                .filter(f -> {
-                    String desc = ((String) f.getOrDefault("description", "")).toLowerCase();
-                    return desc.contains(queryLower);
-                })
-                .sorted((a, b) -> {
-                    String da = ((String) a.getOrDefault("description", "")).toLowerCase();
-                    String db = ((String) b.getOrDefault("description", "")).toLowerCase();
-                    boolean aStarts = da.startsWith(queryLower);
-                    boolean bStarts = db.startsWith(queryLower);
-                    if (aStarts && !bStarts) return -1;
-                    if (!aStarts && bStarts) return 1;
-                    return da.compareTo(db);
-                })
-                .collect(Collectors.toList());
+                .filter(food -> startsWithQueryOrWord(food, queryLower))
+                .sorted(Comparator
+                    .comparingInt((Map<String, Object> food) -> suggestionRank(food, queryLower))
+                    .thenComparing(food -> descriptionOf(food).toLowerCase(Locale.ROOT)))
+                .limit(limit)
+                .toList();
 
             return foods.stream()
                 .map(food -> {
@@ -105,6 +103,24 @@ public class NutritionApiService {
             log.warn("USDA searchMultiple failed for '{}': {}", query, e.getMessage());
             return List.of();
         }
+    }
+
+    private boolean startsWithQueryOrWord(Map<String, Object> food, String queryLower) {
+        String description = descriptionOf(food).toLowerCase(Locale.ROOT);
+        if (description.startsWith(queryLower)) return true;
+        return Arrays.stream(description.split("[^\\p{L}\\p{N}]+"))
+            .anyMatch(word -> word.startsWith(queryLower));
+    }
+
+    private int suggestionRank(Map<String, Object> food, String queryLower) {
+        boolean startsDescription = descriptionOf(food).toLowerCase(Locale.ROOT).startsWith(queryLower);
+        boolean branded = "Branded".equalsIgnoreCase(String.valueOf(food.getOrDefault("dataType", "")));
+        if (startsDescription) return branded ? 1 : 0;
+        return branded ? 3 : 2;
+    }
+
+    private String descriptionOf(Map<String, Object> food) {
+        return String.valueOf(food.getOrDefault("description", ""));
     }
 
     @SuppressWarnings("unchecked")
