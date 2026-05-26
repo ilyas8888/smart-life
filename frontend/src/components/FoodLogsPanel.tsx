@@ -292,7 +292,7 @@ function HydrationWidget({ count, onChange }: { count: number; onChange: (count:
           <p className="text-xs text-gray-400 dark:text-gray-500">{count} / 8 verres</p>
         </div>
       </div>
-      <div className="flex items-center gap-1 ml-auto">
+      <div className="flex w-full sm:w-auto items-center justify-between gap-1 sm:ml-auto">
         {Array.from({ length: 8 }).map((_, index) => {
           const filled = index < count
           return (
@@ -415,9 +415,9 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={isLoading ? undefined : onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -487,14 +487,14 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                   Ajouter un aliment
                 </label>
-                <div className="flex gap-2">
-                  <input ref={foodInputRef} className="input flex-1" value={newFood}
+                <div className="flex flex-wrap gap-2">
+                  <input ref={foodInputRef} className="input w-full sm:flex-1 sm:w-auto" value={newFood}
                     onChange={e => setNewFood(e.target.value)} onKeyDown={handleFoodKeyDown}
                     placeholder="Ex: Poulet grillé" />
-                  <input className="input w-24" value={newQty}
+                  <input className="input flex-1 sm:flex-none sm:w-24" value={newQty}
                     onChange={e => setNewQty(e.target.value)} onKeyDown={handleFoodKeyDown}
                     placeholder="Qté" />
-                  <select className="input w-auto" value={newUnit} onChange={e => setNewUnit(e.target.value)}>
+                  <select className="input w-24" value={newUnit} onChange={e => setNewUnit(e.target.value)}>
                     {foodUnits.map(unit => <option key={unit} value={unit}>{unit}</option>)}
                   </select>
                   <button type="button" onClick={addFoodItem}
@@ -537,12 +537,12 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 mt-4">
-                <button type="button" onClick={onClose} disabled={isLoading} className="btn-secondary">Annuler</button>
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-4">
+                <button type="button" onClick={onClose} disabled={isLoading} className="btn-secondary w-full sm:w-auto">Annuler</button>
                 <button type="button"
                   onClick={() => quickAddMutation.mutate()}
                   disabled={foodItems.length === 0 || isLoading}
-                  className="btn-primary flex items-center gap-2">
+                  className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
                   ✨ Analyser et sauvegarder
                 </button>
               </div>
@@ -588,12 +588,12 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 mt-4">
-                <button type="button" onClick={onClose} disabled={isLoading} className="btn-secondary">Annuler</button>
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-4">
+                <button type="button" onClick={onClose} disabled={isLoading} className="btn-secondary w-full sm:w-auto">Annuler</button>
                 <button type="button"
                   onClick={() => fromPromptMutation.mutate()}
                   disabled={!promptText.trim() || isLoading}
-                  className="btn-primary flex items-center gap-2">
+                  className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
                   ✨ Analyser et sauvegarder
                 </button>
               </div>

@@ -120,10 +120,10 @@ function NoteModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative rounded-2xl shadow-2xl w-full max-w-xl max-h-[85vh] flex flex-col overflow-hidden ${noteCardClass(note.color, note.isPinned) || 'bg-white dark:bg-gray-800'}`}>
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-black/5 dark:border-white/10">
+      <div className={`relative rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-xl max-h-[calc(100dvh-1rem)] sm:max-h-[85vh] flex flex-col overflow-hidden ${noteCardClass(note.color, note.isPinned) || 'bg-white dark:bg-gray-800'}`}>
+        <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-black/5 dark:border-white/10">
           <ColorPickerPopover currentColor={note.color ?? 'default'} onSelect={c => onColorChange(note.id, c)} />
           <button type="button" onClick={() => onPin(note.id)}
             className={`p-1.5 rounded-lg transition-colors ${note.isPinned ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-400'}`}>
@@ -296,7 +296,7 @@ export default function NotesPanel() {
           )}
           <div className="flex items-start justify-between gap-2 mb-2 pr-5">
             {n.title && <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{n.title}</h3>}
-            <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+            <div className="flex gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity ml-auto">
               <ColorPickerPopover
                 currentColor={n.color ?? 'default'}
                 onSelect={(c) => colorMutation.mutate({ id: n.id, color: c })}
@@ -342,7 +342,7 @@ export default function NotesPanel() {
         Notes
       </h2>
 
-      <div className="grid grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
         {[
           { label: 'Total', value: stats.total, icon: <FileText size={15} /> },
           { label: 'Épinglées', value: stats.pinned, icon: <Pin size={15} /> },

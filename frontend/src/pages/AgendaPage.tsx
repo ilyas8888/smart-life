@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Pin, Plus } from 'lucide-react'
-import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, getDay, isSameDay, isToday, startOfMonth, startOfWeek } from 'date-fns'
+import { addDays, addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, getDay, isSameDay, isToday, startOfMonth, startOfWeek } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import api from '../api/axios'
 import { fetchMonthCalendar, MonthCalendarResponse, fetchTimeline, TimelineItem, TimelineResponse } from '../api/timeline'
@@ -159,21 +159,71 @@ function MonthCalendar({
   const days = eachDayOfInterval({ start: monthStart, end: endOfMonth(viewMonth) })
   const leadingEmptyDays = (getDay(monthStart) + 6) % 7
   const weekDays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
+  const dayRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const pendingFocus = useRef<string | null>(null)
+  const keyboardDay = days.find((day) => isSameDay(day, selectedDate)) ?? days.find((day) => isToday(day)) ?? days[0]
+
+  useEffect(() => {
+    if (!pendingFocus.current) return
+    dayRefs.current[pendingFocus.current]?.focus()
+    pendingFocus.current = null
+  }, [selectedDate, viewMonth])
+
+  const onCalendarKeyDown = (event: KeyboardEvent<HTMLButtonElement>, day: Date) => {
+    const weekPosition = (getDay(day) + 6) % 7
+    let nextDate: Date | undefined
+
+    switch (event.key) {
+      case 'ArrowLeft':
+        nextDate = addDays(day, -1)
+        break
+      case 'ArrowRight':
+        nextDate = addDays(day, 1)
+        break
+      case 'ArrowUp':
+        nextDate = addDays(day, -7)
+        break
+      case 'ArrowDown':
+        nextDate = addDays(day, 7)
+        break
+      case 'Home':
+        nextDate = addDays(day, -weekPosition)
+        break
+      case 'End':
+        nextDate = addDays(day, 6 - weekPosition)
+        break
+      case 'PageUp':
+        nextDate = addMonths(day, -1)
+        break
+      case 'PageDown':
+        nextDate = addMonths(day, 1)
+        break
+      default:
+        return
+    }
+
+    event.preventDefault()
+    pendingFocus.current = dateKey(nextDate)
+    onSelectDate(nextDate)
+    onChangeMonth(nextDate)
+  }
 
   return (
-    <div className="card mb-6 p-4">
+    <div role="group" className="card mb-6 p-4" aria-label="Calendrier mensuel">
       <div className="flex items-center justify-between mb-3">
         <button
           type="button"
           onClick={() => onChangeMonth(addMonths(viewMonth, -1))}
+          aria-label="Afficher le mois precedent"
           className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700 transition-colors"
         >
           <ChevronLeft size={16} />
         </button>
-        <h2 className="text-sm font-semibold text-gray-800 dark:text-gray-100 capitalize">{monthTitle(viewMonth)}</h2>
+        <h2 aria-live="polite" className="text-sm font-semibold text-gray-800 dark:text-gray-100 capitalize">{monthTitle(viewMonth)}</h2>
         <button
           type="button"
           onClick={() => onChangeMonth(addMonths(viewMonth, 1))}
+          aria-label="Afficher le mois suivant"
           className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700 transition-colors"
         >
           <ChevronRight size={16} />
@@ -201,6 +251,14 @@ function MonthCalendar({
               key={key}
               type="button"
               onClick={() => onSelectDate(day)}
+              onKeyDown={(event) => onCalendarKeyDown(event, day)}
+              ref={(element) => {
+                dayRefs.current[key] = element
+              }}
+              tabIndex={isSameDay(day, keyboardDay) ? 0 : -1}
+              aria-label={format(day, 'EEEE d MMMM yyyy', { locale: fr })}
+              aria-pressed={selected}
+              aria-current={currentDay ? 'date' : undefined}
               className="relative flex min-h-14 flex-col items-center justify-center py-1 rounded-xl transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <span
@@ -375,6 +433,9 @@ function WeekStrip({ selectedDate, onSelectDate }: { selectedDate: Date; onSelec
           key={dateKey(day)}
           type="button"
           onClick={() => onSelectDate(day)}
+          aria-pressed={isSameDay(day, selectedDate)}
+          aria-current={isToday(day) ? 'date' : undefined}
+          aria-label={format(day, 'EEEE d MMMM yyyy', { locale: fr })}
           className={`min-w-[64px] rounded-xl px-3 py-2 text-center ${
             isSameDay(day, selectedDate)
               ? 'bg-primary-600 text-white'
@@ -424,6 +485,7 @@ function MonthOverview({
             key={item.value}
             type="button"
             onClick={() => onFilter(item.value)}
+            aria-pressed={filter === item.value}
             className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
               filter === item.value
                 ? 'bg-primary-600 text-white'
@@ -436,15 +498,15 @@ function MonthOverview({
       </div>
       <div className="card p-4">
         <div className="flex items-center justify-between mb-4">
-          <button type="button" onClick={() => onChangeMonth(addMonths(viewMonth, -1))} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+          <button type="button" aria-label="Afficher le mois precedent" onClick={() => onChangeMonth(addMonths(viewMonth, -1))} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
             <ChevronLeft size={20} />
           </button>
-          <h2 className="font-semibold text-lg text-gray-900 dark:text-gray-100">{monthTitle(viewMonth)}</h2>
-          <button type="button" onClick={() => onChangeMonth(addMonths(viewMonth, 1))} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+          <h2 aria-live="polite" className="font-semibold text-lg text-gray-900 dark:text-gray-100">{monthTitle(viewMonth)}</h2>
+          <button type="button" aria-label="Afficher le mois suivant" onClick={() => onChangeMonth(addMonths(viewMonth, 1))} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
             <ChevronRight size={20} />
           </button>
         </div>
-        <div className="grid grid-cols-7 gap-2">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2">
           {['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'].map((day) => (
             <div key={day} className="text-center text-xs font-semibold uppercase text-gray-400 py-2">{day}</div>
           ))}
@@ -456,7 +518,9 @@ function MonthOverview({
                 key={dateKey(day)}
                 type="button"
                 onClick={() => onSelectDate(day)}
-                className={`min-h-24 rounded-xl border p-2 text-left transition-colors hover:border-primary-400 ${
+                aria-label={format(day, 'EEEE d MMMM yyyy', { locale: fr })}
+                aria-current={isToday(day) ? 'date' : undefined}
+                className={`min-w-0 min-h-16 sm:min-h-24 rounded-lg sm:rounded-xl border p-1 sm:p-2 text-left transition-colors hover:border-primary-400 ${
                   isToday(day)
                     ? 'border-primary-500 bg-primary-50/60 dark:bg-primary-900/20'
                     : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800'
@@ -465,7 +529,7 @@ function MonthOverview({
                 <span className={`text-sm font-medium ${isToday(day) ? 'text-primary-600 dark:text-primary-300' : 'text-gray-600 dark:text-gray-300'}`}>
                   {format(day, 'd')}
                 </span>
-                <div className="mt-1 space-y-1">
+                <div className="hidden sm:block mt-1 space-y-1">
                   {items.slice(0, 2).map((item) => (
                     <div key={`${item.type}-${item.id}`} className={`border-l-2 pl-1.5 text-[11px] text-gray-600 dark:text-gray-300 truncate ${itemBorderClass(item)}`}>
                       {item.title}
@@ -484,7 +548,7 @@ function MonthOverview({
 
 function LoadingState() {
   return (
-    <div className="w-full px-6 py-8 animate-pulse">
+    <div className="w-full px-1 sm:px-4 py-4 sm:py-8 animate-pulse">
       <div className="h-12 w-full bg-gray-100 dark:bg-gray-800 rounded-xl mb-6" />
       <div className="grid lg:grid-cols-[320px_1fr] gap-6">
         <div className="h-96 bg-gray-100 dark:bg-gray-800 rounded-xl" />
@@ -583,7 +647,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-gray-900" onClick={() => setOpenMenu(null)}>
-      <div className="w-full px-6 py-8">
+      <div className="w-full px-1 sm:px-4 py-4 sm:py-8">
         <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between mb-6">
           <div>
             <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Agenda</p>
@@ -607,6 +671,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
                   key={key}
                   type="button"
                   onClick={() => setView(key)}
+                  aria-pressed={view === key}
                   className={`px-3 py-1.5 rounded-md text-sm ${view === key ? 'bg-primary-600 text-white' : 'text-gray-500 dark:text-gray-300'}`}
                 >
                   {label}
@@ -633,12 +698,14 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
               <button
                 type="button"
                 onClick={() => setShowMobileCalendar((open) => !open)}
+                aria-expanded={showMobileCalendar}
+                aria-controls="agenda-month-calendar"
                 className="lg:hidden w-full card mb-4 flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-200"
               >
                 Voir le mois
                 <ChevronDown size={16} className={showMobileCalendar ? 'rotate-180' : ''} />
               </button>
-              <div className={`${showMobileCalendar ? 'block' : 'hidden'} lg:block`}>
+              <div id="agenda-month-calendar" className={`${showMobileCalendar ? 'block' : 'hidden'} lg:block`}>
                 <MonthCalendar selectedDate={selectedDate} viewMonth={viewMonth} calendarData={calendarData} onSelectDate={openDay} onChangeMonth={setViewMonth} />
               </div>
               <div className="card p-4 mb-4">
@@ -668,7 +735,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
               {view === 'day' ? (
                 <>
                   <div className="mb-5">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                       Journée du {format(selectedDate, 'EEEE d MMMM', { locale: fr })}
                     </h2>
                     <p className="text-sm text-gray-400 mt-1">{stats}</p>
@@ -732,7 +799,13 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
                       const items = sortItems(calendarData[dateKey(day)] ?? [])
                       return (
                         <div key={`week-${dateKey(day)}`} className={`rounded-xl p-2 min-h-[460px] ${isToday(day) ? 'bg-primary-50 dark:bg-primary-900/20' : 'bg-gray-50 dark:bg-gray-900/60'}`}>
-                          <button type="button" onClick={() => openDay(day)} className="w-full text-center pb-3 mb-2 border-b border-gray-200 dark:border-gray-700">
+                          <button
+                            type="button"
+                            onClick={() => openDay(day)}
+                            aria-label={`Ouvrir la journee du ${format(day, 'EEEE d MMMM yyyy', { locale: fr })}`}
+                            aria-current={isToday(day) ? 'date' : undefined}
+                            className="w-full text-center pb-3 mb-2 border-b border-gray-200 dark:border-gray-700"
+                          >
                             <span className="block text-xs uppercase text-gray-400">{format(day, 'EEE', { locale: fr })}</span>
                             <span className="text-lg font-semibold text-gray-800 dark:text-gray-100">{format(day, 'd')}</span>
                           </button>

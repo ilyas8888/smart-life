@@ -21,7 +21,7 @@ interface SetLog { setNumber: number; weightKg: string; reps: string }
 interface ExerciseProgress { exercise: PlanExercise; setLogs: SetLog[] }
 type Mode = null | 'guided' | 'prompt'
 type GoalType = 'MUSCLE_GAIN' | 'FAT_LOSS' | 'ENDURANCE' | 'GENERAL'
-type TabType = 'sessions' | 'programs'
+type TabType = 'today' | 'sessions' | 'programs' | 'progression'
 type WorkoutView = 'list' | 'detail' | 'session'
 type WorkoutPhase = 'exercising' | 'resting' | 'done'
 
@@ -353,11 +353,11 @@ function GlobalStats({ sessions }: { sessions: WorkoutSession[] }) {
   ]
 
   return (
-    <div className="grid grid-cols-4 gap-3 mb-5">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
       {stats.map((s) => (
-        <div key={s.label} className={`rounded-2xl ${s.bg} px-3 py-3 text-center`}>
+        <div key={s.label} className={`rounded-2xl ${s.bg} px-3 py-3 text-center hover:-translate-y-0.5 transition-transform cursor-default`}>
           <span className="text-xl block mb-1">{s.icon}</span>
-          <p className={`text-xl font-bold leading-none ${s.text}`}>{s.value}</p>
+          <p className={`text-3xl font-black leading-none ${s.text}`}>{s.value}</p>
           <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{s.label}</p>
         </div>
       ))}
@@ -511,6 +511,7 @@ function SessionCard({
   const groups = groupExercises(session.exercises)
   const totalVolume = session.exercises.reduce((s, e) =>
     s + (e.sets ?? 1) * (e.reps ?? 0) * (e.weightKg ?? 0), 0)
+  const hasPR = session.exercises.some(ex => isPR(sessions, ex.name, ex.weightKg, session.sessionDate))
 
   return (
     <div className={`card overflow-hidden ${borderCls}`}>
@@ -528,7 +529,14 @@ function SessionCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="font-bold text-gray-900 dark:text-gray-100 truncate">{session.title}</p>
+              <div className="flex items-center gap-2 min-w-0">
+                <p className="font-bold text-gray-900 dark:text-gray-100 truncate">{session.title}</p>
+                {hasPR && (
+                  <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-700 shrink-0">
+                    🏆 PR
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                 {format(new Date(`${session.sessionDate}T00:00:00`), 'EEEE dd MMMM yyyy', { locale: fr })}
                 {session.planDayId && (
@@ -597,7 +605,8 @@ function SessionCard({
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
                 {group.name}
               </p>
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[300px] text-sm">
                 <thead>
                   <tr className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-widest">
                     <th className="text-left pb-1 font-medium w-10">Série</th>
@@ -635,6 +644,7 @@ function SessionCard({
                   })}
                 </tbody>
               </table>
+              </div>
             </div>
           ))}
           {session.notes && (
@@ -763,9 +773,9 @@ function AddWorkoutModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={isLoading ? undefined : onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Dumbbell size={20} className="text-amber-500" /> Nouvelle séance
@@ -816,7 +826,7 @@ function AddWorkoutModal({
               )}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type d'activité</label>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                   {SPORT_PRESETS.map(preset => (
                     <button key={preset.label} type="button" onClick={() => selectSport(preset.label)}
                       className={`min-h-14 rounded-xl border-2 px-1.5 py-2 text-xs font-medium transition-colors ${
@@ -942,10 +952,10 @@ function AddWorkoutModal({
               )}
               <textarea className="input resize-none min-h-[70px] mb-4 text-sm" value={notes}
                 onChange={e => setNotes(e.target.value)} placeholder="Notes (optionnel)" />
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={onClose} disabled={isLoading} className="btn-secondary">Annuler</button>
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <button type="button" onClick={onClose} disabled={isLoading} className="btn-secondary w-full sm:w-auto">Annuler</button>
                 <button type="button" onClick={() => guidedMutation.mutate()} disabled={!canSaveGuided || isLoading}
-                  className="btn-primary">Enregistrer la séance</button>
+                  className="btn-primary w-full sm:w-auto">Enregistrer la séance</button>
               </div>
             </div>
           )}
@@ -966,10 +976,10 @@ function AddWorkoutModal({
                   L'IA analyse votre séance…
                 </div>
               )}
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={onClose} disabled={isLoading} className="btn-secondary">Annuler</button>
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                <button type="button" onClick={onClose} disabled={isLoading} className="btn-secondary w-full sm:w-auto">Annuler</button>
                 <button type="button" onClick={() => promptMutation.mutate()} disabled={!promptText.trim() || isLoading}
-                  className="btn-primary flex items-center gap-2">✨ Analyser et sauvegarder</button>
+                  className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">✨ Analyser et sauvegarder</button>
               </div>
             </div>
           )}
@@ -1336,11 +1346,11 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange }: {
         <img
           src={GOAL_IMAGES[(plan.goal as GoalType) in GOAL_IMAGES ? plan.goal as GoalType : 'GENERAL']}
           alt={cfg.label}
-          className="w-full h-48 object-cover"
+          className="w-full min-h-[20rem] sm:min-h-0 sm:h-48 object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
-        <div className="absolute inset-0 p-5 flex flex-col justify-end">
-          <div className="flex items-start gap-4">
+        <div className="absolute inset-0 p-4 sm:p-5 flex flex-col justify-end">
+          <div className="flex items-start gap-2 sm:gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-2xl">{cfg.emoji}</span>
@@ -1412,7 +1422,7 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange }: {
               </div>
             </div>
           </div>
-          <div className="relative shrink-0">
+          <div className="relative shrink-0 hidden sm:block">
             <ProgressRing percent={progress?.percent ?? 0} size={56} />
             <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">
               {progress?.percent ?? 0}%
@@ -1424,14 +1434,14 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange }: {
 
       {!isTodayRest && today && (
         <div className={`rounded-2xl border-2 p-4 mb-5 ${goalTodayBorder(plan.goal)} ${goalTodayBg(plan.goal)}`}>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
             <div>
               <p className={`text-xs font-semibold uppercase tracking-wide mb-0.5 ${cfg.accentText}`}>Séance d'aujourd'hui</p>
               <p className="font-bold text-gray-900 dark:text-gray-100 text-base">{today.label}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">{today.exercises.length} exercices</p>
             </div>
             <button type="button" onClick={() => onStartSession(today)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-colors ${goalAccentBtn(plan.goal)}`}>
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-colors w-full sm:w-auto ${goalAccentBtn(plan.goal)}`}>
               <Play size={16} /> Démarrer
             </button>
           </div>
@@ -1581,9 +1591,9 @@ function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSucces
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={createMutation.isPending ? undefined : onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-xl max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Créer un programme</h3>
           <button type="button" onClick={onClose} disabled={createMutation.isPending}
@@ -1604,7 +1614,7 @@ function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSucces
                   </button>
                 ))}
               </div>
-              <div className="flex gap-2 mb-5">
+              <div className="flex flex-wrap gap-2 mb-5">
                 {[4, 6, 8, 10, 12].map(value => (
                   <button key={value} type="button" onClick={() => setWeeks(value)}
                     className={`rounded-full px-4 py-1.5 text-sm font-medium ${weeks === value ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
@@ -1674,8 +1684,8 @@ function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSucces
                   </div>
                 </div>
               )}
-              <div className="grid grid-cols-5 gap-2 mb-4">
-                <input className="input col-span-5 sm:col-span-1" value={customExercise.name} onChange={e => setCustomExercise(prev => ({ ...prev, name: e.target.value }))} placeholder="Exercice" />
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
+                <input className="input col-span-2 sm:col-span-1" value={customExercise.name} onChange={e => setCustomExercise(prev => ({ ...prev, name: e.target.value }))} placeholder="Exercice" />
                 <input className="input" type="number" value={customExercise.sets} onChange={e => setCustomExercise(prev => ({ ...prev, sets: e.target.value }))} placeholder="Séries" />
                 <input className="input" type="number" value={customExercise.reps} onChange={e => setCustomExercise(prev => ({ ...prev, reps: e.target.value }))} placeholder="Reps" />
                 <input className="input" type="number" value={customExercise.weightKg} onChange={e => setCustomExercise(prev => ({ ...prev, weightKg: e.target.value }))} placeholder="Poids" />
@@ -1774,9 +1784,216 @@ function ProgramCard({ plan, onClick, onDelete }: {
   )
 }
 
+function WeekHeroCard({ sessions, onAddSession }: { sessions: WorkoutSession[]; onAddSession: () => void }) {
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - 6)
+  cutoff.setHours(0, 0, 0, 0)
+  const weekSessions = sessions.filter(session => new Date(`${session.sessionDate}T00:00:00`) >= cutoff)
+  const weekCount = weekSessions.length
+  const weekGoal = 4
+  const weekCalories = weekSessions.reduce((sum, session) => sum + (session.caloriesBurned ?? 0), 0)
+  const weekMinutes = weekSessions.reduce((sum, session) => sum + (session.durationMinutes ?? 0), 0)
+  const weekPercent = Math.min(100, Math.round((weekCount / weekGoal) * 100))
+  const sessionWeeks = new Set(sessions.map(session => getIsoWeekKey(session.sessionDate)))
+  let streak = 0
+  const cursor = new Date()
+  while (sessionWeeks.has(getIsoWeekKey(cursor.toISOString().split('T')[0]))) {
+    streak++
+    cursor.setDate(cursor.getDate() - 7)
+  }
+  const circumference = 2 * Math.PI * 40
+
+  return (
+    <div className="relative rounded-2xl overflow-hidden mb-5 bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 shadow-lg">
+      <div className="absolute -right-12 -top-14 h-44 w-44 rounded-full bg-white/10" />
+      <div className="absolute -left-14 bottom-[-5rem] h-40 w-40 rounded-full bg-red-700/15" />
+      <div className="relative z-10 p-5 sm:p-6 flex items-center gap-4">
+        <div className="flex-1 min-w-0">
+          <p className="text-white/80 text-sm font-medium uppercase tracking-wide mb-1">Cette semaine</p>
+          <div className="flex items-baseline gap-1 mb-3">
+            <span className="text-5xl font-black text-white">{weekCount}</span>
+            <span className="text-white/70 text-lg font-medium">/{weekGoal} séances</span>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {weekCalories > 0 && (
+              <div className="flex items-center gap-1.5 text-white/90 text-sm">
+                <Flame size={14} />
+                <span className="font-semibold">{weekCalories} kcal</span>
+              </div>
+            )}
+            {weekMinutes > 0 && (
+              <div className="flex items-center gap-1.5 text-white/90 text-sm">
+                <Clock size={14} />
+                <span className="font-semibold">
+                  {Math.floor(weekMinutes / 60)}h{weekMinutes % 60 > 0 ? ` ${weekMinutes % 60}min` : ''}
+                </span>
+              </div>
+            )}
+          </div>
+          {streak >= 2 && (
+            <div className="mt-3 inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
+              <Flame size={13} className="text-white" />
+              <span className="text-white text-xs font-bold">{streak} semaines consécutives</span>
+            </div>
+          )}
+          {weekCount === 0 && (
+            <button type="button" onClick={onAddSession}
+              className="mt-4 rounded-lg bg-white/20 hover:bg-white/30 px-3 py-2 text-sm font-semibold text-white transition-colors">
+              Commencer une séance
+            </button>
+          )}
+        </div>
+        <div className="relative shrink-0 w-20 h-20 sm:w-24 sm:h-24">
+          <svg viewBox="0 0 96 96" className="h-full w-full -rotate-90">
+            <circle cx="48" cy="48" r="40" fill="none" strokeWidth="8" className="stroke-white/25" />
+            <circle cx="48" cy="48" r="40" fill="none" strokeWidth="8" stroke="white"
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference * (1 - weekPercent / 100)}
+              strokeLinecap="round"
+              style={{ transition: 'stroke-dashoffset 0.8s ease' }} />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-xl sm:text-2xl font-black text-white">{weekPercent}%</span>
+            <span className="text-[10px] text-white/70">objectif</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TodaySessionBanner({ plans, onStartSession, onViewProgram }: {
+  plans: WorkoutPlan[]
+  onStartSession: (plan: WorkoutPlan, day: PlanDay) => void
+  onViewProgram: (plan: WorkoutPlan) => void
+}) {
+  const activePlan = plans.find(plan => plan.status === 'ACTIVE')
+  if (!activePlan) return null
+
+  const jsDay = new Date().getDay()
+  const planDay = jsDay === 0 ? 7 : jsDay
+  const today = activePlan.days.find(day => day.dayNumber === planDay)
+  const isRest = !today || today.label.toLowerCase() === 'repos'
+
+  if (isRest) {
+    return (
+      <div className="card mb-5 text-center py-6">
+        <span className="text-3xl block mb-2">🧘</span>
+        <p className="font-semibold text-gray-700 dark:text-gray-300">Jour de repos</p>
+        <p className="text-sm text-gray-400 mt-1">{activePlan.name} · Profite de la récupération</p>
+      </div>
+    )
+  }
+
+  const cfg = GOAL_CONFIG[(activePlan.goal as GoalType) in GOAL_CONFIG ? activePlan.goal as GoalType : 'GENERAL']
+  return (
+    <div className={`card mb-5 border-l-4 ${goalDayBorder(activePlan.goal)} bg-gradient-to-r ${cfg.gradient}`}>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-3">
+        <div>
+          <p className={`text-xs font-bold uppercase tracking-wide mb-0.5 ${cfg.accentText}`}>Séance d'aujourd'hui</p>
+          <h3 className="text-lg font-black text-gray-900 dark:text-gray-100">{today.label}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{today.exercises.length} exercices · {activePlan.name}</p>
+        </div>
+        <button type="button" onClick={() => onStartSession(activePlan, today)}
+          className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white ${goalAccentBtn(activePlan.goal)} shadow-md w-full sm:w-auto`}>
+          <Play size={16} /> Démarrer
+        </button>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+        {today.exercises.slice(0, 4).map((exercise, index) => (
+          <div key={`${exercise.name}-${index}`} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">{index + 1}</span>
+            <span className="truncate">{exercise.name}</span>
+            {exercise.sets && exercise.reps && <span className="text-xs text-gray-400 ml-auto shrink-0">{exercise.sets}×{exercise.reps}</span>}
+          </div>
+        ))}
+        {today.exercises.length > 4 && (
+          <p className="text-xs text-gray-400 col-span-full">+{today.exercises.length - 4} autres exercices</p>
+        )}
+      </div>
+      <button type="button" onClick={() => onViewProgram(activePlan)}
+        className={`mt-3 text-xs hover:underline font-medium ${cfg.accentText}`}>
+        Voir le programme complet →
+      </button>
+    </div>
+  )
+}
+
+function PRSection({ sessions }: { sessions: WorkoutSession[] }) {
+  const prMap = new Map<string, { weightKg: number; date: string; reps: number | null }>()
+  sessions.forEach(session => {
+    session.exercises.forEach(exercise => {
+      if (!exercise.weightKg) return
+      const current = prMap.get(exercise.name)
+      if (!current || exercise.weightKg > current.weightKg) {
+        prMap.set(exercise.name, { weightKg: exercise.weightKg, date: session.sessionDate, reps: exercise.reps })
+      }
+    })
+  })
+  const prs = Array.from(prMap.entries())
+    .sort((a, b) => b[1].weightKg - a[1].weightKg)
+    .slice(0, 6)
+  if (prs.length === 0) return null
+
+  return (
+    <div className="card">
+      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">🏆 Records personnels</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {prs.map(([name, pr]) => (
+          <div key={name} className="flex items-center gap-3 rounded-xl bg-amber-50 dark:bg-amber-900/15 px-3 py-3 border border-amber-100 dark:border-amber-800/30">
+            <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-base shrink-0">🏆</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">{name}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500">{format(new Date(`${pr.date}T00:00:00`), 'd MMM yyyy', { locale: fr })}</p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-xl font-black text-amber-600 dark:text-amber-400">{pr.weightKg}<span className="text-xs font-medium"> kg</span></p>
+              {pr.reps && <p className="text-[10px] text-gray-400">× {pr.reps} reps</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function FeaturedProgram({ plan, onClick }: { plan: WorkoutPlan; onClick: () => void }) {
+  const cfg = GOAL_CONFIG[(plan.goal as GoalType) in GOAL_CONFIG ? plan.goal as GoalType : 'GENERAL']
+  const { data: progress } = useQuery<PlanProgress>({
+    queryKey: ['plan-progress', plan.id],
+    queryFn: () => api.get(`/workout-plans/${plan.id}/progress`).then(response => response.data),
+  })
+
+  return (
+    <div className="mb-5">
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">Programme actif</p>
+      <button type="button" onClick={onClick} className="relative rounded-2xl overflow-hidden h-36 group w-full text-left">
+        <img src={GOAL_IMAGES[(plan.goal as GoalType) in GOAL_IMAGES ? plan.goal as GoalType : 'GENERAL']}
+          alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/20" />
+        <div className="absolute inset-0 p-4 flex items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-2xl">{cfg.emoji}</span>
+              <span className="text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-black/30 text-white border border-white/20">{cfg.label}</span>
+              <span className="w-2 h-2 rounded-full bg-green-400 ring-2 ring-white animate-pulse" />
+            </div>
+            <h3 className="text-lg font-black text-white truncate">{plan.name}</h3>
+            <p className="text-sm text-white/70">{plan.daysPerWeek}j/sem · {plan.weeks} semaines</p>
+          </div>
+          <div className="relative shrink-0">
+            <ProgressRing percent={progress?.percent ?? 0} />
+            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-white">{progress?.percent ?? 0}%</span>
+          </div>
+        </div>
+      </button>
+    </div>
+  )
+}
+
 export default function WorkoutPanel() {
   const qc = useQueryClient()
-  const [activeTab, setActiveTab] = useState<TabType>('sessions')
+  const [activeTab, setActiveTab] = useState<TabType>('today')
   const [showAddModal, setShowAddModal] = useState(false)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [showCreatePlan, setShowCreatePlan] = useState(false)
@@ -1873,40 +2090,78 @@ export default function WorkoutPanel() {
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between gap-3 mb-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
           <Dumbbell className="text-amber-500" /> Sport & Entraînement
         </h2>
         <div className="flex gap-2">
           <button type="button" onClick={() => setShowAddModal(true)}
-            className="btn-primary flex items-center gap-2 text-sm">
+            className="btn-primary flex items-center justify-center gap-2 text-sm w-full sm:w-auto">
             <Plus size={16} /> Nouvelle séance
           </button>
         </div>
       </div>
 
-      <div className="flex gap-4 border-b border-gray-100 dark:border-gray-700 mb-6">
+      <div className="flex gap-4 overflow-x-auto border-b border-gray-100 dark:border-gray-700 mb-6">
         {[
-          ['sessions', 'Historique'],
+          ['today', "Aujourd'hui"],
+          ['sessions', 'Séances'],
           ['programs', 'Programmes'],
+          ['progression', 'Progression'],
         ].map(([key, label]) => (
           <button key={key} type="button" onClick={() => setActiveTab(key as TabType)}
-            className={`pb-2 text-sm font-semibold border-b-2 transition-colors ${activeTab === key ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
+            className={`pb-2 text-sm font-semibold whitespace-nowrap border-b-2 transition-colors ${activeTab === key ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}>
             {label}
           </button>
         ))}
       </div>
 
-      {activeTab === 'sessions' && (
+      {activeTab === 'today' && (
         <>
-          {sessions.length > 0 && <GlobalStats sessions={sessions} />}
-          {sessions.length > 0 && <ActivityHeatmap sessions={sessions} />}
-          {sessions.length > 1 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-              <SportDonut sessions={sessions} />
-              <WeeklyVolumeChart sessions={sessions} />
+          <WeekHeroCard sessions={sessions} onAddSession={() => setShowAddModal(true)} />
+          <TodaySessionBanner
+            plans={plans}
+            onStartSession={(plan, day) => {
+              setActivePlan(plan)
+              setActiveDay(day)
+              setView('session')
+            }}
+            onViewProgram={(plan) => { setDetailPlan(plan); setView('detail') }}
+          />
+          {sessions.length > 0 ? (
+            <div>
+              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Dernières séances</p>
+              <div className="space-y-3">
+                {[...sessions]
+                  .sort((a, b) => b.sessionDate.localeCompare(a.sessionDate))
+                  .slice(0, 3)
+                  .map(session => (
+                    <SessionCard key={session.id} session={session} sessions={sessions}
+                      isExpanded={expandedId === session.id}
+                      onToggleExpand={() => setExpandedId(expandedId === session.id ? null : session.id)}
+                      onDelete={() => deleteSessionMutation.mutate(session.id)} />
+                  ))}
+              </div>
+              {sessions.length > 3 && (
+                <button type="button" onClick={() => setActiveTab('sessions')}
+                  className="mt-4 w-full text-sm text-amber-600 dark:text-amber-400 font-medium hover:underline">
+                  Voir tout l'historique ({sessions.length} séances) →
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="card text-center py-10">
+              <Dumbbell size={32} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+              <p className="font-semibold text-gray-600 dark:text-gray-300 mb-1">Prêt pour ton premier entraînement ?</p>
+              <p className="text-sm text-gray-400 mb-4">Enregistre ta première séance et suis ta progression.</p>
+              <button type="button" onClick={() => setShowAddModal(true)} className="btn-primary">+ Nouvelle séance</button>
             </div>
           )}
+        </>
+      )}
+
+      {activeTab === 'sessions' && (
+        <>
           {weekSessions.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
               <span className="rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-3 py-1.5 text-sm font-medium">
@@ -1981,6 +2236,27 @@ export default function WorkoutPanel() {
         </>
       )}
 
+      {activeTab === 'progression' && (
+        <>
+          {sessions.length > 0 && <GlobalStats sessions={sessions} />}
+          {sessions.length > 0 && <ActivityHeatmap sessions={sessions} />}
+          {sessions.length > 1 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+              <SportDonut sessions={sessions} />
+              <WeeklyVolumeChart sessions={sessions} />
+            </div>
+          )}
+          <PRSection sessions={sessions} />
+          {sessions.length === 0 && (
+            <div className="card text-center py-10">
+              <Activity size={32} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+              <p className="font-semibold text-gray-600 dark:text-gray-300">Aucune donnée pour l'instant</p>
+              <p className="text-sm text-gray-400 mt-1">Enregistre des séances pour voir ta progression.</p>
+            </div>
+          )}
+        </>
+      )}
+
       {activeTab === 'programs' && (
         plans.length === 0 ? (
           <EmptyPanel
@@ -2008,20 +2284,32 @@ export default function WorkoutPanel() {
             onPrimary={() => setShowCreatePlan(true)}
           />
         ) : (
-          <div className="grid grid-cols-2 gap-4">
-            {plans.map(plan => (
-              <ProgramCard key={plan.id} plan={plan}
-                onClick={() => { setDetailPlan(plan); setView('detail') }}
-                onDelete={() => deletePlanMutation.mutate(plan.id)} />
-            ))}
-            <button type="button" onClick={() => setShowCreatePlan(true)}
-              className="rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 h-48 flex flex-col items-center justify-center gap-3 text-gray-400 hover:border-amber-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors group">
-              <div className="w-12 h-12 rounded-full border-2 border-current flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Plus size={24} />
-              </div>
-              <span className="text-sm font-medium">Nouveau programme</span>
-            </button>
-          </div>
+          <>
+            {plans.find(plan => plan.status === 'ACTIVE') && (
+              <FeaturedProgram
+                plan={plans.find(plan => plan.status === 'ACTIVE')!}
+                onClick={() => {
+                  const plan = plans.find(candidate => candidate.status === 'ACTIVE')!
+                  setDetailPlan(plan)
+                  setView('detail')
+                }}
+              />
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {plans.map(plan => (
+                <ProgramCard key={plan.id} plan={plan}
+                  onClick={() => { setDetailPlan(plan); setView('detail') }}
+                  onDelete={() => deletePlanMutation.mutate(plan.id)} />
+              ))}
+              <button type="button" onClick={() => setShowCreatePlan(true)}
+                className="rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 h-48 flex flex-col items-center justify-center gap-3 text-gray-400 hover:border-amber-400 hover:text-amber-500 dark:hover:text-amber-400 transition-colors group">
+                <div className="w-12 h-12 rounded-full border-2 border-current flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Plus size={24} />
+                </div>
+                <span className="text-sm font-medium">Nouveau programme</span>
+              </button>
+            </div>
+          </>
         )
       )}
 

@@ -74,9 +74,9 @@ function TaskEditModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] overflow-y-auto">
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wide">Modifier</p>
@@ -112,9 +112,9 @@ function TaskEditModal({
               ))}
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="btn-secondary">Annuler</button>
-            <button type="button" onClick={save} disabled={!title.trim() || saving} className="btn-primary">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="btn-secondary w-full sm:w-auto">Annuler</button>
+            <button type="button" onClick={save} disabled={!title.trim() || saving} className="btn-primary w-full sm:w-auto">
               {saving ? 'Sauvegarde...' : 'Sauvegarder'}
             </button>
           </div>
@@ -206,7 +206,7 @@ export default function TasksPanel() {
 
     return (
       <div className={`card border-l-4 ${meta.strip} ${overdue ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50' : task.status === 'DONE' ? 'opacity-75' : ''}`}>
-        <div className="flex items-start gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.badge}`}>
@@ -230,7 +230,7 @@ export default function TasksPanel() {
               </div>
             )}
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
             <button type="button"
               onClick={() => statusMutation.mutate({ id: task.id, status: nextStatus })}
               className="p-1.5 rounded-full text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
@@ -262,7 +262,7 @@ export default function TasksPanel() {
         Tâches
       </h2>
 
-      <div className="grid grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
         {[
           { label: 'Total', value: tasks.length, icon: <CheckSquare size={15} /> },
           { label: 'À faire', value: tasks.filter(t => t.status === 'TODO').length, icon: <AlertTriangle size={15} /> },

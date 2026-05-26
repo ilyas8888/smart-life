@@ -83,11 +83,11 @@ export default function DateTimePicker({ value, onChange, placeholder = 'Choisir
         className={`input w-full text-left flex items-center gap-2 ${displayDate ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'}`}
       >
         <Calendar size={15} className="text-gray-400 shrink-0" />
-        <span>{displayDate ? format(displayDate, 'dd MMM yyyy à HH:mm', { locale: fr }) : placeholder}</span>
+        <span className="min-w-0 truncate">{displayDate ? format(displayDate, 'dd MMM yyyy à HH:mm', { locale: fr }) : placeholder}</span>
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-2 z-50 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 p-4 w-72">
+        <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-50 max-h-[calc(100dvh-2rem)] overflow-y-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 p-4 sm:absolute sm:inset-x-auto sm:left-0 sm:top-full sm:translate-y-0 sm:mt-2 sm:w-72">
           <div className="flex items-center justify-between gap-2 mb-4">
             <button
               type="button"

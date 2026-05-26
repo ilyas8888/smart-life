@@ -28,10 +28,10 @@ interface EmptyPanelProps {
 
 export function EmptyPanel({ illustration, gradient, headline, description, preview, primaryLabel, onPrimary }: EmptyPanelProps) {
   return (
-    <div className="max-w-lg mx-auto pt-4 pb-12">
-      <div className={`bg-gradient-to-br ${gradient} rounded-2xl p-8 text-center mb-6 shadow-lg`}>
+    <div className="max-w-lg mx-auto pt-2 sm:pt-4 pb-8 sm:pb-12">
+      <div className={`bg-gradient-to-br ${gradient} rounded-2xl p-5 sm:p-8 text-center mb-6 shadow-lg`}>
         <div className="w-20 h-20 mx-auto text-white/90 mb-4">{illustration}</div>
-        <h2 className="text-2xl font-bold text-white mb-2">{headline}</h2>
+        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">{headline}</h2>
         <p className="text-sm text-white/75 max-w-xs mx-auto leading-relaxed">{description}</p>
       </div>
       <div className="mb-7">
@@ -43,7 +43,7 @@ export function EmptyPanel({ illustration, gradient, headline, description, prev
         <div className="opacity-50 pointer-events-none select-none">{preview}</div>
       </div>
       <div className="text-center">
-        <button type="button" onClick={onPrimary} className="btn-primary inline-flex items-center gap-2 px-6 py-3 text-base">
+        <button type="button" onClick={onPrimary} className="btn-primary inline-flex justify-center items-center gap-2 px-6 py-3 text-base w-full sm:w-auto">
           {primaryLabel}
         </button>
       </div>

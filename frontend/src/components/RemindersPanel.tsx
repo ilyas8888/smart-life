@@ -63,9 +63,9 @@ function ReminderEditModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+      <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] overflow-y-auto">
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wide">Modifier</p>
@@ -87,9 +87,9 @@ function ReminderEditModal({
               </button>
             ))}
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" onClick={onClose} className="btn-secondary">Annuler</button>
-            <button type="button" onClick={save} disabled={!title.trim() || !remindAt || saving} className="btn-primary">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="btn-secondary w-full sm:w-auto">Annuler</button>
+            <button type="button" onClick={save} disabled={!title.trim() || !remindAt || saving} className="btn-primary w-full sm:w-auto">
               {saving ? 'Sauvegarde...' : 'Sauvegarder'}
             </button>
           </div>
@@ -182,7 +182,7 @@ export default function RemindersPanel() {
     const isOverdue = !reminder.done && isPast(date)
     return (
       <div className={`card border-l-4 ${meta.strip} ${isOverdue ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50' : reminder.done ? 'opacity-70' : ''}`}>
-        <div className="flex items-start gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <p className={`font-semibold ${reminder.done ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
@@ -198,7 +198,7 @@ export default function RemindersPanel() {
               )}
             </div>
             {reminder.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{reminder.description}</p>}
-            <div className={`flex items-center gap-2 text-xs mt-2 ${isOverdue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>
+            <div className={`flex flex-wrap items-center gap-2 text-xs mt-2 ${isOverdue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>
               <Calendar size={12} />
               <span>{format(date, 'dd MMM yyyy à HH:mm', { locale: fr })}</span>
               <span>·</span>
@@ -206,7 +206,7 @@ export default function RemindersPanel() {
               <span>{formatDistanceToNow(date, { addSuffix: true, locale: fr })}</span>
             </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
             <button type="button" onClick={() => setEditingReminder(reminder)}
               className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
               title="Modifier">
@@ -263,7 +263,7 @@ export default function RemindersPanel() {
         Rappels
       </h2>
 
-      <div className="grid grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
         {[
           { label: 'Total', value: stats.total, icon: <Bell size={15} /> },
           { label: 'En retard', value: stats.overdue, icon: <AlertTriangle size={15} /> },

@@ -117,7 +117,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen min-h-dvh flex">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -222,7 +222,7 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-4 md:p-6 dark:bg-gray-900">
+        <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 dark:bg-gray-900">
           <div key={activePanel} className="w-full min-h-full animate-panel">
             <div className={`h-1.5 rounded-full mb-6 bg-gradient-to-r ${MODULE_GRADIENT[activePanel]}`} />
 
@@ -231,12 +231,12 @@ export default function DashboardPage() {
 
           {activePanel === 'prompt' && (
             <div className="w-full">
-              <div className="text-center mb-8">
+              <div className="text-center mb-6 sm:mb-8">
                 <div className="inline-flex items-center gap-2 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 px-4 py-2 rounded-full text-sm font-medium mb-4">
                   <Sparkles size={16} />
                   Powered by Claude Sonnet 4.6
                 </div>
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                   Qu'est-ce que vous avez aujourd'hui ?
                 </h2>
                 <p className="text-gray-500 dark:text-gray-400">
@@ -252,11 +252,11 @@ export default function DashboardPage() {
                   onChange={(e) => setPrompt(e.target.value)}
                   disabled={promptMutation.isPending}
                 />
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between mt-4 pt-4 border-t border-gray-100">
                   <span className="text-xs text-gray-400">{prompt.length} caractères</span>
                   <button
                     type="submit"
-                    className="btn-primary flex items-center gap-2"
+                    className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
                     disabled={!prompt.trim() || promptMutation.isPending}
                   >
                     {promptMutation.isPending ? (

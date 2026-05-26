@@ -49,7 +49,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-blue-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen min-h-dvh flex items-center justify-center p-4 bg-gradient-to-br from-primary-50 to-blue-100 dark:from-gray-900 dark:to-gray-800">
       <div className="card w-full max-w-md">
         <div className="flex items-center gap-3 mb-8">
           <div className="p-2 bg-primary-600 rounded-lg">
@@ -66,7 +66,7 @@ export default function RegisterPage() {
             <h2 className="text-2xl font-semibold mb-6 dark:text-gray-100">Créer un compte</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">Prénom</label>
                   <input className="input" autoComplete="given-name" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />

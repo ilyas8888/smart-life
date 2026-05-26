@@ -292,7 +292,7 @@ export default function DiaryPanel() {
         Journal Personnel
       </h2>
 
-      <div className="grid grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
         {[
           { label: 'Streak', value: `${streak}j`, icon: <Flame size={15} /> },
           { label: 'Entrées', value: String(entries.length), icon: <BookMarked size={15} /> },
@@ -359,7 +359,7 @@ export default function DiaryPanel() {
         </div>
       </form>
 
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <div className="relative flex-1">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input type="text" placeholder="Rechercher dans le journal..."
@@ -371,7 +371,7 @@ export default function DiaryPanel() {
             </button>
           )}
         </div>
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0">
           <button type="button" onClick={() => setFilterMood(null)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${filterMood === null ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>
             Tout
@@ -441,7 +441,7 @@ export default function DiaryPanel() {
                               {moodMeta ? moodMeta.label : 'Sans humeur'} · {wordCount(e.content)} mots
                             </p>
                           </div>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                             <button type="button" onClick={() => startEdit(e)}
                               className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                               <Edit2 size={14} />

@@ -224,17 +224,17 @@ function ContactModal({
   const [form, setForm] = useState<ContactForm>(() => formFromContact(contact))
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto">
         {mode === 'view' ? (
           <>
-            <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-start gap-4">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-xl shrink-0 ${avatarColor(contact.name)}`}>
+            <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-gray-700 flex items-start gap-3 sm:gap-4">
+              <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-bold text-lg sm:text-xl shrink-0 ${avatarColor(contact.name)}`}>
                 {initials(contact.name)}
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 truncate">{contact.name}</h3>
+                <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">{contact.name}</h3>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Fiche contact</p>
               </div>
               <button type="button" onClick={() => setMode('edit')}
@@ -290,9 +290,9 @@ function ContactModal({
             </div>
             <div className="p-5">
               <ContactFormFields form={form} onChange={setForm} />
-              <div className="flex justify-end gap-2 mt-5">
-                <button type="button" onClick={() => { setForm(formFromContact(contact)); setMode('view') }} className="btn-secondary">Annuler</button>
-                <button type="submit" className="btn-primary" disabled={!form.name.trim()}>Sauvegarder</button>
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-5">
+                <button type="button" onClick={() => { setForm(formFromContact(contact)); setMode('view') }} className="btn-secondary w-full sm:w-auto">Annuler</button>
+                <button type="submit" className="btn-primary w-full sm:w-auto" disabled={!form.name.trim()}>Sauvegarder</button>
               </div>
             </div>
           </form>
@@ -312,11 +312,11 @@ function AddContactModal({
   const [form, setForm] = useState<ContactForm>(() => emptyForm())
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <form
         onSubmit={(e) => { e.preventDefault(); if (form.name.trim()) onCreate(form) }}
-        className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg"
+        className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] overflow-y-auto"
       >
         <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
@@ -328,9 +328,9 @@ function AddContactModal({
         </div>
         <div className="p-5">
           <ContactFormFields form={form} onChange={setForm} />
-          <div className="flex justify-end gap-2 mt-5">
-            <button type="button" onClick={onClose} className="btn-secondary">Annuler</button>
-            <button type="submit" className="btn-primary" disabled={!form.name.trim()}>Ajouter</button>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-5">
+            <button type="button" onClick={onClose} className="btn-secondary w-full sm:w-auto">Annuler</button>
+            <button type="submit" className="btn-primary w-full sm:w-auto" disabled={!form.name.trim()}>Ajouter</button>
           </div>
         </div>
       </form>
@@ -434,7 +434,7 @@ export default function ContactsPanel() {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-3">
           <StatTile label="Total contacts" value={stats.total} icon={Users} />
           <StatTile label="Avec téléphone" value={stats.phone} icon={Phone} />
           <StatTile label="Avec email" value={stats.email} icon={Mail} />

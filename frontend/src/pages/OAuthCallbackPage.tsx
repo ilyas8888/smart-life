@@ -23,7 +23,7 @@ export default function OAuthCallbackPage() {
   }, [navigate, setAuth])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-blue-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen min-h-dvh flex items-center justify-center p-4 bg-gradient-to-br from-primary-50 to-blue-100 dark:from-gray-900 dark:to-gray-800">
       <p className="text-gray-600 dark:text-gray-300">Connexion en cours...</p>
     </div>
   )

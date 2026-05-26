@@ -62,14 +62,14 @@ function StatCard({ icon: Icon, label, value, sub, color, onClick }: StatCardPro
       onClick={onClick}
       className="card text-left hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group w-full"
     >
-      <div className="flex items-start justify-between mb-4">
-        <div className={`p-3.5 rounded-2xl ${color} shadow-sm`}>
-          <Icon size={26} className="text-white" />
+      <div className="flex items-start justify-between mb-3 sm:mb-4">
+        <div className={`p-2.5 sm:p-3.5 rounded-2xl ${color} shadow-sm`}>
+          <Icon size={22} className="text-white sm:w-[26px] sm:h-[26px]" />
         </div>
         <ChevronRight size={18} className="text-gray-300 dark:text-gray-600 group-hover:text-primary-500 dark:group-hover:text-primary-400 transition-colors mt-1" />
       </div>
-      <p className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-1">{value}</p>
-      <p className="text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">{label}</p>
+      <p className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-1 break-words">{value}</p>
+      <p className="text-xs sm:text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">{label}</p>
       {sub && <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{sub}</p>}
     </button>
   )
@@ -187,18 +187,18 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
     <div className="w-full">
       {/* Hero */}
       <div className="card mb-6 bg-gradient-to-br from-primary-600 to-blue-700 text-white border-0">
-        <div className="flex items-start justify-between">
-          <div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <p className="text-primary-200 text-base mb-1 font-medium">
               {capitalize(format(new Date(), "EEEE dd MMMM yyyy", { locale: fr }))}
             </p>
-            <h1 className="text-3xl font-bold mb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-1">
               {emoji} {greeting}, {firstName} !
             </h1>
-            <p className="text-primary-100 text-base italic opacity-90">"{quote}"</p>
+            <p className="text-primary-100 text-sm sm:text-base italic opacity-90">"{quote}"</p>
           </div>
           {streak > 0 && (
-            <div className="flex flex-col items-center bg-white/15 rounded-2xl px-5 py-3 min-w-[72px]">
+            <div className="self-start flex flex-row sm:flex-col items-center gap-2 sm:gap-0 bg-white/15 rounded-2xl px-4 sm:px-5 py-3 min-w-[72px]">
               <span className="text-3xl">🔥</span>
               <span className="text-3xl font-bold leading-none">{streak}</span>
               <span className="text-xs text-primary-100 uppercase tracking-widest mt-1">
