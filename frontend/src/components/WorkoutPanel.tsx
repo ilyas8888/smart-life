@@ -9,7 +9,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
-import { ExerciseInfoButton, getExerciseMedia } from './ExerciseGuide'
+import { DayMuscleSummary, ExerciseInfoButton, ExercisePicker, getExerciseMedia } from './ExerciseGuide'
 
 interface PlanExercise { name: string; sets: number | null; reps: number | null; weightKg: number | null; notes: string }
 interface PlanDay { id: number; dayNumber: number; label: string; exercises: PlanExercise[] }
@@ -1722,22 +1722,10 @@ function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSucces
                   </button>
                 ))}
               </div>
-              {EXERCISE_LIBRARY[currentDay.label] && (
-                <div className="mb-4">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bibliothèque</p>
-                  <div className="flex flex-wrap gap-2">
-                    {EXERCISE_LIBRARY[currentDay.label].map(ex => (
-                      <div key={ex.name} className="flex items-center gap-1">
-                        <button type="button" onClick={() => addExerciseToDay(currentDay.dayNumber, ex)}
-                          className="rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-3 py-1.5 text-xs font-medium hover:bg-amber-100">
-                          + {ex.name}
-                        </button>
-                        <ExerciseInfoButton exerciseName={ex.name} sets={ex.sets} reps={ex.reps} weightKg={ex.weightKg} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <ExercisePicker
+                onAdd={exercise => addExerciseToDay(currentDay.dayNumber, exercise)}
+                alreadyAdded={(dayExercises[currentDay.dayNumber] ?? []).map(exercise => exercise.name)}
+              />
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
                 <input className="input col-span-2 sm:col-span-1" value={customExercise.name} onChange={e => setCustomExercise(prev => ({ ...prev, name: e.target.value }))} placeholder="Exercice" />
                 <input className="input" type="number" value={customExercise.sets} onChange={e => setCustomExercise(prev => ({ ...prev, sets: e.target.value }))} placeholder="Séries" />
@@ -1762,6 +1750,7 @@ function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSucces
                   </div>
                 ))}
               </div>
+              <DayMuscleSummary exercises={dayExercises[currentDay.dayNumber] ?? []} />
               <div className="flex justify-end">
                 <button type="button" onClick={() => createMutation.mutate()} disabled={!name.trim() || activeDays.length === 0 || createMutation.isPending}
                   className="btn-primary flex items-center gap-2">

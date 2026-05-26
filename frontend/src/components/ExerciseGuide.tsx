@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Dumbbell, Info, X } from 'lucide-react'
+import { Dumbbell, Info, Search, X } from 'lucide-react'
 
 interface ExerciseMuscles {
   primary: string[]
@@ -482,5 +482,279 @@ export function ExerciseInfoButton({
         <ExerciseGuideModal exerciseName={exerciseName} sets={sets} reps={reps} weightKg={weightKg} onClose={() => setOpen(false)} />
       )}
     </>
+  )
+}
+
+const PUSH_MUSCLES = ['chest', 'shoulders', 'triceps']
+const PULL_MUSCLES = ['lats', 'traps', 'biceps']
+const LEG_MUSCLES = ['quads', 'hamstrings', 'glutes', 'calves']
+const CORE_MUSCLES = ['core', 'lower-back']
+
+function getDominance(primaryMuscles: string[]): string {
+  const pushCount = primaryMuscles.filter(muscle => PUSH_MUSCLES.includes(muscle)).length
+  const pullCount = primaryMuscles.filter(muscle => PULL_MUSCLES.includes(muscle)).length
+  const legCount = primaryMuscles.filter(muscle => LEG_MUSCLES.includes(muscle)).length
+  const coreCount = primaryMuscles.filter(muscle => CORE_MUSCLES.includes(muscle)).length
+  const max = Math.max(pushCount, pullCount, legCount, coreCount)
+  if (max === 0) return ''
+  const total = pushCount + pullCount + legCount + coreCount
+  if (total >= 4 && max < total * 0.6) return 'Full body'
+  if (pushCount === max) return 'Dominante poussée'
+  if (pullCount === max) return 'Dominante tirage'
+  if (legCount === max) return 'Dominante jambes'
+  return 'Dominante abdos'
+}
+
+export function DayMuscleSummary({ exercises }: { exercises: { name: string }[] }) {
+  const mediaEntries = exercises
+    .map(exercise => getExerciseMedia(exercise.name))
+    .filter((media): media is ExerciseMediaEntry => media !== null)
+
+  if (mediaEntries.length === 0) return null
+
+  const allPrimary = new Set(mediaEntries.flatMap(media => media.muscles.primary))
+  const allSecondary = new Set(
+    mediaEntries
+      .flatMap(media => media.muscles.secondary)
+      .filter(muscle => !allPrimary.has(muscle))
+  )
+  const primaryList = Array.from(allPrimary)
+  const secondaryList = Array.from(allSecondary)
+  const dominance = getDominance(primaryList)
+
+  return (
+    <div className="mt-4 mb-5 rounded-2xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/10 p-4">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+          Muscles ciblés - cette journée
+        </p>
+        {dominance && (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-300/40 dark:border-amber-600/40 shrink-0">
+            {dominance}
+          </span>
+        )}
+      </div>
+      <div className="h-36 mb-3">
+        <MuscleDiagramSVG primaryMuscles={primaryList} secondaryMuscles={secondaryList} />
+      </div>
+      <div className="mb-2">
+        <p className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1.5">
+          Principaux
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {primaryList.map(muscle => (
+            <span key={muscle}
+              className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/30">
+              {MUSCLE_LABELS[muscle] ?? muscle}
+            </span>
+          ))}
+        </div>
+      </div>
+      {secondaryList.length > 0 && (
+        <div>
+          <p className="text-[10px] font-semibold text-amber-500 dark:text-amber-500 uppercase tracking-widest mb-1.5">
+            Secondaires
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {secondaryList.map(muscle => (
+              <span key={muscle}
+                className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-200/30 text-amber-700/80 dark:text-amber-400/70 border border-amber-300/20">
+                {MUSCLE_LABELS[muscle] ?? muscle}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {mediaEntries.length < exercises.length && (
+        <p className="text-[10px] text-gray-400 mt-2 italic">
+          {exercises.length - mediaEntries.length} exercice(s) non reconnu(s) non inclus dans l'analyse.
+        </p>
+      )}
+    </div>
+  )
+}
+
+export interface CatalogExercise {
+  name: string
+  sets: number | null
+  reps: number | null
+  weightKg: number | null
+  notes: string
+  category: string
+  imageUrl: string | null
+  primaryMuscleLabel: string | null
+}
+
+export interface PickerExercise {
+  name: string
+  sets: number | null
+  reps: number | null
+  weightKg: number | null
+  notes: string
+}
+
+const CATEGORY_FILTER_MAP: Record<string, string> = {
+  Poitrine: 'Poitrine',
+  'Poitrine haute': 'Poitrine',
+  'Triceps & Poitrine': 'Poitrine',
+  Dos: 'Dos',
+  'Dos & chaîne postérieure': 'Dos',
+  Jambes: 'Jambes',
+  Épaules: 'Épaules',
+  Biceps: 'Bras',
+  Triceps: 'Bras',
+  'Biceps & Avant-bras': 'Bras',
+  Abdominaux: 'Abdos',
+  Cardio: 'Cardio',
+}
+
+const LIBRARY_FALLBACK: Array<PickerExercise & { category: string }> = [
+  { name: 'Développé couché', sets: 4, reps: 10, weightKg: 60, notes: '', category: 'Poitrine' },
+  { name: 'Développé militaire', sets: 4, reps: 8, weightKg: 40, notes: '', category: 'Épaules' },
+  { name: 'Développé incliné', sets: 3, reps: 10, weightKg: 50, notes: '', category: 'Poitrine' },
+  { name: 'Écarté haltères', sets: 3, reps: 12, weightKg: 15, notes: '', category: 'Poitrine' },
+  { name: 'Dips', sets: 3, reps: 10, weightKg: null, notes: '', category: 'Poitrine' },
+  { name: 'Triceps poulie', sets: 3, reps: 12, weightKg: 25, notes: '', category: 'Bras' },
+  { name: 'Extension triceps', sets: 3, reps: 12, weightKg: 20, notes: '', category: 'Bras' },
+  { name: 'Tractions', sets: 4, reps: 8, weightKg: null, notes: '', category: 'Dos' },
+  { name: 'Rowing barre', sets: 4, reps: 10, weightKg: 60, notes: '', category: 'Dos' },
+  { name: 'Rowing haltère', sets: 3, reps: 12, weightKg: 25, notes: '', category: 'Dos' },
+  { name: 'Tirage vertical', sets: 4, reps: 10, weightKg: 55, notes: '', category: 'Dos' },
+  { name: 'Face pull', sets: 3, reps: 15, weightKg: 20, notes: '', category: 'Épaules' },
+  { name: 'Curl biceps barre', sets: 3, reps: 12, weightKg: 30, notes: '', category: 'Bras' },
+  { name: 'Curl haltères', sets: 3, reps: 12, weightKg: 12, notes: '', category: 'Bras' },
+  { name: 'Curl marteau', sets: 3, reps: 12, weightKg: 14, notes: '', category: 'Bras' },
+  { name: 'Squat', sets: 4, reps: 8, weightKg: 80, notes: '', category: 'Jambes' },
+  { name: 'Leg press', sets: 4, reps: 10, weightKg: 120, notes: '', category: 'Jambes' },
+  { name: 'Fentes haltères', sets: 3, reps: 12, weightKg: 20, notes: '', category: 'Jambes' },
+  { name: 'Soulevé de terre', sets: 4, reps: 6, weightKg: 100, notes: '', category: 'Dos' },
+  { name: 'Leg curl', sets: 3, reps: 12, weightKg: 40, notes: '', category: 'Jambes' },
+  { name: 'Leg extension', sets: 3, reps: 12, weightKg: 40, notes: '', category: 'Jambes' },
+  { name: 'Mollets debout', sets: 4, reps: 15, weightKg: 60, notes: '', category: 'Jambes' },
+  { name: 'Hip thrust', sets: 4, reps: 10, weightKg: 80, notes: '', category: 'Jambes' },
+  { name: 'Deadlift', sets: 4, reps: 5, weightKg: 100, notes: '', category: 'Dos' },
+  { name: 'Pompes', sets: 3, reps: 15, weightKg: null, notes: '', category: 'Poitrine' },
+  { name: 'Gainage', sets: 3, reps: null, weightKg: null, notes: '60 secondes', category: 'Abdos' },
+  { name: 'Élévations latérales', sets: 3, reps: 12, weightKg: 10, notes: '', category: 'Épaules' },
+  { name: 'Course à pied', sets: null, reps: null, weightKg: null, notes: '30 min', category: 'Cardio' },
+  { name: 'Vélo stationnaire', sets: null, reps: null, weightKg: null, notes: '45 min', category: 'Cardio' },
+  { name: 'Corde à sauter', sets: 5, reps: null, weightKg: null, notes: '2 min/série', category: 'Cardio' },
+  { name: 'Rameur', sets: null, reps: null, weightKg: null, notes: '20 min', category: 'Cardio' },
+  { name: 'HIIT 20-40', sets: 8, reps: null, weightKg: null, notes: '20s effort / 40s repos', category: 'Cardio' },
+]
+
+export function getExerciseCatalog(): CatalogExercise[] {
+  const seen = new Set<string>()
+  return LIBRARY_FALLBACK
+    .filter(exercise => {
+      const key = normalizeExerciseName(exercise.name)
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .map(exercise => {
+      const media = getExerciseMedia(exercise.name)
+      return {
+        name: exercise.name,
+        sets: exercise.sets,
+        reps: exercise.reps,
+        weightKg: exercise.weightKg,
+        notes: exercise.notes,
+        category: media
+          ? (CATEGORY_FILTER_MAP[media.category] ?? 'Autre')
+          : (CATEGORY_FILTER_MAP[exercise.category] ?? exercise.category),
+        imageUrl: media?.imageUrl ?? null,
+        primaryMuscleLabel: media?.muscles.primary[0]
+          ? (MUSCLE_LABELS[media.muscles.primary[0]] ?? null)
+          : null,
+      }
+    })
+}
+
+export function ExercisePicker({
+  onAdd,
+  alreadyAdded,
+}: {
+  onAdd: (exercise: PickerExercise) => void
+  alreadyAdded: string[]
+}) {
+  const [search, setSearch] = useState('')
+  const [activeFilter, setActiveFilter] = useState('Tous')
+  const filters = ['Tous', 'Poitrine', 'Dos', 'Jambes', 'Épaules', 'Bras', 'Abdos', 'Cardio']
+  const catalog = getExerciseCatalog()
+  const filtered = catalog.filter(exercise => {
+    const matchesSearch = !search.trim() ||
+      normalizeExerciseName(exercise.name).includes(normalizeExerciseName(search))
+    return matchesSearch && (activeFilter === 'Tous' || exercise.category === activeFilter)
+  })
+
+  return (
+    <div className="mb-4">
+      <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Bibliothèque d'exercices</p>
+      <div className="relative mb-3">
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input type="text" value={search} onChange={event => setSearch(event.target.value)}
+          className="w-full border border-gray-200 dark:border-gray-600 rounded-lg pl-8 pr-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400"
+          placeholder="Rechercher un exercice..." />
+      </div>
+      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3" style={{ scrollbarWidth: 'none' }}>
+        {filters.map(filter => (
+          <button key={filter} type="button" onClick={() => setActiveFilter(filter)}
+            className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+              activeFilter === filter
+                ? 'bg-amber-500 text-white'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-amber-100 dark:hover:bg-amber-900/30'
+            }`}>
+            {filter}
+          </button>
+        ))}
+      </div>
+      {filtered.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-4">Aucun exercice trouvé</p>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-64 overflow-y-auto pr-1">
+          {filtered.map(exercise => {
+            const isAdded = alreadyAdded.some(name =>
+              normalizeExerciseName(name) === normalizeExerciseName(exercise.name)
+            )
+            return (
+              <div key={exercise.name} className={`relative rounded-xl border overflow-hidden flex flex-col transition-all ${
+                isAdded
+                  ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/20'
+                  : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+              }`}>
+                <div className="relative h-16 bg-gray-100 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                  <Dumbbell size={20} className="text-gray-400" />
+                  {exercise.imageUrl && (
+                    <img src={exercise.imageUrl} alt={exercise.name}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onError={event => { event.currentTarget.style.display = 'none' }} />
+                  )}
+                </div>
+                <div className="p-2 flex-1 flex flex-col gap-1">
+                  <p className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-tight line-clamp-2">{exercise.name}</p>
+                  {exercise.primaryMuscleLabel && (
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">{exercise.primaryMuscleLabel}</p>
+                  )}
+                </div>
+                <div className="flex items-center justify-between px-2 pb-2 gap-1">
+                  <ExerciseInfoButton exerciseName={exercise.name} sets={exercise.sets} reps={exercise.reps} weightKg={exercise.weightKg} />
+                  <button type="button"
+                    onClick={() => onAdd({ name: exercise.name, sets: exercise.sets, reps: exercise.reps, weightKg: exercise.weightKg, notes: exercise.notes })}
+                    disabled={isAdded}
+                    className={`flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg transition-colors ${
+                      isAdded
+                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-500 cursor-default'
+                        : 'bg-amber-500 hover:bg-amber-400 text-black'
+                    }`}>
+                    {isAdded ? '✓ Ajouté' : '+ Ajouter'}
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
