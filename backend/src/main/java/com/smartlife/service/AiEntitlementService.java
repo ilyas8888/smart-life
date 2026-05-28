@@ -7,6 +7,7 @@ import com.smartlife.model.UserAiEntitlement;
 import com.smartlife.repository.AiAccessRequestRepository;
 import com.smartlife.repository.UserAiEntitlementRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,10 @@ public class AiEntitlementService {
 
     private final UserAiEntitlementRepository entitlementRepository;
     private final AiAccessRequestRepository requestRepository;
+    private final MailService mailService;
+
+    @Value("${app.mail.security-alert-recipient:}")
+    private String adminEmail;
 
     @Transactional
     public UserAiEntitlement getOrCreate(User user) {
@@ -108,6 +113,7 @@ public class AiEntitlementService {
                 .user(user)
                 .message(message)
                 .build());
+        notifyAdminNewRequest(user, message);
     }
 
     public List<AiAccessRequest> getPendingRequests() {
@@ -135,6 +141,7 @@ public class AiEntitlementService {
         entitlement.setApprovedAt(LocalDateTime.now());
         entitlement.setResetAt(nextMonthStart());
         entitlementRepository.save(entitlement);
+        notifyUserApproved(request.getUser());
     }
 
     @Transactional
@@ -147,6 +154,7 @@ public class AiEntitlementService {
         request.setReviewedBy(admin.getId());
         request.setReviewedAt(LocalDateTime.now());
         requestRepository.save(request);
+        notifyUserRejected(request.getUser());
     }
 
     public void requireAdmin(User user) {
@@ -191,6 +199,35 @@ public class AiEntitlementService {
 
     private LocalDateTime nextMonthStart() {
         return YearMonth.now().plusMonths(1).atDay(1).atStartOfDay();
+    }
+
+    private void notifyAdminNewRequest(User user, String message) {
+        if (adminEmail == null || adminEmail.isBlank()) {
+            return;
+        }
+
+        String body = "Utilisateur : " + user.getEmail() + "\n"
+                + "Message : " + (message != null && !message.isBlank() ? message : "(aucun)") + "\n\n"
+                + "Approuver ou rejeter via l'interface admin SmartLife.";
+        mailService.send(adminEmail, "[SmartLife] Nouvelle demande d'acces IA", body);
+    }
+
+    private void notifyUserApproved(User user) {
+        String body = "Bonjour,\n\n"
+                + "Votre demande d'acces au Prompt IA SmartLife a ete approuvee.\n\n"
+                + "Vous pouvez maintenant utiliser l'assistant IA depuis votre tableau de bord.\n\n"
+                + "Bonne utilisation !\n"
+                + "- L'equipe SmartLife";
+        mailService.send(user.getEmail(), "[SmartLife] Votre acces au Prompt IA est active !", body);
+    }
+
+    private void notifyUserRejected(User user) {
+        String body = "Bonjour,\n\n"
+                + "Votre demande d'acces au Prompt IA n'a pas ete retenue pour le moment.\n\n"
+                + "Vous pouvez soumettre une nouvelle demande depuis votre tableau de bord.\n\n"
+                + "Cordialement,\n"
+                + "- L'equipe SmartLife";
+        mailService.send(user.getEmail(), "[SmartLife] Demande d'acces IA non retenue", body);
     }
 
     private void denyAiAccess(UserAiEntitlement entitlement) {
