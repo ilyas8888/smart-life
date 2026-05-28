@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Brain, CheckSquare, Bell, FileText, Users, LogOut,
-  Send, Sparkles, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon, BookOpen, Dumbbell, Menu, X, Lock
+  Send, Sparkles, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon, BookOpen, Dumbbell, Menu, X, Lock, ShieldCheck
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
@@ -18,9 +18,9 @@ import DiaryPanel from '../components/DiaryPanel'
 import WorkoutPanel from '../components/WorkoutPanel'
 import HomePanel from '../components/HomePanel'
 
-type Panel = 'home' | 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout'
+type Panel = 'home' | 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout' | 'admin'
 
-const VALID_PANELS: Panel[] = ['home', 'agenda', 'prompt', 'tasks', 'reminders', 'notes', 'contacts', 'food', 'diary', 'workout']
+const VALID_PANELS: Panel[] = ['home', 'agenda', 'prompt', 'tasks', 'reminders', 'notes', 'contacts', 'food', 'diary', 'workout', 'admin']
 
 type AiAccessStatus = {
   status: 'FREE' | 'APPROVED' | 'PREMIUM' | 'ADMIN' | 'BLOCKED'
@@ -30,6 +30,15 @@ type AiAccessStatus = {
   monthlyUsed: number
   monthlyQuota: number
   lastRequestStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'
+}
+
+type AdminAiRequest = {
+  id: number
+  userId: number
+  email: string
+  message: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED'
+  requestedAt: string
 }
 
 function panelFromHash(): Panel {
@@ -119,6 +128,34 @@ export default function DashboardPage() {
     },
   })
 
+  const { data: pendingAiRequests = [], refetch: refetchAiRequests } = useQuery<AdminAiRequest[]>({
+    queryKey: ['admin-ai-requests'],
+    queryFn: () => api.get('/admin/ai/requests').then((r) => r.data),
+    enabled: aiStatus?.status === 'ADMIN',
+  })
+
+  const approveAiRequestMutation = useMutation({
+    mutationFn: (id: number) =>
+      api.put(`/admin/ai/requests/${id}/approve`, { status: 'APPROVED', monthlyQuota: 100 }),
+    onSuccess: () => {
+      toast.success('Acces approuve.')
+      refetchAiRequests()
+    },
+    onError: () => toast.error('Erreur lors de l\'approbation.'),
+  })
+
+  const rejectAiRequestMutation = useMutation({
+    mutationFn: (id: number) => api.put(`/admin/ai/requests/${id}/reject`),
+    onSuccess: () => {
+      toast.success('Demande rejetee.')
+      refetchAiRequests()
+    },
+    onError: () => toast.error('Erreur lors du rejet.'),
+  })
+
+  const pendingAiRequestCount = pendingAiRequests.length
+  const isAdminAiActionPending = approveAiRequestMutation.isPending || rejectAiRequestMutation.isPending
+
   const displayName = firstName ? `${firstName} ${lastName ?? ''}`.trim() : (email ?? 'Utilisateur')
 
   const MODULE_ACCENT: Record<string, string> = {
@@ -132,6 +169,7 @@ export default function DashboardPage() {
     food: 'text-green-400',
     diary: 'text-rose-400',
     workout: 'text-amber-400',
+    admin: 'text-emerald-400',
   }
 
   const MODULE_GRADIENT: Record<Panel, string> = {
@@ -145,6 +183,7 @@ export default function DashboardPage() {
     food:      'from-green-600 via-emerald-400 to-teal-400',
     diary:     'from-rose-500 via-pink-400 to-fuchsia-400',
     workout:   'from-amber-500 via-orange-400 to-red-400',
+    admin:     'from-emerald-500 via-teal-500 to-cyan-500',
   }
 
   const navItems = [
@@ -158,6 +197,12 @@ export default function DashboardPage() {
     { id: 'food' as Panel, label: 'Alimentation', icon: UtensilsCrossed },
     { id: 'diary' as Panel, label: 'Journal', icon: BookOpen },
     { id: 'workout' as Panel, label: 'Sport', icon: Dumbbell },
+    ...(aiStatus?.status === 'ADMIN' ? [{
+      id: 'admin' as Panel,
+      label: pendingAiRequestCount > 0 ? `Admin IA (${pendingAiRequestCount})` : 'Admin IA',
+      icon: ShieldCheck,
+      disabled: isAdminAiActionPending,
+    }] : []),
   ]
 
   const handleSend = (e: React.FormEvent) => {
@@ -180,6 +225,20 @@ export default function DashboardPage() {
     window.location.hash = id
     setActivePanel(id)
     setSidebarOpen(false)
+  }
+
+  const formatAdminRequestDate = (value: string) => {
+    try {
+      return new Intl.DateTimeFormat('fr-FR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(value))
+    } catch {
+      return value
+    }
   }
 
   return (
@@ -453,6 +512,94 @@ export default function DashboardPage() {
           {activePanel === 'food' && <FoodLogsPanel />}
           {activePanel === 'diary' && <DiaryPanel />}
           {activePanel === 'workout' && <WorkoutPanel />}
+          {activePanel === 'admin' && aiStatus?.status === 'ADMIN' && (
+            <div className="w-full">
+              <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                    <ShieldCheck size={16} />
+                    Administration IA
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    Demandes d'acces IA
+                    <span className="ml-2 rounded-full bg-emerald-100 px-2.5 py-1 text-sm text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                      {pendingAiRequestCount}
+                    </span>
+                  </h2>
+                  <p className="mt-1 text-gray-500 dark:text-gray-400">
+                    Approuvez ou rejetez les demandes d'acces au Prompt IA.
+                  </p>
+                </div>
+              </div>
+
+              {pendingAiRequests.length === 0 ? (
+                <div className="card max-w-xl text-center py-10">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300">
+                    <CheckSquare size={24} />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Aucune demande en attente</h3>
+                  <p className="text-gray-500 dark:text-gray-400">Tout est a jour.</p>
+                </div>
+              ) : (
+                <div className="grid gap-4 lg:grid-cols-2">
+                  {pendingAiRequests.map((request) => {
+                    const initial = (request.email || '?').charAt(0).toUpperCase()
+                    return (
+                      <div key={request.id} className="card">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-base font-bold text-white">
+                            {initial}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold text-gray-900 dark:text-gray-100">
+                                  {request.email}
+                                </p>
+                                <p className="text-xs text-gray-400">Utilisateur #{request.userId}</p>
+                              </div>
+                              <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                                {request.status}
+                              </span>
+                            </div>
+
+                            {request.message && (
+                              <p className="mt-3 line-clamp-3 rounded-lg bg-gray-50 p-3 text-sm italic text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                                "{request.message}"
+                              </p>
+                            )}
+
+                            <p className="mt-3 text-xs text-gray-400">
+                              Demande recue le {formatAdminRequestDate(request.requestedAt)}
+                            </p>
+
+                            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                              <button
+                                type="button"
+                                className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-900/20"
+                                onClick={() => rejectAiRequestMutation.mutate(request.id)}
+                                disabled={isAdminAiActionPending}
+                              >
+                                Rejeter
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                                onClick={() => approveAiRequestMutation.mutate(request.id)}
+                                disabled={isAdminAiActionPending}
+                              >
+                                Approuver
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
           </div>
         </div>
       </main>
