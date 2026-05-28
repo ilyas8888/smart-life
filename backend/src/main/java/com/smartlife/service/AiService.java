@@ -231,7 +231,7 @@ public class AiService {
             var cached = foodCacheService.findByName(name);
             if (cached.isPresent()) {
                 var c = cached.get();
-                if ("PREPARED_DISH".equals(c.getFoodType())) {
+                if ("PREPARED_DISH".equals(c.getFoodType()) || "COMPOSITE".equals(c.getFoodType())) {
                     Double servingG = extractServingG(c.getNutritionDetails());
                     double scale = computeAiScale(quantity, unit, servingG);
                     var log = FoodLog.builder()
@@ -409,7 +409,7 @@ public class AiService {
                                 .quantity(originalQuantities.get(normalizeKey(original)))
                                 .build();
                         foodLogRepository.save(combined);
-                        foodCacheService.upsert(combined, "usda");
+                        foodCacheService.upsert(combined, "composite");
                         result.add(combined);
                     }
                 }

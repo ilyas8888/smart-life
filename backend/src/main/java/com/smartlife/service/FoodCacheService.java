@@ -45,7 +45,7 @@ public class FoodCacheService {
                     entry.setFiberG(log.getFiberG());
                     entry.setNutritionDetails(log.getNutritionDetails());
                     entry.setSource(source);
-                    entry.setFoodType("ai".equals(source) ? "PREPARED_DISH" : "SIMPLE_INGREDIENT");
+                    entry.setFoodType("ai".equals(source) ? "PREPARED_DISH" : "composite".equals(source) ? "COMPOSITE" : "SIMPLE_INGREDIENT");
                     repo.save(entry);
                     embeddingService.embed(normalized)
                         .ifPresent(vec -> repo.updateEmbedding(normalized, vec));
