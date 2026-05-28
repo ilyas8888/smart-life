@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { CheckSquare, Bell, UtensilsCrossed, Dumbbell, FileText, BookOpen, ChevronRight, Flame } from 'lucide-react'
+import { CheckSquare, Bell, UtensilsCrossed, Dumbbell, FileText, BookOpen, ChevronRight, Flame, Lock } from 'lucide-react'
 import { format, differenceInCalendarDays, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import api from '../api/axios'
@@ -90,6 +90,15 @@ interface FoodSummary { totalCalories: number; mealCount: number }
 interface WorkoutSession { sessionDate: string; caloriesBurned: number | null; durationMinutes: number | null }
 interface Note { id: number }
 interface DiaryEntry { id: number; entryDate: string }
+type AiAccessStatus = {
+  status: 'FREE' | 'APPROVED' | 'PREMIUM' | 'ADMIN' | 'BLOCKED'
+  planName: string
+  trialUsed: number
+  trialQuota: number
+  monthlyUsed: number
+  monthlyQuota: number
+  lastRequestStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'
+}
 
 type Panel = 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout' | 'prompt'
 
@@ -146,6 +155,11 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
     queryFn: () => api.get('/diary').then((r) => r.data),
   })
 
+  const { data: aiStatus } = useQuery<AiAccessStatus>({
+    queryKey: ['ai-access-status'],
+    queryFn: () => api.get('/ai-access/status').then((r) => r.data),
+  })
+
   const tasksTodo = tasks.filter((t) => t.status === 'TODO').length
   const tasksDone = tasks.filter((t) => t.status === 'DONE').length
   const pendingReminders = reminders.filter(
@@ -182,6 +196,27 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
   const emoji = getGreetingEmoji(hour)
   const firstName = displayName.split(' ')[0]
   const quote = getDailyQuote()
+  const aiTrialRemaining = aiStatus
+    ? Math.max(0, aiStatus.trialQuota - aiStatus.trialUsed)
+    : 0
+  const isAiPromptAvailable = !aiStatus
+    || aiStatus.status === 'ADMIN'
+    || aiStatus.status === 'APPROVED'
+    || aiStatus.status === 'PREMIUM'
+    || (aiStatus.status === 'FREE' && aiTrialRemaining > 0)
+  const aiPlanLabel = aiStatus?.status === 'ADMIN'
+    ? 'Admin'
+    : aiStatus?.status === 'PREMIUM'
+      ? 'Premium'
+      : aiStatus?.status === 'APPROVED'
+        ? 'Pro'
+        : aiStatus?.status === 'FREE'
+          ? `${aiTrialRemaining} essais restants`
+          : 'Acces bloque'
+  const isAiRequestPending = aiStatus?.lastRequestStatus === 'PENDING'
+  const isAiRestricted = aiStatus?.status === 'BLOCKED'
+    || (aiStatus?.status === 'FREE' && aiTrialRemaining <= 0)
+  const promptCardActionLabel = isAiRestricted ? 'Demander l\'acces' : 'Utiliser le Prompt IA'
 
   return (
     <div className="w-full">
@@ -307,23 +342,40 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
         )}
       </div>
 
-      <div className="card bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 border-primary-100 dark:border-primary-800">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="p-2 bg-primary-600 rounded-lg">
-            <Flame size={20} className="text-white" />
+      <div className={`card bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 border-primary-100 dark:border-primary-800 ${isAiRestricted ? 'opacity-80' : ''}`}>
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary-600 rounded-lg">
+              {isAiPromptAvailable ? <Flame size={20} className="text-white" /> : <Lock size={20} className="text-white" />}
+            </div>
+            <p className="font-bold text-lg text-primary-900 dark:text-primary-200">Prompt IA</p>
           </div>
-          <p className="font-bold text-lg text-primary-900 dark:text-primary-200">Prompt IA</p>
+          {aiPlanLabel && (
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              isAiPromptAvailable
+                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+            }`}>
+              {aiPlanLabel}
+            </span>
+          )}
         </div>
         <p className="text-base text-primary-700 dark:text-primary-300 mb-4">
           Décrivez votre journée en langage naturel — l'IA extrait tâches, repas, sport, journal et plus.
         </p>
-        <button
-          onClick={() => onNavigate('prompt')}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Flame size={16} />
-          Utiliser le Prompt IA
-        </button>
+        {isAiRequestPending ? (
+          <div className="inline-flex items-center rounded-lg bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+            Demande en cours de revision
+          </div>
+        ) : (
+          <button
+            onClick={() => onNavigate('prompt')}
+            className="btn-primary flex items-center gap-2"
+          >
+            {isAiRestricted ? <Lock size={16} /> : <Flame size={16} />}
+            {promptCardActionLabel}
+          </button>
+        )}
       </div>
     </div>
   )
