@@ -7,6 +7,7 @@ import com.smartlife.model.User;
 import com.smartlife.repository.FoodCacheRepository;
 import com.smartlife.repository.FoodLogRepository;
 import com.smartlife.service.AiService;
+import com.smartlife.service.LocalFoodParserService;
 import com.smartlife.service.NutritionApiService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +32,7 @@ public class FoodLogController {
     private final FoodCacheRepository foodCacheRepository;
     private final AiService aiService;
     private final NutritionApiService nutritionApiService;
+    private final LocalFoodParserService localFoodParserService;
 
     @GetMapping
     public List<FoodLog> getFoodLogs(@AuthenticationPrincipal User user) {
@@ -90,6 +92,10 @@ public class FoodLogController {
                                                         @AuthenticationPrincipal User user) {
         String prompt = (String) body.get("prompt");
         String mealType = (String) body.getOrDefault("mealType", null);
+        List<FoodLog> localResult = localFoodParserService.parse(prompt, mealType, user);
+        if (!localResult.isEmpty()) {
+            return ResponseEntity.ok(localResult);
+        }
         return ResponseEntity.ok(aiService.addFoodsFromPrompt(prompt, mealType, user));
     }
 

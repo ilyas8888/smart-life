@@ -295,6 +295,41 @@ public class AiService {
         }
 
         if (!toDecompose.isEmpty()) {
+            List<Map<String, Object>> stillUnresolved = new ArrayList<>();
+            for (var food : toDecompose) {
+                String name = (String) food.get("name");
+                String quantity = (String) food.getOrDefault("quantity", null);
+                String unit = (String) food.getOrDefault("unit", "g");
+                var apiResult = nutritionApiService.lookup(name);
+                if (apiResult.isPresent()) {
+                    var nr = apiResult.get();
+                    double scale = scaleFactor(quantity, unit, nr.portions());
+                    if (scale > 0) {
+                        String quantityWithUnit = quantity == null || quantity.isBlank() ? null : quantity + " " + unit;
+                        var log = FoodLog.builder()
+                                .user(user).logDate(LocalDate.now()).mealType(mealType)
+                                .foodItem(name)
+                                .calories(scaleCalories(nr.calories(), scale))
+                                .proteinG(scaleBD(nr.proteinG(), scale))
+                                .carbsG(scaleBD(nr.carbsG(), scale))
+                                .fatG(scaleBD(nr.fatG(), scale))
+                                .fiberG(scaleBD(nr.fiberG(), scale))
+                                .quantity(quantityWithUnit)
+                                .build();
+                        foodLogRepository.save(log);
+                        foodCacheService.upsert(log, nr.source(), nr.portions());
+                        result.add(log);
+                        continue;
+                    }
+                }
+                stillUnresolved.add(food);
+            }
+
+            if (stillUnresolved.isEmpty()) {
+                return result;
+            }
+            toDecompose = stillUnresolved;
+
             Map<String, String> originalQuantities = new HashMap<>();
             for (var food : toDecompose) {
                 String name = (String) food.get("name");
