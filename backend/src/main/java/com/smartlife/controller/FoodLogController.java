@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -97,7 +99,11 @@ public class FoodLogController {
             @RequestParam(defaultValue = "8") int limit,
             @AuthenticationPrincipal User user) {
         if (q == null || q.trim().length() < 2) {
-            return ResponseEntity.ok(Map.of("frequent", List.of(), "catalog", List.of()));
+            return ResponseEntity.ok(Map.of(
+                "frequent", List.of(),
+                "catalog", List.of(),
+                "manual", Map.of("label", "Ajouter \"" + (q != null ? q.trim() : "") + "\" manuellement")
+            ));
         }
         String query = q.trim();
         int boundedLimit = Math.max(1, Math.min(limit, 20));
@@ -106,6 +112,9 @@ public class FoodLogController {
         var cacheResults = foodCacheRepository.searchByFoodNamePrefix(query, boundedLimit);
         var frequent = cacheResults.stream()
             .filter(c -> c.getFoodName().toLowerCase(Locale.ROOT).startsWith(queryLower))
+            .sorted(Comparator
+                .comparing((FoodCache c) -> Boolean.TRUE.equals(c.getVerified()) ? 0 : 1)
+                .thenComparing(c -> c.getHitCount() != null ? -c.getHitCount() : 0))
             .map(this::toCacheSuggestion)
             .toList();
 
@@ -113,41 +122,62 @@ public class FoodLogController {
             .map(c -> c.getFoodName().toLowerCase(Locale.ROOT))
             .collect(Collectors.toSet());
 
-        int catalogLimit = Math.max(0, boundedLimit - frequent.size());
-        var catalog = nutritionApiService.searchMultiple(query, boundedLimit)
-            .stream()
-            .filter(r -> !cacheNames.contains(r.foodName().toLowerCase(Locale.ROOT)))
-            .limit(catalogLimit)
-            .map(r -> Map.<String, Object>of(
-                "name",     r.foodName(),
-                "calories", r.calories()  != null ? r.calories()               : 0,
-                "proteinG", r.proteinG()  != null ? r.proteinG().doubleValue() : 0.0,
-                "carbsG",   r.carbsG()    != null ? r.carbsG().doubleValue()   : 0.0,
-                "fatG",     r.fatG()      != null ? r.fatG().doubleValue()     : 0.0,
-                "source",   "usda"
-            ))
-            .toList();
+        List<Map<String, Object>> catalog = List.of();
+        if (frequent.size() < 3) {
+            int catalogLimit = Math.max(0, boundedLimit - frequent.size());
+            catalog = nutritionApiService.searchMultiple(query, boundedLimit)
+                .stream()
+                .filter(r -> !cacheNames.contains(r.foodName().toLowerCase(Locale.ROOT)))
+                .limit(catalogLimit)
+                .map(r -> {
+                    Map<String, Object> m = new LinkedHashMap<>();
+                    m.put("name",     r.foodName());
+                    m.put("calories", r.calories()  != null ? r.calories()               : 0);
+                    m.put("proteinG", r.proteinG()  != null ? r.proteinG().doubleValue() : 0.0);
+                    m.put("carbsG",   r.carbsG()    != null ? r.carbsG().doubleValue()   : 0.0);
+                    m.put("fatG",     r.fatG()      != null ? r.fatG().doubleValue()     : 0.0);
+                    m.put("fiberG",   r.fiberG()    != null ? r.fiberG().doubleValue()   : 0.0);
+                    m.put("source",   "usda");
+                    m.put("verified", false);
+                    return m;
+                })
+                .collect(Collectors.toList());
+        }
 
-        int relatedLimit = Math.max(0, boundedLimit - frequent.size() - catalog.size());
-        var related = cacheResults.stream()
+        int totalSoFar = frequent.size() + catalog.size();
+        List<Map<String, Object>> related = List.of();
+        if (totalSoFar < 3) {
+            var trgmResults = foodCacheRepository.searchByTrgmSimilarity(query, boundedLimit);
+            related = trgmResults.stream()
             .filter(c -> !c.getFoodName().toLowerCase(Locale.ROOT).startsWith(queryLower))
-            .limit(relatedLimit)
+            .filter(c -> !cacheNames.contains(c.getFoodName().toLowerCase(Locale.ROOT)))
+            .limit(Math.max(0, boundedLimit - totalSoFar))
             .map(this::toCacheSuggestion)
             .toList();
+        }
 
-        return ResponseEntity.ok(Map.of("frequent", frequent, "catalog", catalog, "related", related));
+        Map<String, Object> manual = Map.of("label", "Ajouter \"" + query + "\" manuellement");
+
+        return ResponseEntity.ok(Map.of(
+            "frequent", frequent,
+            "catalog", catalog,
+            "related", related,
+            "manual", manual
+        ));
     }
 
     private Map<String, Object> toCacheSuggestion(FoodCache food) {
-        return Map.of(
-            "name",     food.getFoodName(),
-            "calories", food.getCalories() != null ? food.getCalories().intValue() : 0,
-            "proteinG", food.getProteinG() != null ? food.getProteinG().doubleValue() : 0.0,
-            "carbsG",   food.getCarbsG() != null ? food.getCarbsG().doubleValue() : 0.0,
-            "fatG",     food.getFatG() != null ? food.getFatG().doubleValue() : 0.0,
-            "source",   "cache",
-            "hitCount", food.getHitCount() != null ? food.getHitCount() : 1
-        );
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("name",     food.getFoodName());
+        m.put("calories", food.getCalories() != null ? food.getCalories().intValue() : 0);
+        m.put("proteinG", food.getProteinG() != null ? food.getProteinG().doubleValue() : 0.0);
+        m.put("carbsG",   food.getCarbsG()   != null ? food.getCarbsG().doubleValue()   : 0.0);
+        m.put("fatG",     food.getFatG()     != null ? food.getFatG().doubleValue()     : 0.0);
+        m.put("fiberG",   food.getFiberG()   != null ? food.getFiberG().doubleValue()   : 0.0);
+        m.put("source",   "cache");
+        m.put("verified", Boolean.TRUE.equals(food.getVerified()));
+        m.put("hitCount", food.getHitCount() != null ? food.getHitCount() : 0);
+        return m;
     }
 
     @DeleteMapping("/{id}")

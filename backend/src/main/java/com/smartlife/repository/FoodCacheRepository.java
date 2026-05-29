@@ -44,4 +44,13 @@ public interface FoodCacheRepository extends JpaRepository<FoodCache, Long> {
         LIMIT :limit
         """, nativeQuery = true)
     List<FoodCache> searchByFoodNamePrefix(@Param("query") String query, @Param("limit") int limit);
+
+    @Query(value = """
+        SELECT * FROM food_cache
+        WHERE similarity(food_name, :query) > 0.25
+        ORDER BY similarity(food_name, :query) DESC,
+                 hit_count DESC
+        LIMIT :limit
+        """, nativeQuery = true)
+    List<FoodCache> searchByTrgmSimilarity(@Param("query") String query, @Param("limit") int limit);
 }

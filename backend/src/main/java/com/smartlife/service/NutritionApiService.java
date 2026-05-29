@@ -56,7 +56,7 @@ public class NutritionApiService {
             Set<String> resultNames = new LinkedHashSet<>();
 
             appendResults(results, resultNames,
-                fetchUsdaFoods(query, candidateLimit, "Survey (FNDDS)", "SR Legacy", "Foundation"),
+                fetchUsdaFoods(query, candidateLimit, "Foundation", "SR Legacy"),
                 queryLower, limit);
 
             // Brand products are useful for precise searches, but must not drown basic foods.
@@ -143,8 +143,9 @@ public class NutritionApiService {
                 }
             }
         }
-        int kcal = calories != null ? calories : 0;
-        return Optional.of(new NutritionResult(name, kcal, protein, carbs, fat, fiber, Map.of(), "usda"));
+        if (calories == null) return Optional.empty();
+        if (calories == 0 && protein == null && carbs == null && fat == null) return Optional.empty();
+        return Optional.of(new NutritionResult(name, calories, protein, carbs, fat, fiber, Map.of(), "usda"));
     }
 
     private boolean startsWithQueryOrWord(Map<String, Object> food, String queryLower) {
@@ -156,11 +157,25 @@ public class NutritionApiService {
 
     private int suggestionRank(Map<String, Object> food, String queryLower) {
         String description = descriptionOf(food).toLowerCase(Locale.ROOT);
-        if (description.equals(queryLower)) return 0;
-        if (description.startsWith(queryLower + ",")) return 1;
-        if (description.startsWith(queryLower + " ")) return 2;
-        if (description.startsWith(queryLower)) return 3;
-        return 4;
+        Object dataTypeObj = food.get("dataType");
+        String dataType = dataTypeObj != null ? dataTypeObj.toString() : "";
+
+        int brandedPenalty = "Branded".equals(dataType) ? 10 : 0;
+
+        int lengthPenalty = description.length() > 60 ? 2 : 0;
+        boolean hasJunk = description.contains("flavor") || description.contains("imitation")
+                || description.contains("substitute") || description.contains("drink mix")
+                || description.contains("instant");
+        int junkPenalty = hasJunk ? 5 : 0;
+
+        int baseRank;
+        if (description.equals(queryLower)) baseRank = 0;
+        else if (description.startsWith(queryLower + ",")) baseRank = 1;
+        else if (description.startsWith(queryLower + " ")) baseRank = 2;
+        else if (description.startsWith(queryLower)) baseRank = 3;
+        else baseRank = 4;
+
+        return baseRank + brandedPenalty + lengthPenalty + junkPenalty;
     }
 
     private String descriptionOf(Map<String, Object> food) {
