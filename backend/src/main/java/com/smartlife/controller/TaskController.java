@@ -33,6 +33,7 @@ public class TaskController {
                 .description((String) body.getOrDefault("description", ""))
                 .status(Task.TaskStatus.valueOf((String) body.getOrDefault("status", "TODO")))
                 .priority(Task.Priority.valueOf((String) body.getOrDefault("priority", "MEDIUM")))
+                .category(normalizeCategory(body.get("category")))
                 .dueDate(body.get("dueDate") != null ? LocalDateTime.parse((String) body.get("dueDate")) : null)
                 .build();
         return ResponseEntity.ok(taskRepository.save(task));
@@ -60,6 +61,7 @@ public class TaskController {
                     if (body.containsKey("description")) t.setDescription((String) body.get("description"));
                     if (body.containsKey("priority")) t.setPriority(Task.Priority.valueOf((String) body.get("priority")));
                     if (body.containsKey("status")) t.setStatus(Task.TaskStatus.valueOf((String) body.get("status")));
+                    if (body.containsKey("category")) t.setCategory(normalizeCategory(body.get("category")));
                     if (body.containsKey("dueDate")) t.setDueDate(body.get("dueDate") != null ? LocalDateTime.parse((String) body.get("dueDate")) : null);
                     return ResponseEntity.ok(taskRepository.save(t));
                 })
@@ -72,5 +74,12 @@ public class TaskController {
                 .filter(t -> t.getUser().getId().equals(user.getId()))
                 .map(t -> { taskRepository.delete(t); return ResponseEntity.noContent().<Void>build(); })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    private String normalizeCategory(Object rawCategory) {
+        if (!(rawCategory instanceof String category) || category.isBlank()) {
+            return "PERSONAL";
+        }
+        return category.trim().toUpperCase();
     }
 }

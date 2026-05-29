@@ -35,6 +35,10 @@ public class Task {
     @Enumerated(EnumType.STRING)
     private Priority priority = Priority.MEDIUM;
 
+    @Builder.Default
+    @Column(length = 30)
+    private String category = "PERSONAL";
+
     private LocalDateTime dueDate;
 
     @Column(nullable = false, updatable = false)

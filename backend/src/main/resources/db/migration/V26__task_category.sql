@@ -1,0 +1,2 @@
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS category VARCHAR(30) DEFAULT 'PERSONAL';
+CREATE INDEX IF NOT EXISTS idx_tasks_category ON tasks(category);

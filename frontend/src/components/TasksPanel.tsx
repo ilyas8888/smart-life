@@ -8,12 +8,24 @@ import toast from 'react-hot-toast'
 import api from '../api/axios'
 import DateTimePicker from './DateTimePicker'
 
+const TASK_CATEGORIES = {
+  PERSONAL: { label: 'Personnel', emoji: '', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
+  WORK: { label: 'Travail', emoji: '', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' },
+  SCHOOL: { label: 'École', emoji: '', color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300' },
+  FREELANCE: { label: 'Freelance', emoji: '', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300' },
+  HEALTH: { label: 'Santé', emoji: '❤️', color: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
+  LEARNING: { label: 'Apprentissage', emoji: '', color: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
+  SOCIAL: { label: 'Social', emoji: '', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/40 dark:text-pink-300' },
+  PRODUCTIVITY: { label: 'Productivité', emoji: '⚡', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' },
+}
+
 interface Task {
   id: number
   title: string
   description: string | null
   status: 'TODO' | 'IN_PROGRESS' | 'DONE'
   priority: 'LOW' | 'MEDIUM' | 'HIGH'
+  category?: string
   dueDate: string | null
   createdAt: string
 }
@@ -31,6 +43,11 @@ const STATUS_COLORS = {
   IN_PROGRESS: 'text-yellow-600 dark:text-yellow-400',
   DONE: 'text-green-600 dark:text-green-400',
 }
+type TaskCategory = keyof typeof TASK_CATEGORIES
+type SortBy = 'date' | 'priority' | 'category'
+
+const CATEGORY_KEYS = Object.keys(TASK_CATEGORIES) as TaskCategory[]
+const PRIORITY_ORDER: Record<Task['priority'], number> = { HIGH: 0, MEDIUM: 1, LOW: 2 }
 
 function toInputDateTime(value: string | null) {
   return value ? value.slice(0, 16) : ''
@@ -38,6 +55,34 @@ function toInputDateTime(value: string | null) {
 
 function priorityOf(task: Task) {
   return PRIORITY[task.priority ?? 'MEDIUM'] ?? PRIORITY.MEDIUM
+}
+
+function categoryOf(task: Task) {
+  const key = (task.category ?? 'PERSONAL') as TaskCategory
+  return TASK_CATEGORIES[key] ?? TASK_CATEGORIES.PERSONAL
+}
+
+function CategoryPicker({ value, onChange }: { value: string; onChange: (category: string) => void }) {
+  return (
+    <div>
+      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Catégorie</p>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {CATEGORY_KEYS.map(category => {
+          const meta = TASK_CATEGORIES[category]
+          const selected = value === category
+          return (
+            <button key={category} type="button" onClick={() => onChange(category)}
+              className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                selected ? meta.color : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
+              }`}>
+              {meta.emoji && <span>{meta.emoji}</span>}
+              <span>{meta.label}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 function TaskEditModal({
@@ -51,6 +96,7 @@ function TaskEditModal({
   const [description, setDescription] = useState(task.description ?? '')
   const [priority, setPriority] = useState<Task['priority']>(task.priority ?? 'MEDIUM')
   const [status, setStatus] = useState<Task['status']>(task.status)
+  const [category, setCategory] = useState(task.category ?? 'PERSONAL')
   const [dueDate, setDueDate] = useState(toInputDateTime(task.dueDate))
   const [saving, setSaving] = useState(false)
 
@@ -62,6 +108,7 @@ function TaskEditModal({
       description: description.trim() || null,
       priority,
       status,
+      category,
       dueDate: dueDate || null,
     })
       .then(() => {
@@ -90,6 +137,7 @@ function TaskEditModal({
           <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Titre" />
           <textarea className="input min-h-[90px] resize-none" value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optionnel)" />
           <DateTimePicker value={dueDate} onChange={setDueDate} placeholder="Choisir une date et heure..." />
+          <CategoryPicker value={category} onChange={setCategory} />
           <div>
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Priorité</p>
             <div className="grid grid-cols-3 gap-2">
@@ -130,9 +178,13 @@ export default function TasksPanel() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<Task['priority']>('MEDIUM')
+  const [newCategory, setNewCategory] = useState('PERSONAL')
   const [dueDate, setDueDate] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [filterPriority, setFilterPriority] = useState<Task['priority'] | null>(null)
+  const [filterCategory, setFilterCategory] = useState<string | null>(null)
+  const [sortBy, setSortBy] = useState<SortBy>('date')
+  const [sortAsc, setSortAsc] = useState(true)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
 
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
@@ -146,6 +198,7 @@ export default function TasksPanel() {
         title,
         description: description || null,
         priority,
+        category: newCategory,
         status: 'TODO',
         dueDate: dueDate || null,
       }),
@@ -154,6 +207,7 @@ export default function TasksPanel() {
       setTitle('')
       setDescription('')
       setPriority('MEDIUM')
+      setNewCategory('PERSONAL')
       setDueDate('')
       setFormExpanded(false)
       toast.success('Tâche créée')
@@ -172,19 +226,28 @@ export default function TasksPanel() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks'] }); toast.success('Tâche supprimée') },
   })
 
-  const filteredTasks = useMemo(() => tasks.filter(task => {
-    const q = searchQuery.trim().toLowerCase()
-    const matchesSearch = !q || task.title.toLowerCase().includes(q) || (task.description ?? '').toLowerCase().includes(q)
-    const matchesPriority = !filterPriority || task.priority === filterPriority
-    return matchesSearch && matchesPriority
-  }), [tasks, searchQuery, filterPriority])
+  const filteredTasks = useMemo(() => [...tasks]
+    .filter(task => {
+      const q = searchQuery.trim().toLowerCase()
+      const matchesSearch = !q || task.title.toLowerCase().includes(q) || (task.description ?? '').toLowerCase().includes(q)
+      const matchesCategory = !filterCategory || (task.category ?? 'PERSONAL') === filterCategory
+      const matchesPriority = !filterPriority || task.priority === filterPriority
+      return matchesSearch && matchesCategory && matchesPriority
+    })
+    .sort((a, b) => {
+      let cmp = 0
+      if (sortBy === 'date') cmp = (a.dueDate ?? '').localeCompare(b.dueDate ?? '')
+      if (sortBy === 'priority') cmp = (PRIORITY_ORDER[a.priority] ?? 1) - (PRIORITY_ORDER[b.priority] ?? 1)
+      if (sortBy === 'category') cmp = (a.category ?? 'PERSONAL').localeCompare(b.category ?? 'PERSONAL')
+      return sortAsc ? cmp : -cmp
+    }), [tasks, searchQuery, filterCategory, filterPriority, sortBy, sortAsc])
 
   const todo = filteredTasks.filter((t) => t.status === 'TODO')
   const inProgress = filteredTasks.filter((t) => t.status === 'IN_PROGRESS')
   const done = filteredTasks.filter((t) => t.status === 'DONE')
   const allDone = tasks.filter((t) => t.status === 'DONE')
   const progress = tasks.length > 0 ? (allDone.length / tasks.length) * 100 : 0
-  const formIsEmpty = !title.trim() && !description.trim() && !dueDate && priority === 'MEDIUM'
+  const formIsEmpty = !title.trim() && !description.trim() && !dueDate && priority === 'MEDIUM' && newCategory === 'PERSONAL'
 
   const handleCreate = (e: FormEvent) => {
     e.preventDefault()
@@ -197,8 +260,18 @@ export default function TasksPanel() {
     if (formIsEmpty) setFormExpanded(false)
   }
 
+  const handleSort = (nextSortBy: SortBy) => {
+    if (sortBy === nextSortBy) {
+      setSortAsc(value => !value)
+      return
+    }
+    setSortBy(nextSortBy)
+    setSortAsc(true)
+  }
+
   const TaskCard = ({ task }: { task: Task }) => {
     const meta = priorityOf(task)
+    const categoryMeta = categoryOf(task)
     const due = task.dueDate ? new Date(task.dueDate) : null
     const overdue = Boolean(due && isPast(due) && task.status !== 'DONE')
     const nextStatus = STATUS_NEXT[task.status]
@@ -222,6 +295,10 @@ export default function TasksPanel() {
             <p className={`font-semibold ${task.status === 'DONE' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
               {task.title}
             </p>
+            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full mt-1 ${categoryMeta.color}`}>
+              {categoryMeta.emoji && <span>{categoryMeta.emoji}</span>}
+              <span>{categoryMeta.label}</span>
+            </span>
             {task.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{task.description}</p>}
             {due && (
               <div className={`flex items-center gap-1.5 text-xs mt-2 ${overdue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>
@@ -289,6 +366,7 @@ export default function TasksPanel() {
             <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titre de la tâche" autoFocus />
             <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optionnel)" />
             <DateTimePicker value={dueDate} onChange={setDueDate} placeholder="Choisir une échéance..." />
+            <CategoryPicker value={newCategory} onChange={setNewCategory} />
             <div className="grid grid-cols-3 gap-2">
               {(Object.keys(PRIORITY) as Task['priority'][]).map(p => (
                 <button key={p} type="button" onClick={() => setPriority(p)}
@@ -317,18 +395,49 @@ export default function TasksPanel() {
               className="absolute right-3 top-1/2 -translate-y-1/2"><X size={14} className="text-gray-400" /></button>
           )}
         </div>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          <button type="button" onClick={() => setFilterCategory(null)}
+            className={`shrink-0 text-xs px-3 py-1.5 rounded-full font-semibold transition-colors ${
+              !filterCategory ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
+            }`}>
+            Tout
+          </button>
+          {CATEGORY_KEYS.map(category => {
+            const meta = TASK_CATEGORIES[category]
+            const active = filterCategory === category
+            return (
+              <button key={category} type="button" onClick={() => setFilterCategory(active ? null : category)}
+                className={`shrink-0 text-xs px-3 py-1.5 rounded-full font-semibold transition-colors flex items-center gap-1 ${
+                  active ? meta.color : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
+                }`}>
+                {meta.emoji && <span>{meta.emoji}</span>}
+                <span>{meta.label}</span>
+              </button>
+            )
+          })}
+        </div>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-gray-400 font-medium">Priorité :</span>
-          <button type="button" onClick={() => setFilterPriority(null)}
-            className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${!filterPriority ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>
-            Toutes
-          </button>
           {(Object.keys(PRIORITY) as Task['priority'][]).map(p => (
             <button key={p} type="button" onClick={() => setFilterPriority(filterPriority === p ? null : p)}
-              className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 ${
-                p === 'HIGH' ? 'bg-red-400' : p === 'MEDIUM' ? 'bg-yellow-400' : 'bg-green-400'
-              } ${filterPriority === p ? 'border-gray-800 dark:border-white scale-125' : 'border-transparent'}`}
-              title={PRIORITY[p].label} />
+              className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${
+                filterPriority === p ? PRIORITY[p].badge : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
+              }`}>
+              {p}
+            </button>
+          ))}
+          <span className="h-5 w-px bg-gray-200 dark:bg-gray-700 mx-1" />
+          {([
+            ['date', 'Date'],
+            ['priority', 'Priorité'],
+            ['category', 'Catégorie'],
+          ] as const).map(([key, label]) => (
+            <button key={key} type="button" onClick={() => handleSort(key)}
+              className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${
+                sortBy === key ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'
+              }`}>
+              {label} {sortBy === key ? (sortAsc ? '↑' : '↓') : ''}
+            </button>
           ))}
         </div>
       </div>
