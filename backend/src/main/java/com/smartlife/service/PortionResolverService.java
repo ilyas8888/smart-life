@@ -17,25 +17,24 @@ public class PortionResolverService {
     public Map<String, Object> resolve(Map<String, Object> nutritionDetails, String foodName) {
         if (nutritionDetails == null) return Map.of();
         Object rawPortions = nutritionDetails.get("portions");
-        if (!(rawPortions instanceof Map<?, ?> rawMap) || rawMap.isEmpty()) return Map.of();
-
         String foodNameLower = foodName == null ? "" : foodName.toLowerCase();
         Map<String, Object> portions = new LinkedHashMap<>();
-        for (var entry : rawMap.entrySet()) {
-            String unit = String.valueOf(entry.getKey());
-            Object value = entry.getValue();
-            Map<String, Object> portion = toRichPortion(unit, value);
-            if (portion == null) continue;
 
-            double grams = numberValue(portion.get("grams"), 0.0);
-            if (isAbsurd(unit, grams, foodNameLower)) {
-                portion = new LinkedHashMap<>(portion);
-                portion.put("confidence", 0.15);
+        if (rawPortions instanceof Map<?, ?> rawMap && !rawMap.isEmpty()) {
+            for (var entry : rawMap.entrySet()) {
+                String unit = String.valueOf(entry.getKey());
+                Object value = entry.getValue();
+                Map<String, Object> portion = toRichPortion(unit, value);
+                if (portion == null) continue;
+
+                double grams = numberValue(portion.get("grams"), 0.0);
+                if (isAbsurd(unit, grams, foodNameLower)) {
+                    portion = new LinkedHashMap<>(portion);
+                    portion.put("confidence", 0.15);
+                }
+                portions.put(unit, portion);
             }
-            portions.put(unit, portion);
         }
-
-        if (portions.isEmpty()) return Map.of();
         boolean allLowConfidence = portions.values().stream()
             .allMatch(portion -> portion instanceof Map<?, ?> portionMap
                 && numberValue(portionMap.get("confidence"), 0.0) < 0.5);
