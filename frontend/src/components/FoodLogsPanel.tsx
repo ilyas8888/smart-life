@@ -697,14 +697,17 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                     <div key={i} className="flex items-center justify-between px-3 py-2.5">
                       <div>
                         <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{item.name}</span>
-                        {item.hasNutrition && item.calories != null && (
-                          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
-                            {Math.round(item.calories * ((parseFloat(item.quantity) || 100) / 100))} kcal
-                            {' · '}P {((item.proteinG ?? 0) * ((parseFloat(item.quantity) || 100) / 100)).toFixed(1)}g
-                            {' · '}G {((item.carbsG ?? 0) * ((parseFloat(item.quantity) || 100) / 100)).toFixed(1)}g
-                            {' · '}L {((item.fatG ?? 0) * ((parseFloat(item.quantity) || 100) / 100)).toFixed(1)}g
-                          </p>
-                        )}
+                        {item.hasNutrition && item.calories != null && (() => {
+                          const scale = computeScale(item.quantity || '1', item.unit, item.portions)
+                          return (
+                            <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+                              {Math.round(item.calories * scale)} kcal
+                              {' · '}P {((item.proteinG ?? 0) * scale).toFixed(1)}g
+                              {' · '}G {((item.carbsG ?? 0) * scale).toFixed(1)}g
+                              {' · '}L {((item.fatG ?? 0) * scale).toFixed(1)}g
+                            </p>
+                          )
+                        })()}
                         {!item.hasNutrition && (
                           <p className="text-xs text-amber-500 dark:text-amber-400 mt-0.5">
                             ✨ Valeurs estimées par l'IA
