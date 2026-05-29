@@ -13,6 +13,7 @@ import java.util.Optional;
 public interface FoodCacheRepository extends JpaRepository<FoodCache, Long> {
     Optional<FoodCache> findByFoodNameNormalized(String foodNameNormalized);
     List<FoodCache> findTop20ByOrderByHitCountDesc();
+    long countByVerifiedTrue();
 
     @Query(value = """
         SELECT * FROM food_cache

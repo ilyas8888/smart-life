@@ -47,6 +47,13 @@ public class FoodCache {
     @Column(length = 50)
     private String source = "ai";
 
+    @Column(name = "source_id", length = 100)
+    private String sourceId;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Boolean verified = false;
+
     @Column(length = 20)
     private String foodType = "SIMPLE_INGREDIENT";
 
