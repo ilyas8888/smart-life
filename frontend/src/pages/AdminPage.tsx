@@ -12,6 +12,7 @@ import {
   Command,
   CornerDownLeft,
   Database,
+  Download,
   Inbox,
   LayoutDashboard,
   Mail,
@@ -443,6 +444,7 @@ function AdminUsersTab() {
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null)
   const [editingStatus, setEditingStatus] = useState<{ userId: number; status: string; quota: number } | null>(null)
+  const [exporting, setExporting] = useState(false)
 
   const { data: users = [], refetch } = useQuery<AdminUser[]>({
     queryKey: ['admin-users'],
@@ -471,6 +473,27 @@ function AdminUsersTab() {
   const filtered = users
     .filter((user) => search === '' || user.email.toLowerCase().includes(search.toLowerCase()))
     .filter((user) => statusFilter === 'ALL' || user.aiStatus === statusFilter)
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const response = await api.get('/admin/users/export/csv', {
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }))
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'smartlife-users.csv'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch {
+      // keep export failure quiet; the button state is restored below
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const openDrawer = (user: AdminUser) => {
     setSelectedUserId(user.userId)
@@ -524,6 +547,16 @@ function AdminUsersTab() {
             <option value="BLOCKED">BLOCKED</option>
             <option value="ADMIN">ADMIN</option>
           </select>
+
+          <button
+            type="button"
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center gap-2 rounded-lg border border-slate-700 px-3 py-2 text-sm font-semibold text-slate-300 transition-colors hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download size={15} className={exporting ? 'animate-bounce' : ''} />
+            {exporting ? 'Export...' : 'Exporter CSV'}
+          </button>
         </div>
       </div>
 

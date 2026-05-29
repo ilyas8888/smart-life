@@ -4,6 +4,8 @@ import com.smartlife.model.User;
 import com.smartlife.service.AdminUserService;
 import com.smartlife.service.AiEntitlementService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +29,18 @@ public class AdminUserController {
     public ResponseEntity<List<Map<String, Object>>> getUsers(@AuthenticationPrincipal User admin) {
         entitlementService.requireAdmin(admin);
         return ResponseEntity.ok(adminUserService.getAllUsers());
+    }
+
+    @GetMapping("/export/csv")
+    public ResponseEntity<byte[]> exportCsv(@AuthenticationPrincipal User admin) {
+        entitlementService.requireAdmin(admin);
+        String csv = adminUserService.exportCsv();
+        byte[] bytes = csv.getBytes(StandardCharsets.UTF_8);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
+        headers.setContentDispositionFormData("attachment", "smartlife-users.csv");
+        headers.setContentLength(bytes.length);
+        return ResponseEntity.ok().headers(headers).body(bytes);
     }
 
     @GetMapping("/{userId}")

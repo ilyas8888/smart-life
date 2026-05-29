@@ -34,6 +34,37 @@ public class AdminUserService {
         return toUserResponse(user, entitlement);
     }
 
+    public String exportCsv() {
+        List<Map<String, Object>> users = getAllUsers();
+
+        String header = "userId,email,firstName,lastName,provider,emailVerified,"
+                + "createdAt,aiStatus,planName,monthlyUsed,monthlyQuota,"
+                + "trialUsed,trialQuota,approvedAt";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(header).append("\n");
+
+        for (Map<String, Object> user : users) {
+            sb.append(csvLine(
+                    user.get("userId"),
+                    user.get("email"),
+                    user.get("firstName"),
+                    user.get("lastName"),
+                    user.get("provider"),
+                    user.get("emailVerified"),
+                    user.get("createdAt"),
+                    user.get("aiStatus"),
+                    user.get("planName"),
+                    user.get("monthlyUsed"),
+                    user.get("monthlyQuota"),
+                    user.get("trialUsed"),
+                    user.get("trialQuota"),
+                    user.get("approvedAt")
+            )).append("\n");
+        }
+        return sb.toString();
+    }
+
     private Map<String, Object> toUserResponse(User user, UserAiEntitlement entitlement) {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("userId", user.getId());
@@ -59,5 +90,26 @@ public class AdminUserService {
 
     private int valueOrZero(Integer value) {
         return value != null ? value : 0;
+    }
+
+    private String csvLine(Object... values) {
+        StringBuilder line = new StringBuilder();
+        for (int i = 0; i < values.length; i++) {
+            if (i > 0) {
+                line.append(",");
+            }
+            Object val = values[i];
+            if (val == null) {
+                line.append("");
+            } else {
+                String s = val.toString().replace("\"", "\"\"");
+                if (s.contains(",") || s.contains("\"") || s.contains("\n")) {
+                    line.append("\"").append(s).append("\"");
+                } else {
+                    line.append(s);
+                }
+            }
+        }
+        return line.toString();
     }
 }
