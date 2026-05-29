@@ -18,10 +18,12 @@ import AgendaPage from './AgendaPage'
 import DiaryPanel from '../components/DiaryPanel'
 import WorkoutPanel from '../components/WorkoutPanel'
 import HomePanel from '../components/HomePanel'
+import SleepPanel from '../components/SleepPanel'
+import StudyPanel from '../components/StudyPanel'
 
-type Panel = 'home' | 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout' | 'admin'
+type Panel = 'home' | 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout' | 'sleep' | 'study' | 'admin'
 
-const VALID_PANELS: Panel[] = ['home', 'agenda', 'prompt', 'tasks', 'reminders', 'notes', 'contacts', 'food', 'diary', 'workout', 'admin']
+const VALID_PANELS: Panel[] = ['home', 'agenda', 'prompt', 'tasks', 'reminders', 'notes', 'contacts', 'food', 'diary', 'workout', 'sleep', 'study', 'admin']
 
 type AiAccessStatus = {
   status: 'FREE' | 'APPROVED' | 'PREMIUM' | 'ADMIN' | 'BLOCKED'
@@ -171,6 +173,8 @@ export default function DashboardPage() {
     food: 'text-green-400',
     diary: 'text-rose-400',
     workout: 'text-amber-400',
+    sleep: 'text-indigo-400',
+    study: 'text-cyan-400',
     admin: 'text-emerald-400',
   }
 
@@ -185,6 +189,8 @@ export default function DashboardPage() {
     food:      'from-green-600 via-emerald-400 to-teal-400',
     diary:     'from-rose-500 via-pink-400 to-fuchsia-400',
     workout:   'from-amber-500 via-orange-400 to-red-400',
+    sleep:     'from-indigo-500 via-sky-500 to-cyan-400',
+    study:     'from-cyan-500 via-blue-500 to-violet-500',
     admin:     'from-emerald-500 via-teal-500 to-cyan-500',
   }
 
@@ -199,6 +205,8 @@ export default function DashboardPage() {
     { id: 'food' as Panel, label: 'Alimentation', icon: UtensilsCrossed },
     { id: 'diary' as Panel, label: 'Journal', icon: BookOpen },
     { id: 'workout' as Panel, label: 'Sport', icon: Dumbbell },
+    { id: 'sleep' as Panel, label: 'Sommeil', icon: Moon },
+    { id: 'study' as Panel, label: 'Apprentissage', icon: BookOpen },
     ...(aiStatus?.status === 'ADMIN' ? [{
       id: 'admin' as Panel,
       label: pendingAiRequestCount > 0 ? `Admin IA (${pendingAiRequestCount})` : 'Admin IA',
@@ -312,7 +320,7 @@ export default function DashboardPage() {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col overflow-hidden min-w-0">
+      <main className="flex-1 flex flex-col overflow-hidden min-w-0 pb-20 md:pb-0">
         <header className="shadow-none border-b border-gray-100 bg-white/80 backdrop-blur-sm px-4 md:px-6 py-4 dark:bg-gray-900/80 dark:border-gray-700">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
@@ -505,6 +513,8 @@ export default function DashboardPage() {
           {activePanel === 'food' && <FoodLogsPanel />}
           {activePanel === 'diary' && <DiaryPanel />}
           {activePanel === 'workout' && <WorkoutPanel />}
+          {activePanel === 'sleep' && <SleepPanel />}
+          {activePanel === 'study' && <StudyPanel />}
           {activePanel === 'admin' && aiStatus?.status === 'ADMIN' && (
             <div className="w-full flex flex-col items-center justify-center py-20 animate-panel">
               <div className="bg-slate-800 rounded-2xl p-8 max-w-sm w-full text-center space-y-4">
@@ -532,13 +542,33 @@ export default function DashboardPage() {
         </div>
       </main>
 
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-gray-700 dark:bg-gray-900/95 md:hidden">
+        <div className="flex gap-1 overflow-x-auto">
+          {navItems.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => handleNavClick(id)}
+              className={`flex min-w-[4.75rem] flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-semibold transition-colors ${
+                activePanel === id
+                  ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                  : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+              }`}
+            >
+              <Icon size={19} className={activePanel === id ? MODULE_ACCENT[id] : ''} />
+              <span className="max-w-16 truncate">{label.replace(/\s*\(.+\)$/, '')}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
+
       {showAccessModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 px-4 py-6"
+          className="fixed inset-0 z-50 flex items-stretch justify-center bg-black/55 p-0 sm:items-center sm:px-4 sm:py-6"
           onMouseDown={() => setShowAccessModal(false)}
         >
           <div
-            className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+            className="h-dvh w-full overflow-y-auto border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900 sm:h-auto sm:max-w-lg sm:rounded-2xl"
             onMouseDown={(event) => event.stopPropagation()}
             role="dialog"
             aria-modal="true"
