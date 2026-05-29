@@ -26,8 +26,17 @@ interface Task {
   status: 'TODO' | 'IN_PROGRESS' | 'DONE'
   priority: 'LOW' | 'MEDIUM' | 'HIGH'
   category?: string
+  startDate?: string | null
   dueDate: string | null
   createdAt: string
+  checklist?: ChecklistItem[]
+}
+
+interface ChecklistItem {
+  id: number
+  text: string
+  done: boolean
+  position: number
 }
 
 const PRIORITY = {
@@ -97,6 +106,7 @@ function TaskEditModal({
   const [priority, setPriority] = useState<Task['priority']>(task.priority ?? 'MEDIUM')
   const [status, setStatus] = useState<Task['status']>(task.status)
   const [category, setCategory] = useState(task.category ?? 'PERSONAL')
+  const [startDate, setStartDate] = useState(toInputDateTime(task.startDate ?? null))
   const [dueDate, setDueDate] = useState(toInputDateTime(task.dueDate))
   const [saving, setSaving] = useState(false)
 
@@ -109,6 +119,7 @@ function TaskEditModal({
       priority,
       status,
       category,
+      startDate: startDate || null,
       dueDate: dueDate || null,
     })
       .then(() => {
@@ -136,6 +147,10 @@ function TaskEditModal({
         <div className="p-5 space-y-3">
           <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Titre" />
           <textarea className="input min-h-[90px] resize-none" value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optionnel)" />
+          <label className="block">
+            <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Début (optionnel)</span>
+            <input type="datetime-local" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} />
+          </label>
           <DateTimePicker value={dueDate} onChange={setDueDate} placeholder="Choisir une date et heure..." />
           <CategoryPicker value={category} onChange={setCategory} />
           <div>
@@ -172,6 +187,162 @@ function TaskEditModal({
   )
 }
 
+function TaskDetailPanel({
+  task,
+  onClose,
+  onSaved,
+  onDelete,
+  onAddChecklist,
+  onToggleChecklist,
+  onDeleteChecklist,
+}: {
+  task: Task
+  onClose: () => void
+  onSaved: () => void
+  onDelete: (id: number) => void
+  onAddChecklist: (payload: { taskId: number; text: string }) => void
+  onToggleChecklist: (payload: { taskId: number; itemId: number; done: boolean }) => void
+  onDeleteChecklist: (payload: { taskId: number; itemId: number }) => void
+}) {
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [editingDescription, setEditingDescription] = useState(false)
+  const [title, setTitle] = useState(task.title)
+  const [description, setDescription] = useState(task.description ?? '')
+  const [newItem, setNewItem] = useState('')
+  const categoryMeta = categoryOf(task)
+  const priorityMeta = priorityOf(task)
+  const checklist = task.checklist ?? []
+  const doneCount = checklist.filter(item => item.done).length
+  const checklistPercent = checklist.length > 0 ? (doneCount / checklist.length) * 100 : 0
+
+  const saveInline = (patch: Partial<Pick<Task, 'title' | 'description'>>) => {
+    api.put(`/tasks/${task.id}`, {
+      title: Object.prototype.hasOwnProperty.call(patch, 'title') ? patch.title : task.title,
+      description: Object.prototype.hasOwnProperty.call(patch, 'description') ? patch.description : task.description,
+      priority: task.priority,
+      status: task.status,
+      category: task.category ?? 'PERSONAL',
+      startDate: task.startDate ?? null,
+      dueDate: task.dueDate ?? null,
+    })
+      .then(() => onSaved())
+      .catch(() => toast.error('Erreur lors de la mise à jour'))
+  }
+
+  const addItem = () => {
+    const text = newItem.trim()
+    if (!text) return
+    onAddChecklist({ taskId: task.id, text })
+    setNewItem('')
+  }
+
+  return (
+    <div className="fixed inset-0 z-50">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <aside className="absolute right-0 top-0 h-full w-full sm:w-96 bg-white dark:bg-gray-800 shadow-2xl flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <div className="min-w-0">
+            <p className="text-xs text-gray-400 uppercase tracking-wide">Détail</p>
+            <p className="font-bold text-gray-900 dark:text-gray-100 truncate">Tâche</p>
+          </div>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          <div>
+            {editingTitle ? (
+              <input className="input text-lg font-semibold" value={title} autoFocus
+                onChange={e => setTitle(e.target.value)}
+                onBlur={() => {
+                  setEditingTitle(false)
+                  if (title.trim() && title.trim() !== task.title) saveInline({ title: title.trim() })
+                }} />
+            ) : (
+              <button type="button" onClick={() => setEditingTitle(true)}
+                className="text-left text-lg font-semibold text-gray-900 dark:text-gray-100 hover:text-primary-600">
+                {task.title}
+              </button>
+            )}
+            {editingDescription ? (
+              <textarea className="input min-h-[90px] resize-none mt-3" value={description} autoFocus
+                onChange={e => setDescription(e.target.value)}
+                onBlur={() => {
+                  setEditingDescription(false)
+                  if (description.trim() !== (task.description ?? '')) saveInline({ description: description.trim() || null })
+                }} />
+            ) : (
+              <button type="button" onClick={() => setEditingDescription(true)}
+                className="block text-left text-sm text-gray-500 dark:text-gray-400 mt-3">
+                {task.description || 'Ajouter une description'}
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${categoryMeta.color}`}>
+              {categoryMeta.emoji && `${categoryMeta.emoji} `}{categoryMeta.label}
+            </span>
+            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${priorityMeta.badge}`}>
+              <Flag size={9} className="inline mr-1" />{priorityMeta.label}
+            </span>
+            <span className={`text-[10px] font-semibold ${STATUS_COLORS[task.status]}`}>{STATUS_LABEL[task.status]}</span>
+          </div>
+
+          {(task.startDate || task.dueDate) && (
+            <div className="rounded-xl bg-gray-50 dark:bg-gray-700 p-3 text-xs text-gray-500 dark:text-gray-300 space-y-1">
+              {task.startDate && <p>Du {format(new Date(task.startDate), 'dd MMM yyyy à HH:mm', { locale: fr })}</p>}
+              {task.dueDate && <p>Au {format(new Date(task.dueDate), 'dd MMM yyyy à HH:mm', { locale: fr })}</p>}
+            </div>
+          )}
+
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Checklist</h4>
+              <span className="text-xs text-gray-400">{doneCount}/{checklist.length}</span>
+            </div>
+            {checklist.length > 0 && (
+              <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden mb-3">
+                <div className="h-full bg-primary-500 transition-all" style={{ width: `${checklistPercent}%` }} />
+              </div>
+            )}
+            <div className="space-y-2">
+              {checklist.map(item => (
+                <div key={item.id} className="flex items-center gap-2 rounded-lg bg-gray-50 dark:bg-gray-700 px-3 py-2">
+                  <input type="checkbox" checked={item.done}
+                    onChange={e => onToggleChecklist({ taskId: task.id, itemId: item.id, done: e.target.checked })}
+                    className="h-4 w-4 accent-primary-600" />
+                  <span className={`flex-1 text-sm ${item.done ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>{item.text}</span>
+                  <button type="button" onClick={() => onDeleteChecklist({ taskId: task.id, itemId: item.id })}
+                    className="p-1 text-gray-300 hover:text-red-500">
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 mt-3">
+              <input className="input flex-1" value={newItem} onChange={e => setNewItem(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItem() } }}
+                placeholder="Nouvelle sous-tâche" />
+              <button type="button" onClick={addItem} className="btn-primary px-3">
+                <Plus size={16} />
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <div className="p-5 border-t border-gray-100 dark:border-gray-700">
+          <button type="button" onClick={() => onDelete(task.id)}
+            className="w-full rounded-xl bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 px-4 py-2 text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">
+            Supprimer la tâche
+          </button>
+        </div>
+      </aside>
+    </div>
+  )
+}
+
 export default function TasksPanel() {
   const qc = useQueryClient()
   const [formExpanded, setFormExpanded] = useState(false)
@@ -179,6 +350,7 @@ export default function TasksPanel() {
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<Task['priority']>('MEDIUM')
   const [newCategory, setNewCategory] = useState('PERSONAL')
+  const [startDate, setStartDate] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [filterPriority, setFilterPriority] = useState<Task['priority'] | null>(null)
@@ -186,6 +358,7 @@ export default function TasksPanel() {
   const [sortBy, setSortBy] = useState<SortBy>('date')
   const [sortAsc, setSortAsc] = useState(true)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
+  const [detailTaskId, setDetailTaskId] = useState<number | null>(null)
 
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
     queryKey: ['tasks'],
@@ -200,6 +373,7 @@ export default function TasksPanel() {
         priority,
         category: newCategory,
         status: 'TODO',
+        startDate: startDate || null,
         dueDate: dueDate || null,
       }),
     onSuccess: () => {
@@ -208,6 +382,7 @@ export default function TasksPanel() {
       setDescription('')
       setPriority('MEDIUM')
       setNewCategory('PERSONAL')
+      setStartDate('')
       setDueDate('')
       setFormExpanded(false)
       toast.success('Tâche créée')
@@ -223,7 +398,29 @@ export default function TasksPanel() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/tasks/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['tasks'] }); toast.success('Tâche supprimée') },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] })
+      setDetailTaskId(null)
+      toast.success('Tâche supprimée')
+    },
+  })
+
+  const checklistAddMutation = useMutation({
+    mutationFn: ({ taskId, text }: { taskId: number; text: string }) =>
+      api.post(`/tasks/${taskId}/checklist`, { text }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+  })
+
+  const checklistToggleMutation = useMutation({
+    mutationFn: ({ taskId, itemId, done }: { taskId: number; itemId: number; done: boolean }) =>
+      api.patch(`/tasks/${taskId}/checklist/${itemId}`, { done }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+  })
+
+  const checklistDeleteMutation = useMutation({
+    mutationFn: ({ taskId, itemId }: { taskId: number; itemId: number }) =>
+      api.delete(`/tasks/${taskId}/checklist/${itemId}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
   })
 
   const filteredTasks = useMemo(() => [...tasks]
@@ -247,7 +444,8 @@ export default function TasksPanel() {
   const done = filteredTasks.filter((t) => t.status === 'DONE')
   const allDone = tasks.filter((t) => t.status === 'DONE')
   const progress = tasks.length > 0 ? (allDone.length / tasks.length) * 100 : 0
-  const formIsEmpty = !title.trim() && !description.trim() && !dueDate && priority === 'MEDIUM' && newCategory === 'PERSONAL'
+  const detailTask = detailTaskId ? tasks.find(task => task.id === detailTaskId) ?? null : null
+  const formIsEmpty = !title.trim() && !description.trim() && !startDate && !dueDate && priority === 'MEDIUM' && newCategory === 'PERSONAL'
 
   const handleCreate = (e: FormEvent) => {
     e.preventDefault()
@@ -272,6 +470,9 @@ export default function TasksPanel() {
   const TaskCard = ({ task }: { task: Task }) => {
     const meta = priorityOf(task)
     const categoryMeta = categoryOf(task)
+    const checklist = task.checklist ?? []
+    const checklistDone = checklist.filter(item => item.done).length
+    const checklistPercent = checklist.length > 0 ? (checklistDone / checklist.length) * 100 : 0
     const due = task.dueDate ? new Date(task.dueDate) : null
     const overdue = Boolean(due && isPast(due) && task.status !== 'DONE')
     const nextStatus = STATUS_NEXT[task.status]
@@ -292,13 +493,24 @@ export default function TasksPanel() {
                 </span>
               )}
             </div>
-            <p className={`font-semibold ${task.status === 'DONE' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
+            <button type="button" onClick={() => setDetailTaskId(task.id)}
+              className={`block text-left font-semibold hover:text-primary-600 dark:hover:text-primary-400 ${task.status === 'DONE' ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
               {task.title}
-            </p>
+            </button>
             <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full mt-1 ${categoryMeta.color}`}>
               {categoryMeta.emoji && <span>{categoryMeta.emoji}</span>}
               <span>{categoryMeta.label}</span>
             </span>
+            {checklist.length > 0 && (
+              <div className="mt-2">
+                <div className="flex items-center justify-between text-[10px] text-gray-400 dark:text-gray-500 mb-1">
+                  <span>{checklistDone}/{checklist.length} sous-tâches</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+                  <div className="h-full bg-primary-500 transition-all" style={{ width: `${checklistPercent}%` }} />
+                </div>
+              </div>
+            )}
             {task.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{task.description}</p>}
             {due && (
               <div className={`flex items-center gap-1.5 text-xs mt-2 ${overdue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>
@@ -365,6 +577,10 @@ export default function TasksPanel() {
           <div className="space-y-3">
             <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titre de la tâche" autoFocus />
             <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optionnel)" />
+            <label className="block">
+              <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Début (optionnel)</span>
+              <input type="datetime-local" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} />
+            </label>
             <DateTimePicker value={dueDate} onChange={setDueDate} placeholder="Choisir une échéance..." />
             <CategoryPicker value={newCategory} onChange={setNewCategory} />
             <div className="grid grid-cols-3 gap-2">
@@ -502,6 +718,17 @@ export default function TasksPanel() {
           task={editingTask}
           onClose={() => setEditingTask(null)}
           onSaved={() => qc.invalidateQueries({ queryKey: ['tasks'] })}
+        />
+      )}
+      {detailTask && (
+        <TaskDetailPanel
+          task={detailTask}
+          onClose={() => setDetailTaskId(null)}
+          onSaved={() => qc.invalidateQueries({ queryKey: ['tasks'] })}
+          onDelete={(id) => deleteMutation.mutate(id)}
+          onAddChecklist={(payload) => checklistAddMutation.mutate(payload)}
+          onToggleChecklist={(payload) => checklistToggleMutation.mutate(payload)}
+          onDeleteChecklist={(payload) => checklistDeleteMutation.mutate(payload)}
         />
       )}
     </div>

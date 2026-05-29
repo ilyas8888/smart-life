@@ -39,6 +39,8 @@ public class Task {
     @Column(length = 30)
     private String category = "PERSONAL";
 
+    private LocalDateTime startDate;
+
     private LocalDateTime dueDate;
 
     @Column(nullable = false, updatable = false)
