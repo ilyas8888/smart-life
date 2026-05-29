@@ -1,10 +1,14 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import {
+  ArrowDown,
+  ArrowUp,
   Ban,
   ChevronRight,
   CheckCircle,
+  Command,
+  CornerDownLeft,
   Inbox,
   LayoutDashboard,
   Search,
@@ -67,6 +71,7 @@ const navItems = [
 export default function AdminPage() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<AdminTab>('overview')
+  const [paletteOpen, setPaletteOpen] = useState(false)
 
   const { data: aiStatus, isLoading: isStatusLoading } = useQuery<AiAccessStatus>({
     queryKey: ['ai-access-status'],
@@ -78,6 +83,17 @@ export default function AdminPage() {
       navigate('/', { replace: true })
     }
   }, [aiStatus, navigate])
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        setPaletteOpen((open) => !open)
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [])
 
   if (isStatusLoading || !aiStatus) {
     return (
@@ -127,6 +143,20 @@ export default function AdminPage() {
             </button>
           ))}
         </nav>
+
+        <div className="border-t border-slate-800 p-3">
+          <button
+            type="button"
+            onClick={() => setPaletteOpen(true)}
+            className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300"
+          >
+            <div className="flex items-center gap-2">
+              <Command size={13} />
+              <span>Commandes</span>
+            </div>
+            <span className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-xs text-slate-400">⌃K</span>
+          </button>
+        </div>
       </aside>
 
       <main className="ml-56 min-h-screen overflow-y-auto bg-slate-950 p-6">
@@ -136,6 +166,16 @@ export default function AdminPage() {
           {activeTab === 'users' && <AdminUsersTab />}
         </div>
       </main>
+
+      {paletteOpen && (
+        <CommandPalette
+          onClose={() => setPaletteOpen(false)}
+          onNavigate={(tab) => {
+            setActiveTab(tab)
+            setPaletteOpen(false)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -865,4 +905,215 @@ function formatRelativeDate(value: string) {
     return formatter.format(hours, 'hour')
   }
   return formatter.format(days, 'day')
+}
+
+function CommandPalette({
+  onClose,
+  onNavigate,
+}: {
+  onClose: () => void
+  onNavigate: (tab: AdminTab) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [cursor, setCursor] = useState(0)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const { data: pendingRequests = [] } = useQuery<AdminAiRequest[]>({
+    queryKey: ['admin-requests', 'PENDING'],
+    queryFn: () => api.get('/admin/ai/requests?status=PENDING').then((r) => r.data),
+  })
+
+  const { data: users = [] } = useQuery<AdminUser[]>({
+    queryKey: ['admin-users'],
+    queryFn: () => api.get('/admin/users').then((r) => r.data),
+  })
+
+  type PaletteAction = {
+    id: string
+    label: string
+    description?: string
+    icon: LucideIcon
+    iconClass: string
+    category: string
+    onSelect: () => void
+  }
+
+  const staticActions: PaletteAction[] = [
+    {
+      id: 'nav-overview',
+      label: 'Overview',
+      description: 'Vue d\'ensemble et statistiques',
+      icon: LayoutDashboard,
+      iconClass: 'text-cyan-400',
+      category: 'Navigation',
+      onSelect: () => onNavigate('overview'),
+    },
+    {
+      id: 'nav-access',
+      label: 'Accès IA',
+      description: 'Gérer les demandes d\'accès',
+      icon: ShieldCheck,
+      iconClass: 'text-emerald-400',
+      category: 'Navigation',
+      onSelect: () => onNavigate('access'),
+    },
+    {
+      id: 'nav-users',
+      label: 'Utilisateurs',
+      description: 'Tableau des comptes et statuts',
+      icon: Users,
+      iconClass: 'text-blue-400',
+      category: 'Navigation',
+      onSelect: () => onNavigate('users'),
+    },
+  ]
+
+  const requestActions: PaletteAction[] = pendingRequests.slice(0, 3).map((req) => ({
+    id: `request-${req.id}`,
+    label: req.email,
+    description: 'Demande en attente · Accès IA',
+    icon: ShieldCheck,
+    iconClass: 'text-amber-400',
+    category: 'Demandes en attente',
+    onSelect: () => onNavigate('access'),
+  }))
+
+  const userActions: PaletteAction[] = query.length >= 2
+    ? users
+        .filter((u) => u.email.toLowerCase().includes(query.toLowerCase()))
+        .slice(0, 4)
+        .map((u) => ({
+          id: `user-${u.userId}`,
+          label: u.email,
+          description: `${u.aiStatus} · ${u.provider ?? 'LOCAL'}`,
+          icon: Users,
+          iconClass: 'text-slate-400',
+          category: 'Utilisateurs',
+          onSelect: () => onNavigate('users'),
+        }))
+    : []
+
+  const allActions = [...staticActions, ...requestActions, ...userActions]
+  const normalizedQuery = query.toLowerCase()
+  const filtered = query.trim() === ''
+    ? allActions
+    : allActions.filter((action) =>
+        action.label.toLowerCase().includes(normalizedQuery)
+        || (action.description ?? '').toLowerCase().includes(normalizedQuery)
+      )
+
+  useEffect(() => {
+    setCursor(0)
+  }, [query])
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose()
+      return
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setCursor((current) => Math.min(current + 1, filtered.length - 1))
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setCursor((current) => Math.max(current - 1, 0))
+    }
+    if (e.key === 'Enter' && filtered[cursor]) {
+      filtered[cursor].onSelect()
+    }
+  }
+
+  const groups = filtered.reduce<Record<string, PaletteAction[]>>((acc, action) => {
+    acc[action.category] = [...(acc[action.category] ?? []), action]
+    return acc
+  }, {})
+
+  let globalIndex = 0
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm" onMouseDown={onClose}>
+      <div
+        className="fixed left-1/2 top-[20%] z-[70] w-full max-w-lg -translate-x-1/2 overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center gap-3 border-b border-slate-700 px-4 py-3">
+          <Search size={18} className="text-slate-400" />
+          <input
+            ref={inputRef}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Rechercher une action..."
+            className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              className="text-slate-500 transition-colors hover:text-white"
+              aria-label="Effacer la recherche"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        <div className="max-h-80 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <p className="py-8 text-center text-sm text-slate-500">Aucune action trouvée.</p>
+          ) : (
+            Object.entries(groups).map(([category, actions]) => (
+              <div key={category}>
+                <p className="px-4 pb-1 pt-3 text-xs font-bold uppercase text-slate-500">{category}</p>
+                {actions.map((action) => {
+                  const actionIndex = globalIndex
+                  globalIndex += 1
+                  const Icon = action.icon
+                  const isActive = actionIndex === cursor
+
+                  return (
+                    <button
+                      key={action.id}
+                      type="button"
+                      onClick={action.onSelect}
+                      className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-slate-800 ${
+                        isActive ? 'bg-slate-700' : ''
+                      }`}
+                    >
+                      <Icon size={16} className={action.iconClass} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-slate-200">{action.label}</p>
+                        {action.description && (
+                          <p className="truncate text-xs text-slate-500">{action.description}</p>
+                        )}
+                      </div>
+                      {isActive && <CornerDownLeft size={13} className="text-slate-500" />}
+                    </button>
+                  )
+                })}
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="flex gap-4 border-t border-slate-800 px-4 py-2 text-xs text-slate-500">
+          <span className="inline-flex items-center gap-1">
+            <ArrowUp size={12} />
+            <ArrowDown size={12} />
+            naviguer
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <CornerDownLeft size={12} />
+            sélectionner
+          </span>
+          <span>Esc fermer</span>
+        </div>
+      </div>
+    </div>
+  )
 }
