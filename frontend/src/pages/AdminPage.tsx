@@ -4,6 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   ArrowDown,
   ArrowUp,
+  AlertCircle,
   BarChart2,
   Ban,
   ChevronRight,
@@ -14,6 +15,7 @@ import {
   Inbox,
   LayoutDashboard,
   Mail,
+  MinusCircle,
   RefreshCw,
   Search,
   Server,
@@ -29,7 +31,7 @@ import {
 } from 'lucide-react'
 import api from '../api/axios'
 
-type AdminTab = 'overview' | 'access' | 'users' | 'prompts' | 'systeme'
+type AdminTab = 'overview' | 'access' | 'users' | 'prompts' | 'systeme' | 'emails'
 
 type AiAccessStatus = {
   status: 'FREE' | 'APPROVED' | 'PREMIUM' | 'ADMIN' | 'BLOCKED'
@@ -93,12 +95,27 @@ type SystemHealth = {
   mail: ServiceHealth
 }
 
+type EmailLogEntry = {
+  id: number
+  type: string
+  recipient: string
+  status: 'SENT' | 'FAILED' | 'SKIPPED'
+  errorMsg: string | null
+  createdAt: string
+}
+
+type EmailLogsData = {
+  counts: { SENT: number; FAILED: number; SKIPPED: number }
+  logs: EmailLogEntry[]
+}
+
 const navItems = [
   { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
   { id: 'access' as const, label: 'Accès IA', icon: ShieldCheck },
   { id: 'users' as const, label: 'Utilisateurs', icon: Users },
   { id: 'prompts' as const, label: 'Prompts IA', icon: Sparkles },
   { id: 'systeme' as const, label: 'Système', icon: Server },
+  { id: 'emails' as const, label: 'Emails', icon: Mail },
 ]
 
 export default function AdminPage() {
@@ -199,6 +216,7 @@ export default function AdminPage() {
           {activeTab === 'users' && <AdminUsersTab />}
           {activeTab === 'prompts' && <AdminPromptsTab />}
           {activeTab === 'systeme' && <AdminSystemTab />}
+          {activeTab === 'emails' && <AdminEmailsTab />}
         </div>
       </main>
 
@@ -1171,6 +1189,171 @@ function ServiceCard({
         </p>
       )}
     </div>
+  )
+}
+
+function AdminEmailsTab() {
+  const { data, isLoading, refetch, isFetching } = useQuery<EmailLogsData>({
+    queryKey: ['admin-email-logs'],
+    queryFn: () => api.get('/admin/emails').then((r) => r.data),
+  })
+
+  const typeLabels: Record<string, string> = {
+    AI_REQUEST_ADMIN: 'Demande IA → Admin',
+    AI_APPROVED: 'Accès IA approuvé',
+    AI_REJECTED: 'Accès IA rejeté',
+    OTP: 'Code OTP',
+    GENERAL: 'Général',
+  }
+
+  if (isLoading) {
+    return <div className="text-slate-400">Chargement des logs...</div>
+  }
+
+  const counts = data?.counts ?? { SENT: 0, FAILED: 0, SKIPPED: 0 }
+  const logs = data?.logs ?? []
+
+  return (
+    <section>
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Emails</h2>
+          <p className="mt-1 text-sm text-slate-400">50 derniers envois</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 transition-colors hover:bg-slate-800 disabled:opacity-50"
+        >
+          <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
+          Actualiser
+        </button>
+      </div>
+
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <EmailCountCard
+          label="Sent"
+          count={counts.SENT}
+          icon={CheckCircle}
+          iconClass="text-emerald-400"
+          className="border-emerald-700/30 bg-emerald-900/20"
+        />
+        <EmailCountCard
+          label="Failed"
+          count={counts.FAILED}
+          icon={AlertCircle}
+          iconClass="text-red-400"
+          className="border-red-700/30 bg-red-900/20"
+        />
+        <EmailCountCard
+          label="Skipped"
+          count={counts.SKIPPED}
+          icon={MinusCircle}
+          iconClass="text-slate-400"
+          className="border-slate-700 bg-slate-800"
+        />
+      </div>
+
+      {logs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-slate-800 bg-slate-900 p-12 text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-800 text-slate-400">
+            <Inbox size={24} />
+          </div>
+          <h3 className="text-lg font-bold text-white">Aucun email enregistré pour le moment.</h3>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-slate-800">
+          <table className="w-full min-w-[640px] text-left">
+            <thead className="bg-slate-800">
+              <tr className="text-xs font-bold uppercase text-slate-400">
+                <th className="px-4 py-3">Type</th>
+                <th className="px-4 py-3">Destinataire</th>
+                <th className="px-4 py-3">Statut</th>
+                <th className="px-4 py-3">Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700/50 bg-slate-900">
+              {logs.map((entry) => (
+                <tr key={entry.id} className="transition-colors hover:bg-slate-800/70">
+                  <td className="px-4 py-4">
+                    <EmailTypeBadge type={entry.type} label={typeLabels[entry.type] ?? entry.type} />
+                  </td>
+                  <td className="px-4 py-4">
+                    <p className="font-mono text-sm text-slate-300">{entry.recipient}</p>
+                    {entry.errorMsg && (
+                      <p className="mt-1 max-w-xs truncate text-xs text-red-400" title={entry.errorMsg}>
+                        {entry.errorMsg}
+                      </p>
+                    )}
+                  </td>
+                  <td className="px-4 py-4">
+                    <EmailStatusBadge status={entry.status} />
+                  </td>
+                  <td className="px-4 py-4 text-sm text-slate-400">
+                    {formatFullDate(entry.createdAt)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function EmailCountCard({
+  label,
+  count,
+  icon: Icon,
+  iconClass,
+  className,
+}: {
+  label: string
+  count: number
+  icon: LucideIcon
+  iconClass: string
+  className: string
+}) {
+  return (
+    <div className={`flex items-center gap-3 rounded-xl border p-3 ${className}`}>
+      <Icon size={18} className={iconClass} />
+      <div>
+        <p className="text-xl font-bold text-white">{count}</p>
+        <p className="text-xs uppercase text-slate-400">{label}</p>
+      </div>
+    </div>
+  )
+}
+
+function EmailTypeBadge({ type, label }: { type: string; label: string }) {
+  const classes: Record<string, string> = {
+    AI_REQUEST_ADMIN: 'bg-amber-900/30 text-amber-300',
+    AI_APPROVED: 'bg-emerald-900/30 text-emerald-300',
+    AI_REJECTED: 'bg-red-900/30 text-red-300',
+    OTP: 'bg-blue-900/30 text-blue-300',
+    GENERAL: 'bg-slate-700 text-slate-300',
+  }
+
+  return (
+    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${classes[type] ?? classes.GENERAL}`}>
+      {label}
+    </span>
+  )
+}
+
+function EmailStatusBadge({ status }: { status: EmailLogEntry['status'] }) {
+  const config = {
+    SENT: { label: 'Envoyé', className: 'bg-emerald-900/30 text-emerald-300' },
+    FAILED: { label: 'Échoué', className: 'bg-red-900/30 text-red-300' },
+    SKIPPED: { label: 'Ignoré', className: 'bg-slate-700 text-slate-400' },
+  }[status]
+
+  return (
+    <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${config.className}`}>
+      {config.label}
+    </span>
   )
 }
 

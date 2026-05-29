@@ -19,6 +19,7 @@ import java.util.Map;
 public class MailService {
 
     private final ObjectMapper objectMapper;
+    private final EmailLogService emailLogService;
 
     @Value("${brevo.api-key:}")
     private String brevoApiKey;
@@ -29,10 +30,12 @@ public class MailService {
     public void send(String toEmail, String subject, String textContent) {
         if (isBlank(toEmail)) {
             log.info("[MAIL SKIPPED] Missing recipient for subject: {}", subject);
+            emailLogService.log(toEmail, subject, "SKIPPED", "Missing recipient");
             return;
         }
         if (isBlank(brevoApiKey) || isBlank(fromEmail)) {
             log.info("[MAIL DEV] To: {} | Subject: {} | Body: {}", toEmail, subject, textContent);
+            emailLogService.log(toEmail, subject, "SKIPPED", "Dev mode");
             return;
         }
 
@@ -54,11 +57,14 @@ public class MailService {
 
             if (response.statusCode() >= 400) {
                 log.warn("Brevo API error {}: {}", response.statusCode(), response.body());
+                emailLogService.log(toEmail, subject, "FAILED", "Brevo error " + response.statusCode());
             } else {
                 log.info("Email sent via Brevo to {}", toEmail);
+                emailLogService.log(toEmail, subject, "SENT", null);
             }
         } catch (Exception e) {
             log.warn("Failed to send email via Brevo: {}", e.getMessage());
+            emailLogService.log(toEmail, subject, "FAILED", e.getMessage());
         }
     }
 
