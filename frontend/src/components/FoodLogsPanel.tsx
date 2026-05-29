@@ -57,6 +57,14 @@ const mealDots: Record<string, string> = {
   BREAKFAST: 'bg-yellow-400', LUNCH: 'bg-green-500', DINNER: 'bg-blue-500', SNACK: 'bg-gray-400',
 }
 const foodUnits = ['g', 'oz', 'ml', 'piece', 'cup', 'bowl', 'tbsp', 'tsp']
+const UNIT_GRAMS: Record<string, number> = {
+  g: 1, ml: 1, oz: 28.35, piece: 100, cup: 240, bowl: 300, tbsp: 15, tsp: 5,
+}
+const computeScale = (qty: string, unit: string): number => {
+  const q = parseFloat(qty) || 1
+  const gramsPerUnit = UNIT_GRAMS[unit] ?? 100
+  return (q * gramsPerUnit) / 100
+}
 const headerBg: Record<string, string> = {
   BREAKFAST: 'bg-yellow-50 dark:bg-yellow-900/20',
   LUNCH: 'bg-green-50 dark:bg-green-900/20',
@@ -399,8 +407,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
       const withoutNutrition = foodItems.filter(f => !f.hasNutrition)
 
       const directPromises = withNutrition.map(f => {
-        const qty = parseFloat(f.quantity) || 100
-        const factor = qty / 100
+        const factor = computeScale(f.quantity, f.unit)
         return api.post('/food-logs', {
           foodItem: f.name,
           mealType,
@@ -581,20 +588,23 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                     <Plus size={18} />
                   </button>
                 </div>
-                {selectedMacros && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 font-medium">
-                    ≈ {Math.round(selectedMacros.calories * (parseFloat(newQty) || 100) / 100)} kcal
-                    {' · '}P {(selectedMacros.proteinG * (parseFloat(newQty) || 100) / 100).toFixed(1)}g
-                    {' · '}G {(selectedMacros.carbsG * (parseFloat(newQty) || 100) / 100).toFixed(1)}g
-                    {' · '}L {(selectedMacros.fatG * (parseFloat(newQty) || 100) / 100).toFixed(1)}g
-                    {selectedMacros.fiberG > 0 && (
-                      <> · F {(selectedMacros.fiberG * (parseFloat(newQty) || 100) / 100).toFixed(1)}g</>
-                    )}
-                    <span className="text-gray-400 dark:text-gray-500">
-                      {' '}(pour {newQty || 100}{newUnit})
-                    </span>
-                  </p>
-                )}
+                {selectedMacros && (() => {
+                  const scale = computeScale(newQty || '1', newUnit)
+                  return (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 font-medium">
+                      ≈ {Math.round(selectedMacros.calories * scale)} kcal
+                      {' · '}P {(selectedMacros.proteinG * scale).toFixed(1)}g
+                      {' · '}G {(selectedMacros.carbsG * scale).toFixed(1)}g
+                      {' · '}L {(selectedMacros.fatG * scale).toFixed(1)}g
+                      {selectedMacros.fiberG > 0 && (
+                        <> · F {(selectedMacros.fiberG * scale).toFixed(1)}g</>
+                      )}
+                      <span className="text-gray-400 dark:text-gray-500">
+                        {' '}(pour {newQty || 1} {newUnit})
+                      </span>
+                    </p>
+                  )
+                })()}
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Appuyez sur Entrée pour ajouter rapidement</p>
               </div>
 
