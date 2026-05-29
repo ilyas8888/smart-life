@@ -9,7 +9,9 @@ interface Suggestion {
   proteinG: number
   carbsG: number
   fatG: number
+  fiberG?: number
   source: 'cache' | 'usda'
+  verified?: boolean
   hitCount?: number
 }
 
@@ -17,6 +19,7 @@ interface SuggestionsResponse {
   frequent: Suggestion[]
   catalog: Suggestion[]
   related?: Suggestion[]
+  manual?: { label: string }
 }
 
 interface Props {
@@ -58,7 +61,7 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
   const listboxId = useId()
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => setDebouncedQuery(value), 300)
+    const timeoutId = window.setTimeout(() => setDebouncedQuery(value), 250)
     return () => window.clearTimeout(timeoutId)
   }, [value])
 
@@ -212,22 +215,8 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
 
           {inputSettled && !isFetching && allItems.length === 0 && (
             <div className="px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400">
-              Aucune variante nutritionnelle trouvée.
+              Aucun aliment trouvé pour "{debouncedQuery}"
             </div>
-          )}
-
-          {inputSettled && !isFetching && onEnter && (
-            <button type="button"
-              className="w-full px-3 py-2.5 text-left border-b border-gray-100 dark:border-gray-700 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
-              onMouseDown={event => event.preventDefault()}
-              onClick={() => { setOpen(false); onEnter() }}>
-              <span className="block text-sm font-semibold text-primary-600 dark:text-primary-400">
-                Ajouter "{value.trim()}" tel quel
-              </span>
-              <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                SmartLife estimera les valeurs nutritionnelles
-              </span>
-            </button>
           )}
 
           {inputSettled && !isFetching && data?.frequent && data.frequent.length > 0 && (
@@ -246,7 +235,7 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
           {inputSettled && !isFetching && data?.catalog && data.catalog.length > 0 && (
             <>
               <div className="px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 border-b border-t border-gray-100 dark:border-gray-700">
-                Résultats nutritionnels
+                Base USDA
               </div>
               {data.catalog.map((item, index) => {
                 const itemIndex = (data.frequent?.length ?? 0) + index
@@ -262,7 +251,7 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
           {inputSettled && !isFetching && data?.related && data.related.length > 0 && (
             <>
               <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/30 border-b border-t border-gray-100 dark:border-gray-700">
-                Habitudes associées
+                Similaires
               </div>
               {data.related.map((item, index) => {
                 const itemIndex = (data.frequent?.length ?? 0) + (data.catalog?.length ?? 0) + index
@@ -273,6 +262,22 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
                 )
               })}
             </>
+          )}
+
+          {inputSettled && !isFetching && onEnter && (
+            <div className="border-t border-gray-100 dark:border-gray-700">
+              <button type="button"
+                className="w-full px-3 py-2.5 text-left hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                onMouseDown={event => event.preventDefault()}
+                onClick={() => { setOpen(false); onEnter() }}>
+                <span className="block text-sm font-semibold text-primary-600 dark:text-primary-400">
+                  {data?.manual?.label ?? `Ajouter "${value.trim()}" manuellement`}
+                </span>
+                <span className="block text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                  Saisir les valeurs nutritionnelles manuellement
+                </span>
+              </button>
+            </div>
           )}
         </div>,
         document.body
@@ -290,15 +295,40 @@ function SuggestionRow({ item, query, active, onHover, onClick }: {
 }) {
   return (
     <button type="button" role="option" aria-selected={active}
-      className={`w-full text-left px-3 py-2.5 flex items-center justify-between gap-2 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${active ? 'bg-gray-50 dark:bg-gray-700/50' : ''}`}
+      className={`w-full text-left px-3 py-2.5 transition-colors ${active ? 'bg-gray-50 dark:bg-gray-700/50' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
       onMouseDown={event => event.preventDefault()}
       onMouseEnter={onHover} onClick={onClick}>
-      <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-        {highlight(item.name, query)}
-      </span>
-      <div className="flex items-center gap-2 shrink-0 text-xs text-gray-500 dark:text-gray-400">
-        <span className="font-semibold text-amber-600 dark:text-amber-400">{item.calories} kcal</span>
+      <div className="flex items-center justify-between gap-2 mb-0.5">
+        <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+          {highlight(item.name, query)}
+        </span>
+        <div className="flex items-center gap-1 shrink-0">
+          {item.verified && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+              ✓
+            </span>
+          )}
+          {item.source === 'usda' && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+              USDA
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+        <span className="font-semibold text-amber-600 dark:text-amber-400">
+          {item.calories} kcal
+        </span>
         <span>P {item.proteinG.toFixed(1)}g</span>
+        <span>G {item.carbsG.toFixed(1)}g</span>
+        <span>L {item.fatG.toFixed(1)}g</span>
+        {item.fiberG != null && item.fiberG > 0 && (
+          <span className="text-gray-400 dark:text-gray-500">
+            F {item.fiberG.toFixed(1)}g
+          </span>
+        )}
+        <span className="text-gray-300 dark:text-gray-600 ml-auto">/ 100g</span>
       </div>
     </button>
   )
