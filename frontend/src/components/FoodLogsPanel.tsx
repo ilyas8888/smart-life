@@ -11,6 +11,9 @@ import api from '../api/axios'
 import { EmptyPanel, IllustrationFood } from './EmptyState'
 import { FoodAutocomplete } from './FoodAutocomplete'
 
+type RichPortion = { grams: number; label: string; source: string; confidence: number }
+type PortionMap = Record<string, RichPortion | number>
+
 interface FoodLog {
   id: number
   logDate: string
@@ -39,7 +42,7 @@ type FoodItemDraft = {
   carbsG?: number
   fatG?: number
   fiberG?: number
-  portions?: Record<string, number>
+  portions?: PortionMap
 }
 type SelectedMacros = {
   calories: number
@@ -47,7 +50,7 @@ type SelectedMacros = {
   carbsG: number
   fatG: number
   fiberG: number
-  portions?: Record<string, number>
+  portions?: PortionMap
 }
 
 const dailyGoals = { calories: 2000, proteinG: 50, carbsG: 250, fatG: 70, fiberG: 25 }
@@ -62,16 +65,33 @@ const foodUnits = ['g', 'oz', 'ml', 'piece', 'cup', 'bowl', 'tbsp', 'tsp']
 const UNIT_GRAMS: Record<string, number> = {
   g: 1, ml: 1, oz: 28.35, piece: 100, cup: 240, bowl: 300, tbsp: 15, tsp: 5,
 }
+const getPortionGrams = (portions: PortionMap | undefined, unit: string): number => {
+  if (!portions) return UNIT_GRAMS[unit] ?? 100
+  const p = portions[unit]
+  if (!p) return UNIT_GRAMS[unit] ?? 100
+  return typeof p === 'object' ? p.grams : p
+}
+const getPortionConfidence = (portions: PortionMap | undefined, unit: string): number => {
+  if (!portions) return 0.2
+  const p = portions[unit]
+  if (!p) return 0.2
+  return typeof p === 'object' ? p.confidence : 1.0
+}
+const getPortionLabel = (portions: PortionMap | undefined, unit: string): string | null => {
+  if (!portions) return null
+  const p = portions[unit]
+  if (!p || typeof p === 'number') return null
+  return p.label
+}
 const computeScale = (
   qty: string,
   unit: string,
-  portions?: Record<string, number>
+  portions?: PortionMap
 ): number => {
   const q = parseFloat(qty) || 1
   if (unit === 'g' || unit === 'ml') return q / 100
   if (unit === 'oz') return (q * 28.35) / 100
-  const gramsPerUnit = portions?.[unit] ?? UNIT_GRAMS[unit] ?? 100
-  return (q * gramsPerUnit) / 100
+  return (q * getPortionGrams(portions, unit)) / 100
 }
 const headerBg: Record<string, string> = {
   BREAKFAST: 'bg-yellow-50 dark:bg-yellow-900/20',
@@ -568,7 +588,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                     value={newFood}
                     onChange={value => { setNewFood(value); setSelectedMacros(null) }}
                     onSelect={item => {
-                      const portions = (item as typeof item & { portions?: Record<string, number> }).portions
+                      const portions = (item as typeof item & { portions?: PortionMap }).portions
                       setNewFood(item.name)
                       setNewQty('100')
                       setNewUnit('g')
@@ -601,23 +621,59 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                 </div>
                 {selectedMacros && (() => {
                   const scale = computeScale(newQty || '1', newUnit, selectedMacros?.portions)
-                  const gramsPerUnit = selectedMacros.portions?.[newUnit] ?? UNIT_GRAMS[newUnit] ?? 100
+                  const gramsPerUnit = getPortionGrams(selectedMacros?.portions, newUnit)
                   const totalG = Math.round((parseFloat(newQty) || 1) * gramsPerUnit)
                   const showEstimatedWeight = newUnit !== 'g' && newUnit !== 'ml' && newUnit !== 'oz'
+                  const conf = getPortionConfidence(selectedMacros?.portions, newUnit)
+                  const lbl = getPortionLabel(selectedMacros?.portions, newUnit)
                   return (
-                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 font-medium">
-                      ≈ {Math.round(selectedMacros.calories * scale)} kcal
-                      {' · '}P {(selectedMacros.proteinG * scale).toFixed(1)}g
-                      {' · '}G {(selectedMacros.carbsG * scale).toFixed(1)}g
-                      {' · '}L {(selectedMacros.fatG * scale).toFixed(1)}g
-                      {selectedMacros.fiberG > 0 && (
-                        <> · F {(selectedMacros.fiberG * scale).toFixed(1)}g</>
+                    <>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 font-medium">
+                        ≈ {Math.round(selectedMacros.calories * scale)} kcal
+                        {' · '}P {(selectedMacros.proteinG * scale).toFixed(1)}g
+                        {' · '}G {(selectedMacros.carbsG * scale).toFixed(1)}g
+                        {' · '}L {(selectedMacros.fatG * scale).toFixed(1)}g
+                        {selectedMacros.fiberG > 0 && (
+                          <> · F {(selectedMacros.fiberG * scale).toFixed(1)}g</>
+                        )}
+                        <span className="text-gray-400 dark:text-gray-500" title={lbl ?? undefined}>
+                          {showEstimatedWeight && <> (≈ {totalG}g{conf < 0.5 ? ' estimé' : ''})</>}
+                          {' '}(pour {newQty || 1} {newUnit})
+                        </span>
+                      </p>
+                      {selectedMacros?.portions && Object.keys(selectedMacros.portions).length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          <button type="button"
+                            onClick={() => { setNewQty('100'); setNewUnit('g') }}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                              newUnit === 'g' ? 'bg-primary-600 text-white border-primary-600'
+                                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-primary-400'
+                            }`}>
+                            100g
+                          </button>
+                          {Object.entries(selectedMacros.portions).map(([unit, portion]) => {
+                            const grams = typeof portion === 'object' ? portion.grams : portion
+                            const label = typeof portion === 'object' ? portion.label : `1 ${unit}`
+                            const confidence = typeof portion === 'object' ? portion.confidence : 1.0
+                            const isSelected = newUnit === unit
+                            return (
+                              <button key={unit} type="button"
+                                onClick={() => { setNewQty('1'); setNewUnit(unit) }}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1 ${
+                                  isSelected ? 'bg-primary-600 text-white border-primary-600'
+                                    : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-primary-400'
+                                }`}>
+                                <span>{label}</span>
+                                <span className={isSelected ? 'text-primary-200' : 'text-gray-400'}>≈{grams}g</span>
+                                {confidence < 0.5 && (
+                                  <span className="text-yellow-500 text-[10px]">estimé</span>
+                                )}
+                              </button>
+                            )
+                          })}
+                        </div>
                       )}
-                      <span className="text-gray-400 dark:text-gray-500">
-                        {showEstimatedWeight && <> (≈ {totalG}g)</>}
-                        {' '}(pour {newQty || 1} {newUnit})
-                      </span>
-                    </p>
+                    </>
                   )
                 })()}
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Appuyez sur Entrée pour ajouter rapidement</p>
