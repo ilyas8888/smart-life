@@ -36,8 +36,11 @@ public class OpenFoodFactsService {
                     .queryParam("fields", "product_name,serving_size,serving_quantity")
                     .build())
                 .retrieve()
+                .onStatus(status -> status.isError(), resp -> resp.bodyToMono(String.class).thenReturn(new RuntimeException("OFF HTTP " + resp.statusCode())))
                 .bodyToMono(Map.class)
-                .block(Duration.ofSeconds(5));
+                .timeout(Duration.ofMillis(1500))
+                .onErrorReturn(null)
+                .block();
 
             if (response == null) return Optional.empty();
             Object productsObj = response.get("products");
