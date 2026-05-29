@@ -4,6 +4,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   ArrowDown,
   ArrowUp,
+  BarChart2,
   Ban,
   ChevronRight,
   CheckCircle,
@@ -13,15 +14,18 @@ import {
   LayoutDashboard,
   Search,
   ShieldCheck,
+  Sparkles,
   Star,
+  TrendingUp,
   UserCheck,
   Users,
   X,
+  Zap,
   type LucideIcon,
 } from 'lucide-react'
 import api from '../api/axios'
 
-type AdminTab = 'overview' | 'access' | 'users'
+type AdminTab = 'overview' | 'access' | 'users' | 'prompts'
 
 type AiAccessStatus = {
   status: 'FREE' | 'APPROVED' | 'PREMIUM' | 'ADMIN' | 'BLOCKED'
@@ -62,10 +66,20 @@ type AdminUser = {
   resetAt?: string | null
 }
 
+type PromptStats = {
+  totalPrompts: number
+  todayCount: number
+  avgPerDay: number
+  last30Days: { date: string; count: number }[]
+  topUsers: { userId: number; email: string; count: number }[]
+  modulesBreakdown: Record<string, number>
+}
+
 const navItems = [
   { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
   { id: 'access' as const, label: 'Accès IA', icon: ShieldCheck },
   { id: 'users' as const, label: 'Utilisateurs', icon: Users },
+  { id: 'prompts' as const, label: 'Prompts IA', icon: Sparkles },
 ]
 
 export default function AdminPage() {
@@ -164,6 +178,7 @@ export default function AdminPage() {
           {activeTab === 'overview' && <AdminOverviewTab setActiveTab={setActiveTab} />}
           {activeTab === 'access' && <AdminAiAccessTab />}
           {activeTab === 'users' && <AdminUsersTab />}
+          {activeTab === 'prompts' && <AdminPromptsTab />}
         </div>
       </main>
 
@@ -750,7 +765,7 @@ function StatCard({
   iconClassName,
 }: {
   label: string
-  value: number
+  value: number | string
   icon: LucideIcon
   iconClassName: string
 }) {
@@ -905,6 +920,140 @@ function formatRelativeDate(value: string) {
     return formatter.format(hours, 'hour')
   }
   return formatter.format(days, 'day')
+}
+
+function AdminPromptsTab() {
+  const { data: stats, isLoading } = useQuery<PromptStats>({
+    queryKey: ['admin-prompt-stats'],
+    queryFn: () => api.get('/admin/stats/prompts').then((r) => r.data),
+  })
+
+  const moduleLabels: Record<string, string> = {
+    tasks: 'Tâches',
+    reminders: 'Rappels',
+    notes: 'Notes',
+    contacts: 'Contacts',
+    food_logs: 'Repas',
+    diary: 'Journal',
+    workouts: 'Entraînements',
+  }
+
+  if (isLoading) {
+    return <div className="text-slate-400">Chargement des statistiques...</div>
+  }
+
+  if (!stats) {
+    return <div className="text-slate-400">Statistiques indisponibles.</div>
+  }
+
+  if (stats.totalPrompts === 0) {
+    return (
+      <section>
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-white">Prompts IA</h2>
+          <p className="mt-1 text-sm text-slate-400">Statistiques d'utilisation du Prompt IA</p>
+        </div>
+        <div className="flex flex-col items-center justify-center rounded-xl border border-slate-800 bg-slate-900 p-12 text-center">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-800 text-slate-400">
+            <Inbox size={24} />
+          </div>
+          <h3 className="text-lg font-bold text-white">Aucun prompt enregistré pour le moment.</h3>
+        </div>
+      </section>
+    )
+  }
+
+  const maxCount = Math.max(...stats.last30Days.map((day) => day.count), 1)
+  const firstDay = stats.last30Days[0]?.date ?? ''
+  const lastDay = stats.last30Days[stats.last30Days.length - 1]?.date ?? ''
+  const moduleEntries = Object.entries(stats.modulesBreakdown ?? {})
+    .sort(([, a], [, b]) => b - a)
+  const totalModules = Math.max(...moduleEntries.map(([, count]) => count), 1)
+
+  return (
+    <section>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-white">Prompts IA</h2>
+        <p className="mt-1 text-sm text-slate-400">Statistiques d'utilisation du Prompt IA</p>
+      </div>
+
+      <div className="mb-6 grid gap-4 md:grid-cols-3">
+        <StatCard label="Total" value={stats.totalPrompts} icon={Zap} iconClassName="text-violet-400" />
+        <StatCard label="Aujourd'hui" value={stats.todayCount} icon={TrendingUp} iconClassName="text-cyan-400" />
+        <StatCard label="Moy/jour" value={stats.avgPerDay.toFixed(1)} icon={BarChart2} iconClassName="text-emerald-400" />
+      </div>
+
+      <div className="mb-6 rounded-xl border border-slate-800 bg-slate-800 p-5">
+        <h3 className="mb-4 text-lg font-bold text-white">Activité — 30 derniers jours</h3>
+        <div className="flex h-28 items-end gap-0.5">
+          {stats.last30Days.map((day) => {
+            const height = Math.max(4, (day.count / maxCount) * 100)
+            return (
+              <div
+                key={day.date}
+                className={`flex-1 rounded-t-sm ${day.count > 0 ? 'bg-violet-500' : 'bg-slate-700'}`}
+                style={{ height: `${height}%` }}
+                title={`${day.date} : ${day.count} prompt(s)`}
+              />
+            )
+          })}
+        </div>
+        <div className="mt-2 flex justify-between text-xs text-slate-500">
+          <span>{firstDay}</span>
+          <span>{lastDay}</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-slate-800 bg-slate-800 p-5">
+          <h3 className="mb-4 text-lg font-bold text-white">Top utilisateurs</h3>
+          {stats.topUsers.length === 0 ? (
+            <p className="text-sm text-slate-500">Aucun prompt enregistré</p>
+          ) : (
+            <div className="space-y-3">
+              {stats.topUsers.map((user) => (
+                <div key={user.userId} className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-bold text-white">
+                      {(user.email || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <p className="ml-2 truncate text-sm text-slate-200">{user.email}</p>
+                  </div>
+                  <span className="rounded-full bg-violet-900/40 px-2 py-0.5 text-xs font-bold text-violet-300">
+                    {user.count}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-slate-800 bg-slate-800 p-5">
+          <h3 className="mb-4 text-lg font-bold text-white">Modules créés</h3>
+          {moduleEntries.length === 0 ? (
+            <p className="text-sm text-slate-500">Aucun module créé.</p>
+          ) : (
+            <div className="space-y-3">
+              {moduleEntries.map(([module, count]) => (
+                <div key={module}>
+                  <div className="mb-1 flex items-center justify-between gap-3">
+                    <span className="text-sm text-slate-300">{moduleLabels[module] ?? module}</span>
+                    <span className="text-sm font-bold text-white">{count}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-slate-700">
+                    <div
+                      className="h-2 rounded-full bg-violet-500"
+                      style={{ width: `${(count / totalModules) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  )
 }
 
 function CommandPalette({
