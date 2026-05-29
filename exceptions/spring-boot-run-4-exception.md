@@ -1,0 +1,68 @@
+12:27:29.692 [main] ERROR org.springframework.boot.SpringApplication -- Application run failed
+org.yaml.snakeyaml.constructor.DuplicateKeyException: while constructing a mapping
+ in 'reader', line 1, column 1:
+    spring:
+    ^
+found duplicate key spring
+ in 'reader', line 32, column 1:
+    spring:
+    ^
+
+        at org.yaml.snakeyaml.constructor.SafeConstructor.processDuplicateKeys(SafeConstructor.java:126)
+        at org.yaml.snakeyaml.constructor.SafeConstructor.flattenMapping(SafeConstructor.java:78)
+        at org.yaml.snakeyaml.constructor.SafeConstructor.flattenMapping(SafeConstructor.java:73)
+        at org.yaml.snakeyaml.constructor.SafeConstructor.constructMapping2ndStep(SafeConstructor.java:209)
+        at org.yaml.snakeyaml.constructor.BaseConstructor.constructMapping(BaseConstructor.java:552)
+        at org.yaml.snakeyaml.constructor.SafeConstructor$ConstructYamlMap.construct(SafeConstructor.java:597)
+        at org.yaml.snakeyaml.constructor.BaseConstructor.constructObjectNoCheck(BaseConstructor.java:264)
+        at org.yaml.snakeyaml.constructor.BaseConstructor.constructObject(BaseConstructor.java:247)
+        at org.springframework.boot.env.OriginTrackedYamlLoader$OriginTrackingConstructor.constructObject(OriginTrackedYamlLoader.java:119)
+        at org.yaml.snakeyaml.constructor.BaseConstructor.constructDocument(BaseConstructor.java:201)
+        at org.yaml.snakeyaml.constructor.BaseConstructor.getData(BaseConstructor.java:166)
+        at org.springframework.boot.env.OriginTrackedYamlLoader$OriginTrackingConstructor.getData(OriginTrackedYamlLoader.java:99)
+        at org.yaml.snakeyaml.Yaml$1.next(Yaml.java:515)
+        at org.springframework.beans.factory.config.YamlProcessor.process(YamlProcessor.java:203)
+        at org.springframework.beans.factory.config.YamlProcessor.process(YamlProcessor.java:169)
+        at org.springframework.boot.env.OriginTrackedYamlLoader.load(OriginTrackedYamlLoader.java:84)
+        at org.springframework.boot.env.YamlPropertySourceLoader.load(YamlPropertySourceLoader.java:50)
+        at org.springframework.boot.context.config.StandardConfigDataLoader.load(StandardConfigDataLoader.java:54)
+        at org.springframework.boot.context.config.StandardConfigDataLoader.load(StandardConfigDataLoader.java:36)
+        at org.springframework.boot.context.config.ConfigDataLoaders.load(ConfigDataLoaders.java:96)
+        at org.springframework.boot.context.config.ConfigDataImporter.load(ConfigDataImporter.java:132)
+        at org.springframework.boot.context.config.ConfigDataImporter.resolveAndLoad(ConfigDataImporter.java:87)
+        at org.springframework.boot.context.config.ConfigDataEnvironmentContributors.withProcessedImports(ConfigDataEnvironmentContributors.java:115)
+        at org.springframework.boot.context.config.ConfigDataEnvironment.processInitial(ConfigDataEnvironment.java:242)
+        at org.springframework.boot.context.config.ConfigDataEnvironment.processAndApply(ConfigDataEnvironment.java:229)
+        at org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor.postProcessEnvironment(ConfigDataEnvironmentPostProcessor.java:96)
+        at org.springframework.boot.context.config.ConfigDataEnvironmentPostProcessor.postProcessEnvironment(ConfigDataEnvironmentPostProcessor.java:89)
+        at org.springframework.boot.env.EnvironmentPostProcessorApplicationListener.onApplicationEnvironmentPreparedEvent(EnvironmentPostProcessorApplicationListener.java:109)
+        at org.springframework.boot.env.EnvironmentPostProcessorApplicationListener.onApplicationEvent(EnvironmentPostProcessorApplicationListener.java:94)
+        at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:185)
+        at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:178)
+        at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:156)
+        at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:138)
+        at org.springframework.boot.context.event.EventPublishingRunListener.multicastInitialEvent(EventPublishingRunListener.java:136)
+        at org.springframework.boot.context.event.EventPublishingRunListener.environmentPrepared(EventPublishingRunListener.java:81)
+        at org.springframework.boot.SpringApplicationRunListeners.lambda$environmentPrepared$2(SpringApplicationRunListeners.java:64)
+        at java.base/java.lang.Iterable.forEach(Iterable.java:75)
+        at org.springframework.boot.SpringApplicationRunListeners.doWithListeners(SpringApplicationRunListeners.java:118)
+        at org.springframework.boot.SpringApplicationRunListeners.doWithListeners(SpringApplicationRunListeners.java:112)
+        at org.springframework.boot.SpringApplicationRunListeners.environmentPrepared(SpringApplicationRunListeners.java:63)
+        at org.springframework.boot.SpringApplication.prepareEnvironment(SpringApplication.java:369)
+        at org.springframework.boot.SpringApplication.run(SpringApplication.java:329)
+        at org.springframework.boot.SpringApplication.run(SpringApplication.java:1354)
+        at org.springframework.boot.SpringApplication.run(SpringApplication.java:1343)
+        at com.smartlife.SmartlifeApplication.main(SmartlifeApplication.java:9)
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  5.178 s
+[INFO] Finished at: 2026-05-15T12:27:29+01:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:3.2.5:run (default-cli) on project smartlife-backend: Process terminated with exit code: 1 -> [Help 1]
+[ERROR]
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR]
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

@@ -6,7 +6,9 @@ import com.smartlife.model.User;
 import com.smartlife.model.UserAiEntitlement;
 import com.smartlife.repository.AiAccessRequestRepository;
 import com.smartlife.repository.UserAiEntitlementRepository;
+import com.smartlife.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +32,9 @@ public class AiEntitlementService {
 
     private final UserAiEntitlementRepository entitlementRepository;
     private final AiAccessRequestRepository requestRepository;
+    private final UserRepository userRepository;
     private final MailService mailService;
+    private final AuditLogService auditLogService;
 
     @Value("${app.mail.security-alert-recipient:}")
     private String adminEmail;
@@ -120,6 +124,47 @@ public class AiEntitlementService {
         return requestRepository.findByStatusOrderByRequestedAtDesc(PENDING);
     }
 
+    public List<AiAccessRequest> getAllRequests(String statusFilter) {
+        String status = statusFilter == null ? "ALL" : statusFilter.trim().toUpperCase();
+        if (status.isBlank() || "ALL".equals(status)) {
+            return requestRepository.findAll(Sort.by(Sort.Direction.DESC, "requestedAt"));
+        }
+        return requestRepository.findByStatusInOrderByRequestedAtDesc(List.of(status));
+    }
+
+    public List<UserAiEntitlement> getAllEntitlements() {
+        return entitlementRepository.findAllByOrderByUserEmailAsc();
+    }
+
+    @Transactional
+    public UserAiEntitlement updateEntitlement(Long userId, String newStatus, Integer newMonthlyQuota, User admin) {
+        requireAdmin(admin);
+
+        UserAiEntitlement entitlement = entitlementRepository.findByUserId(userId)
+                .orElseGet(() -> getOrCreate(userRepository.findById(userId)
+                        .orElseThrow(() -> new IllegalArgumentException("Utilisateur introuvable"))));
+
+        boolean statusProvided = newStatus != null && !newStatus.isBlank();
+        String status = statusProvided
+                ? normalizeEntitlementStatus(newStatus)
+                : normalizeStatus(entitlement.getStatus());
+
+        entitlement.setStatus(status);
+        entitlement.setPlanName(planNameForStatus(status));
+        if (newMonthlyQuota != null && !(statusProvided && BLOCKED.equals(status))) {
+            entitlement.setMonthlyQuota(newMonthlyQuota);
+        }
+        entitlementRepository.save(entitlement);
+        auditLogService.log(
+                admin.getId(),
+                "AI_ENTITLEMENT_UPDATED",
+                auditEntityType("status=" + status + ",quota=" + entitlement.getMonthlyQuota()),
+                userId,
+                null
+        );
+        return entitlement;
+    }
+
     @Transactional
     public void approve(Long requestId, User admin, String targetStatus, Integer monthlyQuota) {
         requireAdmin(admin);
@@ -141,6 +186,13 @@ public class AiEntitlementService {
         entitlement.setApprovedAt(LocalDateTime.now());
         entitlement.setResetAt(nextMonthStart());
         entitlementRepository.save(entitlement);
+        auditLogService.log(
+                admin.getId(),
+                "AI_ACCESS_APPROVED",
+                auditEntityType("status=" + status + ",quota=" + entitlement.getMonthlyQuota()),
+                request.getUser().getId(),
+                null
+        );
         notifyUserApproved(request.getUser());
     }
 
@@ -154,6 +206,13 @@ public class AiEntitlementService {
         request.setReviewedBy(admin.getId());
         request.setReviewedAt(LocalDateTime.now());
         requestRepository.save(request);
+        auditLogService.log(
+                admin.getId(),
+                "AI_ACCESS_REJECTED",
+                auditEntityType("target=" + safeEmail(request.getUser())),
+                request.getUser().getId(),
+                null
+        );
         notifyUserRejected(request.getUser());
     }
 
@@ -185,12 +244,41 @@ public class AiEntitlementService {
         };
     }
 
+    private String normalizeEntitlementStatus(String status) {
+        String normalized = normalizeStatus(status);
+        return switch (normalized) {
+            case FREE, APPROVED, PREMIUM, ADMIN, BLOCKED -> normalized;
+            default -> APPROVED;
+        };
+    }
+
     private Integer defaultMonthlyQuota(String status) {
         return switch (status) {
             case PREMIUM -> 300;
             case ADMIN -> null;
             default -> 100;
         };
+    }
+
+    private String planNameForStatus(String status) {
+        return switch (status) {
+            case APPROVED -> "Approved";
+            case PREMIUM -> "Premium";
+            case ADMIN -> "Admin";
+            case BLOCKED -> "Blocked";
+            default -> "Free";
+        };
+    }
+
+    private String safeEmail(User user) {
+        return user != null && user.getEmail() != null ? user.getEmail() : "";
+    }
+
+    private String auditEntityType(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.length() <= 50 ? value : value.substring(0, 50);
     }
 
     private int valueOrZero(Integer value) {

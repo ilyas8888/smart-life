@@ -6,12 +6,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AuditLogService {
 
     private final AuditLogRepository repo;
+
+    public List<AuditLog> getRecentAiLogs() {
+        return repo.findByActionStartingWithOrderByCreatedAtDesc("AI_").stream()
+                .limit(50)
+                .toList();
+    }
 
     public void log(Long userId, String action, String entityType, Long entityId, String ip) {
         try {

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Brain, CheckSquare, Bell, FileText, Users, LogOut,
-  Send, Sparkles, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon, BookOpen, Dumbbell, Menu, X, Lock, ShieldCheck
+  Send, Sparkles, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon, BookOpen, Dumbbell, Menu, X, Lock, ShieldCheck, ExternalLink
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
@@ -47,6 +48,7 @@ function panelFromHash(): Panel {
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate()
   const { firstName, lastName, email, logout } = useAuthStore()
   const isDark = useThemeStore((s) => s.isDark)
   const toggle = useThemeStore((s) => s.toggle)
@@ -222,23 +224,14 @@ export default function DashboardPage() {
   }
 
   const handleNavClick = (id: Panel) => {
+    if (id === 'admin') {
+      navigate('/admin')
+      setSidebarOpen(false)
+      return
+    }
     window.location.hash = id
     setActivePanel(id)
     setSidebarOpen(false)
-  }
-
-  const formatAdminRequestDate = (value: string) => {
-    try {
-      return new Intl.DateTimeFormat('fr-FR', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }).format(new Date(value))
-    } catch {
-      return value
-    }
   }
 
   return (
@@ -513,91 +506,26 @@ export default function DashboardPage() {
           {activePanel === 'diary' && <DiaryPanel />}
           {activePanel === 'workout' && <WorkoutPanel />}
           {activePanel === 'admin' && aiStatus?.status === 'ADMIN' && (
-            <div className="w-full">
-              <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                    <ShieldCheck size={16} />
-                    Administration IA
+            <div className="w-full flex flex-col items-center justify-center py-20 animate-panel">
+              <div className="bg-slate-800 rounded-2xl p-8 max-w-sm w-full text-center space-y-4">
+                <ShieldCheck className="w-12 h-12 text-emerald-400 mx-auto" />
+                <h2 className="text-xl font-bold text-slate-100">Panneau d'administration</h2>
+                <p className="text-slate-400 text-sm">
+                  Le panneau admin a été déplacé vers une interface dédiée.
+                </p>
+                {pendingAiRequestCount > 0 && (
+                  <div className="bg-amber-900/30 border border-amber-700/50 rounded-lg px-4 py-2 text-amber-300 text-sm">
+                    {pendingAiRequestCount} demande(s) en attente
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                    Demandes d'acces IA
-                    <span className="ml-2 rounded-full bg-emerald-100 px-2.5 py-1 text-sm text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                      {pendingAiRequestCount}
-                    </span>
-                  </h2>
-                  <p className="mt-1 text-gray-500 dark:text-gray-400">
-                    Approuvez ou rejetez les demandes d'acces au Prompt IA.
-                  </p>
-                </div>
+                )}
+                <button
+                  onClick={() => navigate('/admin')}
+                  className="w-full btn-primary flex items-center justify-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Ouvrir l'admin panel
+                </button>
               </div>
-
-              {pendingAiRequests.length === 0 ? (
-                <div className="card max-w-xl text-center py-10">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300">
-                    <CheckSquare size={24} />
-                  </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">Aucune demande en attente</h3>
-                  <p className="text-gray-500 dark:text-gray-400">Tout est a jour.</p>
-                </div>
-              ) : (
-                <div className="grid gap-4 lg:grid-cols-2">
-                  {pendingAiRequests.map((request) => {
-                    const initial = (request.email || '?').charAt(0).toUpperCase()
-                    return (
-                      <div key={request.id} className="card">
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-base font-bold text-white">
-                            {initial}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                              <div className="min-w-0">
-                                <p className="truncate font-semibold text-gray-900 dark:text-gray-100">
-                                  {request.email}
-                                </p>
-                                <p className="text-xs text-gray-400">Utilisateur #{request.userId}</p>
-                              </div>
-                              <span className="shrink-0 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-                                {request.status}
-                              </span>
-                            </div>
-
-                            {request.message && (
-                              <p className="mt-3 line-clamp-3 rounded-lg bg-gray-50 p-3 text-sm italic text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                                "{request.message}"
-                              </p>
-                            )}
-
-                            <p className="mt-3 text-xs text-gray-400">
-                              Demande recue le {formatAdminRequestDate(request.requestedAt)}
-                            </p>
-
-                            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-                              <button
-                                type="button"
-                                className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-900/20"
-                                onClick={() => rejectAiRequestMutation.mutate(request.id)}
-                                disabled={isAdminAiActionPending}
-                              >
-                                Rejeter
-                              </button>
-                              <button
-                                type="button"
-                                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-                                onClick={() => approveAiRequestMutation.mutate(request.id)}
-                                disabled={isAdminAiActionPending}
-                              >
-                                Approuver
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
             </div>
           )}
           </div>
