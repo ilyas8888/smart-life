@@ -9,6 +9,7 @@ import com.smartlife.repository.FoodLogRepository;
 import com.smartlife.service.AiService;
 import com.smartlife.service.LocalFoodParserService;
 import com.smartlife.service.NutritionApiService;
+import com.smartlife.service.PortionResolverService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -33,6 +34,7 @@ public class FoodLogController {
     private final AiService aiService;
     private final NutritionApiService nutritionApiService;
     private final LocalFoodParserService localFoodParserService;
+    private final PortionResolverService portionResolverService;
 
     @GetMapping
     public List<FoodLog> getFoodLogs(@AuthenticationPrincipal User user) {
@@ -173,8 +175,9 @@ public class FoodLogController {
     }
 
     private Map<String, Object> toCacheSuggestion(FoodCache food) {
-        Object portions = food.getNutritionDetails() != null
-                ? food.getNutritionDetails().get("portions") : null;
+        Object portions = portionResolverService.resolve(
+                food.getNutritionDetails(), food.getFoodName());
+        if (((Map<?, ?>) portions).isEmpty()) portions = null;
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("name",     food.getFoodName());
         m.put("calories", food.getCalories() != null ? food.getCalories().intValue() : 0);
