@@ -55,6 +55,11 @@ public class FoodCacheService {
     }
 
     public void upsert(FoodLog log, String source, Map<String, Double> portions) {
+        upsert(log, source, portions, Map.of());
+    }
+
+    public void upsert(FoodLog log, String source, Map<String, Double> portions,
+                       Map<String, Object> richPortions) {
         upsert(log, source);
         if (log.getFoodItem() == null || portions == null || portions.isEmpty()) return;
 
@@ -63,7 +68,20 @@ public class FoodCacheService {
             Map<String, Object> details = entry.getNutritionDetails() != null
                     ? new HashMap<>(entry.getNutritionDetails())
                     : new HashMap<>();
-            details.put("portions", portions);
+            if (richPortions != null && !richPortions.isEmpty()) {
+                details.put("portions", richPortions);
+            } else {
+                Map<String, Object> minimalRich = new HashMap<>();
+                portions.forEach((unit, grams) ->
+                    minimalRich.put(unit, Map.of(
+                        "grams", grams,
+                        "label", "1 " + unit,
+                        "source", source,
+                        "confidence", 0.5
+                    ))
+                );
+                details.put("portions", minimalRich);
+            }
             entry.setNutritionDetails(details);
             repo.save(entry);
         });

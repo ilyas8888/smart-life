@@ -281,7 +281,7 @@ public class AiService {
                                 .quantity(quantityWithUnit)
                                 .build();
                         foodLogRepository.save(log);
-                        foodCacheService.upsert(log, nr.source(), nr.portions());
+                        foodCacheService.upsert(log, nr.source(), nr.portions(), nr.richPortions());
                         result.add(log);
                     } else {
                         toDecompose.add(foodWithUnit(food, unit));
@@ -317,7 +317,7 @@ public class AiService {
                                 .quantity(quantityWithUnit)
                                 .build();
                         foodLogRepository.save(log);
-                        foodCacheService.upsert(log, nr.source(), nr.portions());
+                        foodCacheService.upsert(log, nr.source(), nr.portions(), nr.richPortions());
                         result.add(log);
                         continue;
                     }
@@ -422,7 +422,7 @@ public class AiService {
                                     .proteinG(nr.proteinG()).carbsG(nr.carbsG())
                                     .fatG(nr.fatG()).fiberG(nr.fiberG())
                                     .build();
-                            foodCacheService.upsert(cacheLog, nr.source(), nr.portions());
+                            foodCacheService.upsert(cacheLog, nr.source(), nr.portions(), nr.richPortions());
                             calories += scaleCalories(nr.calories(), scale) != null ? scaleCalories(nr.calories(), scale) : 0;
                             protein = protein.add(nullToZero(scaleBD(nr.proteinG(), scale)));
                             carbs = carbs.add(nullToZero(scaleBD(nr.carbsG(), scale)));
@@ -595,15 +595,13 @@ public class AiService {
 
         Map<String, Double> portions = new HashMap<>();
         for (var entry : rawMap.entrySet()) {
-            if (entry.getKey() == null || entry.getValue() == null) continue;
-            if (entry.getValue() instanceof Number number) {
-                portions.put(entry.getKey().toString(), number.doubleValue());
-                continue;
-            }
-            try {
-                portions.put(entry.getKey().toString(), Double.parseDouble(entry.getValue().toString()));
-            } catch (Exception ignored) {
-                // Ignore malformed cached portion values.
+            String key = String.valueOf(entry.getKey());
+            Object val = entry.getValue();
+            if (val instanceof Number n) {
+                portions.put(key, n.doubleValue());
+            } else if (val instanceof Map<?, ?> richVal) {
+                Object grams = richVal.get("grams");
+                if (grams instanceof Number g) portions.put(key, g.doubleValue());
             }
         }
         return portions;

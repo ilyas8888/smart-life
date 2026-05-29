@@ -36,6 +36,7 @@ public class NutritionApiService {
         BigDecimal fatG,
         BigDecimal fiberG,
         Map<String, Double> portions,
+        Map<String, Object> richPortions,
         String source
     ) {}
 
@@ -145,7 +146,7 @@ public class NutritionApiService {
         }
         if (calories == null) return Optional.empty();
         if (calories == 0 && protein == null && carbs == null && fat == null) return Optional.empty();
-        return Optional.of(new NutritionResult(name, calories, protein, carbs, fat, fiber, Map.of(), "usda"));
+        return Optional.of(new NutritionResult(name, calories, protein, carbs, fat, fiber, Map.of(), Map.of(), "usda"));
     }
 
     private boolean startsWithQueryOrWord(Map<String, Object> food, String queryLower) {
@@ -255,8 +256,10 @@ public class NutritionApiService {
                 return 1;
             }));
             Map<String, Double> portions = new java.util.LinkedHashMap<>();
+            Map<String, Object> richPortions = new java.util.LinkedHashMap<>();
             for (var p : rawPortions) {
-                String desc = String.valueOf(p.getOrDefault("portionDescription", "")).toLowerCase();
+                String originalDesc = String.valueOf(p.getOrDefault("portionDescription", ""));
+                String desc = originalDesc.toLowerCase();
                 Object gw = p.get("gramWeight");
                 if (gw == null) continue;
                 double gramWeight = ((Number) gw).doubleValue();
@@ -271,12 +274,20 @@ public class NutritionApiService {
                 else if (desc.contains("teaspoon")   || desc.contains("tsp")) { canonical = "tsp";   }
                 else if (desc.contains("slice"))                              { canonical = "slice"; }
                 else if (desc.contains("oz"))                                 { canonical = "oz";    }
-                if (canonical != null) portions.putIfAbsent(canonical, gramWeight);
+                if (canonical != null) {
+                    portions.putIfAbsent(canonical, gramWeight);
+                    richPortions.putIfAbsent(canonical, Map.of(
+                        "grams", gramWeight,
+                        "label", originalDesc.isBlank() ? "1 " + canonical : originalDesc,
+                        "source", "usda",
+                        "confidence", 0.9
+                    ));
+                }
             }
 
             if (calories == null) return Optional.empty();
 
-            return Optional.of(new NutritionResult(name, calories, protein, carbs, fat, fiber, portions, "usda"));
+            return Optional.of(new NutritionResult(name, calories, protein, carbs, fat, fiber, portions, richPortions, "usda"));
         } catch (Exception e) {
             log.warn("USDA lookup failed for '{}': {}", query, e.getMessage());
             return Optional.empty();
