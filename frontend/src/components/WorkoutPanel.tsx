@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Activity, ArrowLeft, Check, ChevronDown, ChevronUp, Clock, Dumbbell,
-  Flame, MessageSquareText, Play, Plus, SkipForward, Timer, Trash2, X,
+  Flame, MessageSquareText, Pencil, Play, Plus, SkipForward, Timer, Trash2, X,
 } from 'lucide-react'
 import { EmptyPanel, IllustrationWorkout, IllustrationPrograms } from './EmptyState'
 import { format } from 'date-fns'
@@ -1361,11 +1361,12 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
   )
 }
 
-function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange }: {
+function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange, onEdit }: {
   plan: WorkoutPlan
   onBack: () => void
   onStartSession: (day: PlanDay) => void
   onStatusChange: (id: number, status: string) => void
+  onEdit?: (plan: WorkoutPlan) => void
 }) {
   const [progress, setProgress] = useState<PlanProgress | null>(null)
   const [localStatus, setLocalStatus] = useState(plan.status)
@@ -1387,10 +1388,18 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange }: {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <button type="button" onClick={onBack}
-        className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 mb-5 transition-colors">
-        <ArrowLeft size={16} /> Retour aux programmes
-      </button>
+      <div className="flex items-center justify-between mb-5">
+        <button type="button" onClick={onBack}
+          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors">
+          <ArrowLeft size={16} /> Retour aux programmes
+        </button>
+        {onEdit && (
+          <button type="button" onClick={() => onEdit(plan)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-primary-100 dark:hover:bg-primary-900/40 hover:text-primary-700 dark:hover:text-primary-300 transition-colors">
+            <Pencil size={14} /> Modifier
+          </button>
+        )}
+      </div>
 
       <div className="relative rounded-2xl overflow-hidden mb-5">
         <img
@@ -1576,33 +1585,47 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange }: {
   )
 }
 
-function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => void; onSuccess: () => void; editingPlan?: WorkoutPlan }) {
   const qc = useQueryClient()
+  const isEdit = !!editingPlan
   const [step, setStep] = useState<1 | 2 | 3>(1)
-  const [name, setName] = useState('')
-  const [goal, setGoal] = useState<GoalType>('MUSCLE_GAIN')
-  const [weeks, setWeeks] = useState(8)
-  const [dayConfigs, setDayConfigs] = useState(
-    DAY_LABELS.map((_, i) => ({ dayNumber: i + 1, active: i < 5, label: i < 5 ? (i % 3 === 0 ? 'Push' : i % 3 === 1 ? 'Pull' : 'Legs') : 'Repos' }))
+  const [name, setName] = useState(editingPlan?.name ?? '')
+  const [goal, setGoal] = useState<GoalType>((editingPlan?.goal as GoalType) ?? 'MUSCLE_GAIN')
+  const [weeks, setWeeks] = useState(editingPlan?.weeks ?? 8)
+  const [dayConfigs, setDayConfigs] = useState(() =>
+    DAY_LABELS.map((_, i) => {
+      const existing = editingPlan?.days.find(d => d.dayNumber === i + 1)
+      return {
+        dayNumber: i + 1,
+        active: existing ? existing.label.toLowerCase() !== 'repos' : i < 5,
+        label: existing?.label ?? (i < 5 ? (i % 3 === 0 ? 'Push' : i % 3 === 1 ? 'Pull' : 'Legs') : 'Repos'),
+      }
+    })
   )
-  const [dayExercises, setDayExercises] = useState<Record<number, PlanExercise[]>>({})
+  const [dayExercises, setDayExercises] = useState<Record<number, PlanExercise[]>>(() =>
+    editingPlan
+      ? Object.fromEntries(editingPlan.days.map(d => [d.dayNumber, (d.exercises ?? []) as PlanExercise[]]))
+      : {}
+  )
   const [currentDayIndex, setCurrentDayIndex] = useState(0)
   const [customExercise, setCustomExercise] = useState({ name: '', sets: '', reps: '', weightKg: '' })
   const activeDays = dayConfigs.filter(d => d.active)
   const currentDay = activeDays[currentDayIndex] ?? activeDays[0]
 
-  const createMutation = useMutation({
-    mutationFn: () => api.post('/workout-plans', {
-      name, goal, weeks,
-      daysPerWeek: activeDays.length,
-      days: activeDays.map(d => ({
-        dayNumber: d.dayNumber,
-        label: d.label,
-        exercises: (dayExercises[d.dayNumber] ?? []).map(e => ({
-          name: e.name, sets: e.sets, reps: e.reps, weight_kg: planExerciseWeight(e), notes: e.notes,
-        })),
+  const planBody = () => ({
+    name, goal, weeks,
+    daysPerWeek: activeDays.length,
+    days: activeDays.map(d => ({
+      dayNumber: d.dayNumber,
+      label: d.label,
+      exercises: (dayExercises[d.dayNumber] ?? []).map(e => ({
+        name: e.name, sets: e.sets, reps: e.reps, weight_kg: planExerciseWeight(e), notes: e.notes,
       })),
-    }),
+    })),
+  })
+
+  const createMutation = useMutation({
+    mutationFn: () => api.post('/workout-plans', planBody()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workout-plans'] })
       toast.success('Programme créé !')
@@ -1610,6 +1633,24 @@ function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSucces
     },
     onError: () => toast.error('Erreur lors de la création'),
   })
+
+  const updateMutation = useMutation({
+    mutationFn: () => api.put(`/workout-plans/${editingPlan!.id}`, planBody()),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workout-plans'] })
+      toast.success('Programme modifié ✓')
+      onSuccess()
+    },
+    onError: () => toast.error('Erreur lors de la modification'),
+  })
+
+  const handleSave = () => isEdit ? updateMutation.mutate() : createMutation.mutate()
+  const isPending = createMutation.isPending || updateMutation.isPending
+
+  const handleBackdrop = () => {
+    if (isPending) return
+    if (isEdit && name.trim()) { updateMutation.mutate() } else { onClose() }
+  }
 
   const updateDay = (dayNumber: number, patch: Partial<{ active: boolean; label: string }>) =>
     setDayConfigs(prev => prev.map(day => day.dayNumber === dayNumber ? {
@@ -1643,11 +1684,13 @@ function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSucces
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={createMutation.isPending ? undefined : onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleBackdrop} />
       <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-xl max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Créer un programme</h3>
-          <button type="button" onClick={onClose} disabled={createMutation.isPending}
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+            {isEdit ? 'Modifier le programme' : 'Créer un programme'}
+          </h3>
+          <button type="button" onClick={handleBackdrop} disabled={isPending}
             className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <X size={18} />
           </button>
@@ -1752,9 +1795,9 @@ function CreatePlanModal({ onClose, onSuccess }: { onClose: () => void; onSucces
               </div>
               <DayMuscleSummary exercises={dayExercises[currentDay.dayNumber] ?? []} />
               <div className="flex justify-end">
-                <button type="button" onClick={() => createMutation.mutate()} disabled={!name.trim() || activeDays.length === 0 || createMutation.isPending}
+                <button type="button" onClick={handleSave} disabled={!name.trim() || activeDays.length === 0 || isPending}
                   className="btn-primary flex items-center gap-2">
-                  <Check size={16} /> Créer le programme
+                  <Check size={16} /> {isEdit ? 'Modifier le programme' : 'Créer le programme'}
                 </button>
               </div>
             </div>
@@ -2042,6 +2085,7 @@ export default function WorkoutPanel() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [showCreatePlan, setShowCreatePlan] = useState(false)
+  const [editingPlan, setEditingPlan] = useState<WorkoutPlan | null>(null)
   const [view, setView] = useState<WorkoutView>('list')
   const [detailPlan, setDetailPlan] = useState<WorkoutPlan | null>(null)
   const [activePlan, setActivePlan] = useState<WorkoutPlan | null>(null)
@@ -2129,6 +2173,7 @@ export default function WorkoutPanel() {
             prev?.map(p => p.id === id ? { ...p, status } : p) ?? []
           )
         }}
+        onEdit={(plan) => setEditingPlan(plan)}
       />
     )
   }
@@ -2368,6 +2413,13 @@ export default function WorkoutPanel() {
         <CreatePlanModal
           onClose={() => setShowCreatePlan(false)}
           onSuccess={() => { qc.invalidateQueries({ queryKey: ['workout-plans'] }); setShowCreatePlan(false) }}
+        />
+      )}
+      {editingPlan && (
+        <CreatePlanModal
+          onClose={() => setEditingPlan(null)}
+          onSuccess={() => { qc.invalidateQueries({ queryKey: ['workout-plans'] }); setEditingPlan(null) }}
+          editingPlan={editingPlan}
         />
       )}
     </div>

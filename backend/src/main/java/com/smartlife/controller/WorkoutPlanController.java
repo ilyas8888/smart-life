@@ -65,6 +65,36 @@ public class WorkoutPlanController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PutMapping("/{id}")
+    @SuppressWarnings("unchecked")
+    public ResponseEntity<WorkoutPlan> updatePlan(@PathVariable Long id,
+                                                   @RequestBody Map<String, Object> body,
+                                                   @AuthenticationPrincipal User user) {
+        return planRepository.findById(id)
+                .filter(p -> p.getUser().getId().equals(user.getId()))
+                .map(p -> {
+                    if (body.get("name") != null) p.setName((String) body.get("name"));
+                    if (body.get("goal") != null) p.setGoal((String) body.get("goal"));
+                    if (body.get("weeks") != null) p.setWeeks(((Number) body.get("weeks")).intValue());
+                    if (body.get("daysPerWeek") != null) p.setDaysPerWeek(((Number) body.get("daysPerWeek")).intValue());
+                    List<Map<String, Object>> daysRaw = (List<Map<String, Object>>) body.get("days");
+                    if (daysRaw != null) {
+                        p.getDays().clear();
+                        for (var d : daysRaw) {
+                            PlanDay day = PlanDay.builder()
+                                    .plan(p)
+                                    .dayNumber(((Number) d.get("dayNumber")).intValue())
+                                    .label((String) d.get("label"))
+                                    .exercises((List<Map<String, Object>>) d.getOrDefault("exercises", List.of()))
+                                    .build();
+                            p.getDays().add(day);
+                        }
+                    }
+                    return ResponseEntity.ok(planRepository.save(p));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PatchMapping("/{id}/status")
     public ResponseEntity<WorkoutPlan> updateStatus(@PathVariable Long id,
                                                     @RequestBody Map<String, Object> body,
