@@ -626,6 +626,31 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                   const showEstimatedWeight = newUnit !== 'g' && newUnit !== 'ml' && newUnit !== 'oz'
                   const conf = getPortionConfidence(selectedMacros?.portions, newUnit)
                   const lbl = getPortionLabel(selectedMacros?.portions, newUnit)
+                  const portionEntries = selectedMacros?.portions ? Object.entries(selectedMacros.portions) : []
+                  const reliablePortions = portionEntries.filter(([unit]) => getPortionConfidence(selectedMacros?.portions, unit) >= 0.5)
+                  const estimatedPortions = portionEntries.filter(([unit]) => getPortionConfidence(selectedMacros?.portions, unit) < 0.5)
+                  const renderPortionButton = ([unit, portion]: [string, RichPortion | number], estimated = false) => {
+                    const grams = typeof portion === 'object' ? portion.grams : portion
+                    const label = typeof portion === 'object' ? portion.label : `1 ${unit}`
+                    const confidence = typeof portion === 'object' ? portion.confidence : 1.0
+                    const isSelected = newUnit === unit
+                    return (
+                      <button key={unit} type="button"
+                        onClick={() => { setNewQty('1'); setNewUnit(unit) }}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1 ${
+                          isSelected ? 'bg-primary-600 text-white border-primary-600'
+                            : estimated
+                              ? 'bg-white dark:bg-gray-700 text-gray-400 border-gray-200 dark:border-gray-600 border-dashed hover:border-primary-400'
+                              : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-primary-400'
+                        }`}>
+                        <span>{label}</span>
+                        <span className={isSelected ? 'text-primary-200' : 'text-gray-400'}>≈{grams}g</span>
+                        {(estimated || confidence < 0.5) && (
+                          <span className="text-yellow-500 text-[10px]">estimé</span>
+                        )}
+                      </button>
+                    )
+                  }
                   return (
                     <>
                       <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 font-medium">
@@ -641,7 +666,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                           {' '}(pour {newQty || 1} {newUnit})
                         </span>
                       </p>
-                      {selectedMacros?.portions && Object.keys(selectedMacros.portions).length > 0 && (
+                      {portionEntries.length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           <button type="button"
                             onClick={() => { setNewQty('100'); setNewUnit('g') }}
@@ -651,26 +676,13 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                             }`}>
                             100g
                           </button>
-                          {Object.entries(selectedMacros.portions).map(([unit, portion]) => {
-                            const grams = typeof portion === 'object' ? portion.grams : portion
-                            const label = typeof portion === 'object' ? portion.label : `1 ${unit}`
-                            const confidence = typeof portion === 'object' ? portion.confidence : 1.0
-                            const isSelected = newUnit === unit
-                            return (
-                              <button key={unit} type="button"
-                                onClick={() => { setNewQty('1'); setNewUnit(unit) }}
-                                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1 ${
-                                  isSelected ? 'bg-primary-600 text-white border-primary-600'
-                                    : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-primary-400'
-                                }`}>
-                                <span>{label}</span>
-                                <span className={isSelected ? 'text-primary-200' : 'text-gray-400'}>≈{grams}g</span>
-                                {confidence < 0.5 && (
-                                  <span className="text-yellow-500 text-[10px]">estimé</span>
-                                )}
-                              </button>
-                            )
-                          })}
+                          {reliablePortions.map(entry => renderPortionButton(entry))}
+                          {estimatedPortions.length > 0 && (
+                            <>
+                              <span className="text-[10px] text-gray-400 mt-1 w-full">Estimations :</span>
+                              {estimatedPortions.map(entry => renderPortionButton(entry, true))}
+                            </>
+                          )}
                         </div>
                       )}
                     </>
