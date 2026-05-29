@@ -10,9 +10,13 @@ import {
   CheckCircle,
   Command,
   CornerDownLeft,
+  Database,
   Inbox,
   LayoutDashboard,
+  Mail,
+  RefreshCw,
   Search,
+  Server,
   ShieldCheck,
   Sparkles,
   Star,
@@ -25,7 +29,7 @@ import {
 } from 'lucide-react'
 import api from '../api/axios'
 
-type AdminTab = 'overview' | 'access' | 'users' | 'prompts'
+type AdminTab = 'overview' | 'access' | 'users' | 'prompts' | 'systeme'
 
 type AiAccessStatus = {
   status: 'FREE' | 'APPROVED' | 'PREMIUM' | 'ADMIN' | 'BLOCKED'
@@ -75,11 +79,26 @@ type PromptStats = {
   modulesBreakdown: Record<string, number>
 }
 
+type ServiceHealth = {
+  status: 'OK' | 'DOWN' | 'NOT_CONFIGURED' | 'UNKNOWN'
+  latencyMs?: number
+  configured?: boolean
+  error?: string
+}
+
+type SystemHealth = {
+  backend: ServiceHealth
+  database: ServiceHealth
+  aiService: ServiceHealth
+  mail: ServiceHealth
+}
+
 const navItems = [
   { id: 'overview' as const, label: 'Overview', icon: LayoutDashboard },
   { id: 'access' as const, label: 'Accès IA', icon: ShieldCheck },
   { id: 'users' as const, label: 'Utilisateurs', icon: Users },
   { id: 'prompts' as const, label: 'Prompts IA', icon: Sparkles },
+  { id: 'systeme' as const, label: 'Système', icon: Server },
 ]
 
 export default function AdminPage() {
@@ -179,6 +198,7 @@ export default function AdminPage() {
           {activeTab === 'access' && <AdminAiAccessTab />}
           {activeTab === 'users' && <AdminUsersTab />}
           {activeTab === 'prompts' && <AdminPromptsTab />}
+          {activeTab === 'systeme' && <AdminSystemTab />}
         </div>
       </main>
 
@@ -1053,6 +1073,104 @@ function AdminPromptsTab() {
         </div>
       </div>
     </section>
+  )
+}
+
+function AdminSystemTab() {
+  const { data, isLoading, dataUpdatedAt, refetch, isFetching } = useQuery<SystemHealth>({
+    queryKey: ['admin-system-health'],
+    queryFn: () => api.get('/admin/system/health').then((r) => r.data),
+    refetchInterval: 30_000,
+  })
+
+  if (isLoading) {
+    return <div className="text-slate-400">Vérification des services...</div>
+  }
+
+  return (
+    <section>
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Santé du système</h2>
+          <p className="mt-1 text-sm text-slate-400">Mis à jour automatiquement toutes les 30s</p>
+          {dataUpdatedAt > 0 && (
+            <p className="mt-2 text-xs text-slate-500">
+              Dernière vérification : {new Date(dataUpdatedAt).toLocaleTimeString('fr-FR')}
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 transition-colors hover:bg-slate-800 disabled:opacity-50"
+        >
+          <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
+          Actualiser
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <ServiceCard name="Backend" icon={Server} iconClass="text-cyan-400" health={data?.backend} />
+        <ServiceCard name="Database" icon={Database} iconClass="text-blue-400" health={data?.database} />
+        <ServiceCard name="AI Service" icon={Sparkles} iconClass="text-violet-400" health={data?.aiService} />
+        <ServiceCard name="Mail" icon={Mail} iconClass="text-amber-400" health={data?.mail} />
+      </div>
+    </section>
+  )
+}
+
+function ServiceCard({
+  name,
+  icon: Icon,
+  iconClass,
+  health,
+}: {
+  name: string
+  icon: LucideIcon
+  iconClass: string
+  health: ServiceHealth | undefined
+}) {
+  const status = health?.status ?? 'UNKNOWN'
+  const borderClass = {
+    OK: 'border-emerald-500/30',
+    DOWN: 'border-red-500/30',
+    NOT_CONFIGURED: 'border-slate-600',
+    UNKNOWN: 'border-slate-700',
+  }[status]
+  const badgeClass = {
+    OK: 'bg-emerald-900/40 text-emerald-300',
+    DOWN: 'bg-red-900/40 text-red-300',
+    NOT_CONFIGURED: 'bg-slate-700 text-slate-400',
+    UNKNOWN: 'bg-amber-900/40 text-amber-300',
+  }[status]
+  const label = {
+    OK: 'Opérationnel',
+    DOWN: 'Indisponible',
+    NOT_CONFIGURED: 'Non configuré',
+    UNKNOWN: 'Inconnu',
+  }[status]
+
+  return (
+    <div className={`rounded-xl border bg-slate-800 p-5 ${borderClass}`}>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Icon size={20} className={iconClass} />
+          <h3 className="text-base font-bold text-white">{name}</h3>
+        </div>
+        <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${badgeClass}`}>
+          {label}
+        </span>
+      </div>
+      {health?.latencyMs !== undefined && health.latencyMs >= 0 && (
+        <p className="text-xs text-slate-400">Latence : {health.latencyMs} ms</p>
+      )}
+      {health?.error && (
+        <p className="mt-2 max-w-full truncate text-xs text-red-400" title={health.error}>
+          {health.error}
+        </p>
+      )}
+    </div>
   )
 }
 
