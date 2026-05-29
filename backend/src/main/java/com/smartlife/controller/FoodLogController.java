@@ -173,6 +173,8 @@ public class FoodLogController {
     }
 
     private Map<String, Object> toCacheSuggestion(FoodCache food) {
+        Object portions = food.getNutritionDetails() != null
+                ? food.getNutritionDetails().get("portions") : null;
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("name",     food.getFoodName());
         m.put("calories", food.getCalories() != null ? food.getCalories().intValue() : 0);
@@ -180,6 +182,7 @@ public class FoodLogController {
         m.put("carbsG",   food.getCarbsG()   != null ? food.getCarbsG().doubleValue()   : 0.0);
         m.put("fatG",     food.getFatG()     != null ? food.getFatG().doubleValue()     : 0.0);
         m.put("fiberG",   food.getFiberG()   != null ? food.getFiberG().doubleValue()   : 0.0);
+        m.put("portions", portions);
         m.put("source",   "cache");
         m.put("verified", Boolean.TRUE.equals(food.getVerified()));
         m.put("hitCount", food.getHitCount() != null ? food.getHitCount() : 0);

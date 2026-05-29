@@ -39,6 +39,7 @@ type FoodItemDraft = {
   carbsG?: number
   fatG?: number
   fiberG?: number
+  portions?: Record<string, number>
 }
 type SelectedMacros = {
   calories: number
@@ -46,6 +47,7 @@ type SelectedMacros = {
   carbsG: number
   fatG: number
   fiberG: number
+  portions?: Record<string, number>
 }
 
 const dailyGoals = { calories: 2000, proteinG: 50, carbsG: 250, fatG: 70, fiberG: 25 }
@@ -60,9 +62,15 @@ const foodUnits = ['g', 'oz', 'ml', 'piece', 'cup', 'bowl', 'tbsp', 'tsp']
 const UNIT_GRAMS: Record<string, number> = {
   g: 1, ml: 1, oz: 28.35, piece: 100, cup: 240, bowl: 300, tbsp: 15, tsp: 5,
 }
-const computeScale = (qty: string, unit: string): number => {
+const computeScale = (
+  qty: string,
+  unit: string,
+  portions?: Record<string, number>
+): number => {
   const q = parseFloat(qty) || 1
-  const gramsPerUnit = UNIT_GRAMS[unit] ?? 100
+  if (unit === 'g' || unit === 'ml') return q / 100
+  if (unit === 'oz') return (q * 28.35) / 100
+  const gramsPerUnit = portions?.[unit] ?? UNIT_GRAMS[unit] ?? 100
   return (q * gramsPerUnit) / 100
 }
 const headerBg: Record<string, string> = {
@@ -407,7 +415,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
       const withoutNutrition = foodItems.filter(f => !f.hasNutrition)
 
       const directPromises = withNutrition.map(f => {
-        const factor = computeScale(f.quantity, f.unit)
+        const factor = computeScale(f.quantity, f.unit, f.portions)
         return api.post('/food-logs', {
           foodItem: f.name,
           mealType,
@@ -468,6 +476,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
       carbsG: selectedMacros?.carbsG,
       fatG: selectedMacros?.fatG,
       fiberG: selectedMacros?.fiberG,
+      portions: selectedMacros?.portions,
     }])
     setNewFood('')
     setNewQty('')
@@ -559,6 +568,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                     value={newFood}
                     onChange={value => { setNewFood(value); setSelectedMacros(null) }}
                     onSelect={item => {
+                      const portions = (item as typeof item & { portions?: Record<string, number> }).portions
                       setNewFood(item.name)
                       setNewQty('100')
                       setNewUnit('g')
@@ -568,6 +578,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                         carbsG: item.carbsG,
                         fatG: item.fatG,
                         fiberG: item.fiberG ?? 0,
+                        portions: portions ?? undefined,
                       })
                       setTimeout(() => {
                         const qtyInput = document.querySelector<HTMLInputElement>('input[placeholder="Qté"]')
@@ -589,7 +600,10 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                   </button>
                 </div>
                 {selectedMacros && (() => {
-                  const scale = computeScale(newQty || '1', newUnit)
+                  const scale = computeScale(newQty || '1', newUnit, selectedMacros?.portions)
+                  const gramsPerUnit = selectedMacros.portions?.[newUnit] ?? UNIT_GRAMS[newUnit] ?? 100
+                  const totalG = Math.round((parseFloat(newQty) || 1) * gramsPerUnit)
+                  const showEstimatedWeight = newUnit !== 'g' && newUnit !== 'ml' && newUnit !== 'oz'
                   return (
                     <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 font-medium">
                       ≈ {Math.round(selectedMacros.calories * scale)} kcal
@@ -600,6 +614,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                         <> · F {(selectedMacros.fiberG * scale).toFixed(1)}g</>
                       )}
                       <span className="text-gray-400 dark:text-gray-500">
+                        {showEstimatedWeight && <> (≈ {totalG}g)</>}
                         {' '}(pour {newQty || 1} {newUnit})
                       </span>
                     </p>
