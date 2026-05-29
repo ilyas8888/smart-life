@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ChevronDown, ChevronRight, ChevronUp, Droplet, Droplets,
-  ListPlus, MessageSquareText, Plus, Trash2, UtensilsCrossed, X,
+  Edit2, ListPlus, MessageSquareText, Plus, Trash2, UtensilsCrossed, X,
 } from 'lucide-react'
 import { addDays, format, startOfWeek, subDays } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -52,6 +52,17 @@ type SelectedMacros = {
   fiberG: number
   portions?: PortionMap
 }
+type UserFood = {
+  id: number
+  name: string
+  calories: number
+  proteinG: number | null
+  carbsG: number | null
+  fatG: number | null
+  fiberG: number | null
+  portions?: PortionMap | null
+  createdAt: string
+}
 
 const dailyGoals = { calories: 2000, proteinG: 50, carbsG: 250, fatG: 70, fiberG: 25 }
 const mealOrder = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK']
@@ -62,6 +73,7 @@ const mealDots: Record<string, string> = {
   BREAKFAST: 'bg-yellow-400', LUNCH: 'bg-green-500', DINNER: 'bg-blue-500', SNACK: 'bg-gray-400',
 }
 const foodUnits = ['g', 'oz', 'ml', 'piece', 'cup', 'bowl', 'tbsp', 'tsp']
+const CUSTOM_PORTION_UNITS = ['piece', 'cup', 'tbsp', 'tsp', 'bowl', 'slice']
 const UNIT_GRAMS: Record<string, number> = {
   g: 1, ml: 1, oz: 28.35, piece: 100, cup: 240, bowl: 300, tbsp: 15, tsp: 5,
 }
@@ -413,6 +425,219 @@ function FoodLogRow({ log, onDelete }: { log: FoodLog; onDelete: (id: number) =>
             </div>
           ))}
         </div>
+      )}
+    </div>
+  )
+}
+
+function UserFoodFormModal({
+  food,
+  onClose,
+  onSubmit,
+  isSaving,
+}: {
+  food: UserFood | null
+  onClose: () => void
+  onSubmit: (payload: Omit<UserFood, 'id' | 'createdAt'>) => void
+  isSaving: boolean
+}) {
+  const [name, setName] = useState(food?.name ?? '')
+  const [calories, setCalories] = useState(String(food?.calories ?? ''))
+  const [proteinG, setProteinG] = useState(String(food?.proteinG ?? ''))
+  const [carbsG, setCarbsG] = useState(String(food?.carbsG ?? ''))
+  const [fatG, setFatG] = useState(String(food?.fatG ?? ''))
+  const [fiberG, setFiberG] = useState(String(food?.fiberG ?? ''))
+  const [portionDrafts, setPortionDrafts] = useState<Record<string, { enabled: boolean; grams: string }>>(() => {
+    const portions = food?.portions ?? {}
+    return Object.fromEntries(CUSTOM_PORTION_UNITS.map(unit => {
+      const portion = portions[unit]
+      const grams = typeof portion === 'object' && portion !== null && 'grams' in portion
+        ? String((portion as RichPortion).grams)
+        : typeof portion === 'number'
+          ? String(portion)
+          : ''
+      return [unit, { enabled: Boolean(grams), grams }]
+    }))
+  })
+
+  const numberOrNull = (value: string) => value.trim() === '' ? null : Number(value)
+  const submit = () => {
+    const portions: PortionMap = {}
+    Object.entries(portionDrafts).forEach(([unit, draft]) => {
+      const grams = Number(draft.grams)
+      if (draft.enabled && Number.isFinite(grams) && grams > 0) {
+        portions[unit] = { grams, label: `1 ${unit}`, source: 'user', confidence: 1.0 }
+      }
+    })
+    onSubmit({
+      name: name.trim(),
+      calories: Number(calories),
+      proteinG: numberOrNull(proteinG),
+      carbsG: numberOrNull(carbsG),
+      fatG: numberOrNull(fatG),
+      fiberG: numberOrNull(fiberG),
+      portions: Object.keys(portions).length > 0 ? portions : null,
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] overflow-y-auto">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+          <h3 className="font-bold text-gray-900 dark:text-gray-100">{food ? 'Modifier un aliment' : 'Créer un aliment'}</h3>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-5 space-y-4">
+          <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Nom de l'aliment*" />
+          <input className="input" type="number" min="0" step="0.1" value={calories} onChange={e => setCalories(e.target.value)} placeholder="Calories pour 100g*" />
+          <div className="grid grid-cols-2 gap-2">
+            <input className="input" type="number" min="0" step="0.1" value={proteinG} onChange={e => setProteinG(e.target.value)} placeholder="Protéines (g)" />
+            <input className="input" type="number" min="0" step="0.1" value={carbsG} onChange={e => setCarbsG(e.target.value)} placeholder="Glucides (g)" />
+            <input className="input" type="number" min="0" step="0.1" value={fatG} onChange={e => setFatG(e.target.value)} placeholder="Lipides (g)" />
+            <input className="input" type="number" min="0" step="0.1" value={fiberG} onChange={e => setFiberG(e.target.value)} placeholder="Fibres (g)" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">Portions optionnelles</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {CUSTOM_PORTION_UNITS.map(unit => (
+                <label key={unit} className="flex items-center gap-2 rounded-xl border border-gray-100 dark:border-gray-700 px-3 py-2">
+                  <input type="checkbox" checked={portionDrafts[unit]?.enabled ?? false}
+                    onChange={e => setPortionDrafts(prev => ({ ...prev, [unit]: { ...(prev[unit] ?? { grams: '' }), enabled: e.target.checked } }))}
+                    className="accent-primary-600" />
+                  <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 w-12">{unit}</span>
+                  <input type="number" min="0" step="0.1" value={portionDrafts[unit]?.grams ?? ''}
+                    onChange={e => setPortionDrafts(prev => ({ ...prev, [unit]: { ...(prev[unit] ?? { enabled: true }), grams: e.target.value } }))}
+                    className="input py-1 text-xs" placeholder="grammes" />
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="btn-secondary w-full sm:w-auto">Annuler</button>
+            <button type="button" onClick={submit} disabled={!name.trim() || !calories || isSaving} className="btn-primary w-full sm:w-auto">
+              {isSaving ? 'Sauvegarde...' : food ? 'Sauvegarder' : 'Créer'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function MyFoodsView() {
+  const qc = useQueryClient()
+  const [showFoodForm, setShowFoodForm] = useState(false)
+  const [editingFood, setEditingFood] = useState<UserFood | null>(null)
+  const { data: userFoods = [], isLoading } = useQuery<UserFood[]>({
+    queryKey: ['user-foods'],
+    queryFn: () => api.get('/user-foods').then(r => r.data),
+  })
+
+  const createFoodMutation = useMutation({
+    mutationFn: (payload: Omit<UserFood, 'id' | 'createdAt'>) => api.post('/user-foods', payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['user-foods'] })
+      setShowFoodForm(false)
+      toast.success('Aliment créé')
+    },
+  })
+  const updateFoodMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Omit<UserFood, 'id' | 'createdAt'> }) => api.put(`/user-foods/${id}`, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['user-foods'] })
+      setEditingFood(null)
+      toast.success('Aliment mis à jour')
+    },
+  })
+  const deleteFoodMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/user-foods/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['user-foods'] })
+      toast.success('Aliment supprimé')
+    },
+  })
+
+  const openCreate = () => {
+    setEditingFood(null)
+    setShowFoodForm(true)
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Mes Aliments</h3>
+          <p className="text-xs text-gray-400 dark:text-gray-500">Aliments et recettes personnalisés pour 100g.</p>
+        </div>
+        <button type="button" onClick={openCreate} className="btn-primary flex items-center gap-2 text-sm">
+          <Plus size={16} /> Créer un aliment
+        </button>
+      </div>
+      {isLoading ? (
+        <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement...</div>
+      ) : userFoods.length === 0 ? (
+        <div className="card text-center py-10">
+          <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Aucun aliment personnalisé</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Créez vos recettes maison et aliments fréquents.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {userFoods.map(food => {
+            const portions = food.portions ? Object.entries(food.portions) : []
+            return (
+              <div key={food.id} className="card">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-gray-900 dark:text-gray-100 truncate">{food.name}</h4>
+                    <p className="text-sm text-amber-600 dark:text-amber-400 font-semibold mt-1">{food.calories} kcal / 100g</p>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <button type="button" onClick={() => setEditingFood(food)} className="p-1.5 text-gray-400 hover:text-blue-500">
+                      <Edit2 size={15} />
+                    </button>
+                    <button type="button" onClick={() => { if (window.confirm('Supprimer cet aliment ?')) deleteFoodMutation.mutate(food.id) }} className="p-1.5 text-gray-400 hover:text-red-500">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  <span className="text-xs bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-1.5 py-0.5 rounded">P {formatValue(toNumber(food.proteinG))}</span>
+                  <span className="text-xs bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 px-1.5 py-0.5 rounded">G {formatValue(toNumber(food.carbsG))}</span>
+                  <span className="text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-1.5 py-0.5 rounded">L {formatValue(toNumber(food.fatG))}</span>
+                  <span className="text-xs bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 px-1.5 py-0.5 rounded">F {formatValue(toNumber(food.fiberG))}</span>
+                </div>
+                {portions.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-3">
+                    {portions.map(([unit, portion]) => {
+                      const grams = typeof portion === 'object' && portion !== null && 'grams' in portion
+                        ? (portion as RichPortion).grams
+                        : portion
+                      return (
+                        <span key={unit} className="text-[10px] rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 px-2 py-0.5">
+                          {unit} ≈ {String(grams)}g
+                        </span>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+      {(showFoodForm || editingFood) && (
+        <UserFoodFormModal
+          food={editingFood}
+          onClose={() => { setShowFoodForm(false); setEditingFood(null) }}
+          isSaving={createFoodMutation.isPending || updateFoodMutation.isPending}
+          onSubmit={(payload) => {
+            if (editingFood) updateFoodMutation.mutate({ id: editingFood.id, payload })
+            else createFoodMutation.mutate(payload)
+          }}
+        />
       )}
     </div>
   )
@@ -813,6 +1038,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
 
 export default function FoodLogsPanel() {
   const qc = useQueryClient()
+  const [activeTab, setActiveTab] = useState<'logs' | 'myfoods'>('logs')
   const [selectedDate, setSelectedDate] = useState(todayString())
   const [collapsedMeals, setCollapsedMeals] = useState<Set<string>>(new Set())
   const [showModal, setShowModal] = useState(false)
@@ -889,12 +1115,14 @@ export default function FoodLogsPanel() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-        <StreakBadge logs={foodLogs} />
-        <button type="button" onClick={() => setShowModal(true)}
-          className="btn-primary flex items-center gap-2 text-sm font-medium">
-          <Plus size={16} /> Ajouter
-        </button>
-        {visibleMealTypes.length > 0 && (
+        {activeTab === 'logs' && <StreakBadge logs={foodLogs} />}
+        {activeTab === 'logs' && (
+          <button type="button" onClick={() => setShowModal(true)}
+            className="btn-primary flex items-center gap-2 text-sm font-medium">
+            <Plus size={16} /> Ajouter
+          </button>
+        )}
+        {activeTab === 'logs' && visibleMealTypes.length > 0 && (
           <button type="button"
             onClick={() => setCollapsedMeals(allCollapsed ? new Set() : new Set(visibleMealTypes))}
             className="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 font-normal transition-colors">
@@ -903,6 +1131,27 @@ export default function FoodLogsPanel() {
         )}
         </div>
       </div>
+
+      <div className="flex gap-2 mb-5 border-b border-gray-100 dark:border-gray-700">
+        {([
+          ['logs', 'Journal'],
+          ['myfoods', 'Mes Aliments'],
+        ] as const).map(([tab, label]) => (
+          <button key={tab} type="button" onClick={() => setActiveTab(tab)}
+            className={`px-3 py-2 text-sm font-semibold border-b-2 transition-colors ${
+              activeTab === tab
+                ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+            }`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'myfoods' && <MyFoodsView />}
+
+      {activeTab === 'logs' && (
+        <>
 
       {foodLogs.length === 0 && (
         <EmptyPanel
@@ -990,6 +1239,8 @@ export default function FoodLogsPanel() {
           onClose={() => setShowModal(false)}
           onSuccess={handleModalSuccess}
         />
+      )}
+        </>
       )}
     </div>
   )

@@ -6,6 +6,7 @@ import com.smartlife.model.FoodLog;
 import com.smartlife.model.User;
 import com.smartlife.repository.FoodCacheRepository;
 import com.smartlife.repository.FoodLogRepository;
+import com.smartlife.repository.UserFoodRepository;
 import com.smartlife.service.AiService;
 import com.smartlife.service.LocalFoodParserService;
 import com.smartlife.service.NutritionApiService;
@@ -35,6 +36,7 @@ public class FoodLogController {
     private final NutritionApiService nutritionApiService;
     private final LocalFoodParserService localFoodParserService;
     private final PortionResolverService portionResolverService;
+    private final UserFoodRepository userFoodRepository;
 
     @GetMapping
     public List<FoodLog> getFoodLogs(@AuthenticationPrincipal User user) {
@@ -108,6 +110,7 @@ public class FoodLogController {
             @AuthenticationPrincipal User user) {
         if (q == null || q.trim().length() < 2) {
             return ResponseEntity.ok(Map.of(
+                "custom", List.of(),
                 "frequent", List.of(),
                 "catalog", List.of(),
                 "manual", Map.of("label", "Ajouter \"" + (q != null ? q.trim() : "") + "\" manuellement")
@@ -164,9 +167,30 @@ public class FoodLogController {
             .toList();
         }
 
+        List<Map<String, Object>> custom = userFoodRepository
+            .findByUserIdAndNameContainingIgnoreCaseOrderByNameAsc(user.getId(), query)
+            .stream()
+            .limit(5)
+            .map(uf -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("id", uf.getId());
+                m.put("name", uf.getName());
+                m.put("calories", uf.getCalories());
+                m.put("proteinG", uf.getProteinG());
+                m.put("carbsG", uf.getCarbsG());
+                m.put("fatG", uf.getFatG());
+                m.put("fiberG", uf.getFiberG());
+                m.put("portions", uf.getPortions());
+                m.put("source", "user");
+                m.put("verified", true);
+                m.put("custom", true);
+                return m;
+            }).toList();
+
         Map<String, Object> manual = Map.of("label", "Ajouter \"" + query + "\" manuellement");
 
         return ResponseEntity.ok(Map.of(
+            "custom", custom,
             "frequent", frequent,
             "catalog", catalog,
             "related", related,
