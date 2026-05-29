@@ -29,6 +29,24 @@ interface FoodLog {
 
 type MealType = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'SNACK'
 type Mode = null | 'items' | 'prompt'
+type FoodItemDraft = {
+  name: string
+  quantity: string
+  unit: string
+  hasNutrition: boolean
+  calories?: number
+  proteinG?: number
+  carbsG?: number
+  fatG?: number
+  fiberG?: number
+}
+type SelectedMacros = {
+  calories: number
+  proteinG: number
+  carbsG: number
+  fatG: number
+  fiberG: number
+}
 
 const dailyGoals = { calories: 2000, proteinG: 50, carbsG: 250, fatG: 70, fiberG: 25 }
 const mealOrder = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK']
@@ -367,25 +385,53 @@ function FoodLogRow({ log, onDelete }: { log: FoodLog; onDelete: (id: number) =>
 function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
   const [mode, setMode] = useState<Mode>(null)
   const [mealType, setMealType] = useState<MealType>('LUNCH')
-  const [foodItems, setFoodItems] = useState<{ name: string; quantity: string; unit: string }[]>([])
+  const [foodItems, setFoodItems] = useState<FoodItemDraft[]>([])
   const [newFood, setNewFood] = useState('')
   const [newQty, setNewQty] = useState('')
   const [newUnit, setNewUnit] = useState('g')
-  const [selectedMacros, setSelectedMacros] = useState<{ calories: number; proteinG: number; carbsG: number; fatG: number } | null>(null)
+  const [selectedMacros, setSelectedMacros] = useState<SelectedMacros | null>(null)
   const [promptText, setPromptText] = useState('')
   const foodInputRef = useRef<HTMLInputElement>(null)
 
-  const quickAddMutation = useMutation({
-    mutationFn: () => api.post('/food-logs/quick-add', {
-      foods: foodItems.map(f => ({ name: f.name, quantity: f.quantity || null, unit: f.unit })),
-      mealType,
-    }),
-    onSuccess: (res) => {
-      const count = Array.isArray(res.data) ? res.data.length : 1
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const withNutrition = foodItems.filter(f => f.hasNutrition)
+      const withoutNutrition = foodItems.filter(f => !f.hasNutrition)
+
+      const directPromises = withNutrition.map(f => {
+        const qty = parseFloat(f.quantity) || 100
+        const factor = qty / 100
+        return api.post('/food-logs', {
+          foodItem: f.name,
+          mealType,
+          quantity: `${f.quantity} ${f.unit}`,
+          calories: Math.round((f.calories ?? 0) * factor),
+          proteinG: parseFloat(((f.proteinG ?? 0) * factor).toFixed(2)),
+          carbsG: parseFloat(((f.carbsG ?? 0) * factor).toFixed(2)),
+          fatG: parseFloat(((f.fatG ?? 0) * factor).toFixed(2)),
+          fiberG: f.fiberG ? parseFloat((f.fiberG * factor).toFixed(2)) : null,
+        })
+      })
+
+      const aiPromise = withoutNutrition.length > 0
+        ? api.post('/food-logs/quick-add', {
+            foods: withoutNutrition.map(f => ({
+              name: f.name,
+              quantity: f.quantity || null,
+              unit: f.unit,
+            })),
+            mealType,
+          })
+        : Promise.resolve({ data: [] })
+
+      await Promise.all([...directPromises, aiPromise])
+    },
+    onSuccess: () => {
+      const count = foodItems.length
       toast.success(`${count} aliment${count > 1 ? 's' : ''} ajouté${count > 1 ? 's' : ''} ✓`)
       onSuccess()
     },
-    onError: () => toast.error("Erreur lors de l'analyse"),
+    onError: () => toast.error("Erreur lors de l'enregistrement"),
   })
 
   const fromPromptMutation = useMutation({
@@ -401,11 +447,21 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     onError: () => toast.error("Erreur lors de l'analyse"),
   })
 
-  const isLoading = quickAddMutation.isPending || fromPromptMutation.isPending
+  const isLoading = saveMutation.isPending || fromPromptMutation.isPending
 
   const addFoodItem = () => {
     if (!newFood.trim()) return
-    setFoodItems(prev => [...prev, { name: newFood.trim(), quantity: newQty.trim(), unit: newUnit }])
+    setFoodItems(prev => [...prev, {
+      name: newFood.trim(),
+      quantity: newQty.trim(),
+      unit: newUnit,
+      hasNutrition: selectedMacros !== null,
+      calories: selectedMacros?.calories,
+      proteinG: selectedMacros?.proteinG,
+      carbsG: selectedMacros?.carbsG,
+      fatG: selectedMacros?.fatG,
+      fiberG: selectedMacros?.fiberG,
+    }])
     setNewFood('')
     setNewQty('')
     setNewUnit('g')
@@ -497,7 +553,20 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                     onChange={value => { setNewFood(value); setSelectedMacros(null) }}
                     onSelect={item => {
                       setNewFood(item.name)
-                      setSelectedMacros({ calories: item.calories, proteinG: item.proteinG, carbsG: item.carbsG, fatG: item.fatG })
+                      setNewQty('100')
+                      setNewUnit('g')
+                      setSelectedMacros({
+                        calories: item.calories,
+                        proteinG: item.proteinG,
+                        carbsG: item.carbsG,
+                        fatG: item.fatG,
+                        fiberG: item.fiberG ?? 0,
+                      })
+                      setTimeout(() => {
+                        const qtyInput = document.querySelector<HTMLInputElement>('input[placeholder="Qté"]')
+                        qtyInput?.focus()
+                        qtyInput?.select()
+                      }, 50)
                     }}
                     onEnter={addFoodItem}
                   />
@@ -513,12 +582,17 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                   </button>
                 </div>
                 {selectedMacros && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 font-medium">
                     ≈ {Math.round(selectedMacros.calories * (parseFloat(newQty) || 100) / 100)} kcal
                     {' · '}P {(selectedMacros.proteinG * (parseFloat(newQty) || 100) / 100).toFixed(1)}g
                     {' · '}G {(selectedMacros.carbsG * (parseFloat(newQty) || 100) / 100).toFixed(1)}g
                     {' · '}L {(selectedMacros.fatG * (parseFloat(newQty) || 100) / 100).toFixed(1)}g
-                    {' '}(pour {newQty || 100}{newUnit})
+                    {selectedMacros.fiberG > 0 && (
+                      <> · F {(selectedMacros.fiberG * (parseFloat(newQty) || 100) / 100).toFixed(1)}g</>
+                    )}
+                    <span className="text-gray-400 dark:text-gray-500">
+                      {' '}(pour {newQty || 100}{newUnit})
+                    </span>
                   </p>
                 )}
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Appuyez sur Entrée pour ajouter rapidement</p>
@@ -530,6 +604,19 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                     <div key={i} className="flex items-center justify-between px-3 py-2.5">
                       <div>
                         <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{item.name}</span>
+                        {item.hasNutrition && item.calories != null && (
+                          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+                            {Math.round(item.calories * ((parseFloat(item.quantity) || 100) / 100))} kcal
+                            {' · '}P {((item.proteinG ?? 0) * ((parseFloat(item.quantity) || 100) / 100)).toFixed(1)}g
+                            {' · '}G {((item.carbsG ?? 0) * ((parseFloat(item.quantity) || 100) / 100)).toFixed(1)}g
+                            {' · '}L {((item.fatG ?? 0) * ((parseFloat(item.quantity) || 100) / 100)).toFixed(1)}g
+                          </p>
+                        )}
+                        {!item.hasNutrition && (
+                          <p className="text-xs text-amber-500 dark:text-amber-400 mt-0.5">
+                            ✨ Valeurs estimées par l'IA
+                          </p>
+                        )}
                         {item.quantity && (
                           <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">· {item.quantity} {item.unit}</span>
                         )}
@@ -550,19 +637,23 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
               )}
 
               {isLoading && (
-                <div className="flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400 mb-3">
-                  <div className="w-4 h-4 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
-                  L'IA calcule les nutriments…
+                <div className="flex items-center gap-2 text-sm mb-3">
+                  {foodItems.some(f => !f.hasNutrition)
+                    ? <><div className="w-4 h-4 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-primary-600 dark:text-primary-400">L'IA calcule les nutriments…</span></>
+                    : <><div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-emerald-600 dark:text-emerald-400">Enregistrement…</span></>
+                  }
                 </div>
               )}
 
               <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-4">
                 <button type="button" onClick={onClose} disabled={isLoading} className="btn-secondary w-full sm:w-auto">Annuler</button>
                 <button type="button"
-                  onClick={() => quickAddMutation.mutate()}
+                  onClick={() => saveMutation.mutate()}
                   disabled={foodItems.length === 0 || isLoading}
                   className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
-                  ✨ Analyser et sauvegarder
+                  {foodItems.some(f => !f.hasNutrition) ? '✨ Analyser et sauvegarder' : 'Sauvegarder'}
                 </button>
               </div>
             </div>
