@@ -9,7 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 V19_PATH = ROOT / "backend/src/main/resources/db/migration/V19__food_cache_enhancements.sql"
-OUTPUT_PATH = ROOT / "backend/src/main/resources/db/migration/V23__enrich_portions.sql"
+OUTPUT_PATH = ROOT / "backend/src/main/resources/db/migration/V24__enrich_portions_fix.sql"
 API_KEY = os.environ.get("USDA_API_KEY", "DEMO_KEY")
 SEARCH_URL = "https://api.nal.usda.gov/fdc/v1/foods/search"
 DETAIL_URL = "https://api.nal.usda.gov/fdc/v1/food/{fdc_id}"
@@ -30,18 +30,14 @@ def get_json(url, params):
         return json.loads(response.read().decode("utf-8"))
 
 
-def search_fdc_id(food_name):
+def search_foods(food_name):
     data = get_json(SEARCH_URL, {
         "query": food_name,
         "dataType": "Foundation,SR Legacy",
-        "pageSize": 3,
+        "pageSize": 5,
         "api_key": API_KEY,
     })
-    for food in data.get("foods", []):
-        fdc_id = food.get("fdcId")
-        if fdc_id:
-            return fdc_id
-    return None
+    return data.get("foods", [])
 
 
 def fetch_food_detail(fdc_id):
@@ -162,12 +158,17 @@ def main():
     for food_name, normalized in foods:
         portions = {}
         try:
-            fdc_id = search_fdc_id(food_name)
+            foods_results = search_foods(food_name)
             time.sleep(0.3)
-            if fdc_id:
+            for food in foods_results[:3]:
+                fdc_id = food.get("fdcId")
+                if not fdc_id:
+                    continue
                 detail = fetch_food_detail(fdc_id)
                 time.sleep(0.3)
                 portions = extract_usda_portions(detail)
+                if portions:
+                    break
         except Exception as exc:
             print(f"[WARN] USDA lookup failed for {food_name}: {exc}")
 
