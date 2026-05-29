@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import time
 import urllib.parse
@@ -9,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 V19_PATH = ROOT / "backend/src/main/resources/db/migration/V19__food_cache_enhancements.sql"
 OUTPUT_PATH = ROOT / "backend/src/main/resources/db/migration/V23__enrich_portions.sql"
-API_KEY = "DEMO_KEY"
+API_KEY = os.environ.get("USDA_API_KEY", "DEMO_KEY")
 SEARCH_URL = "https://api.nal.usda.gov/fdc/v1/foods/search"
 DETAIL_URL = "https://api.nal.usda.gov/fdc/v1/food/{fdc_id}"
 
