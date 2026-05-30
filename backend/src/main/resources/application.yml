@@ -42,7 +42,7 @@ server:
   port: 8080
 
 jwt:
-  secret: ${JWT_SECRET:smartlife-jwt-secret-key-2024-change-in-prod}
+  secret: ${JWT_SECRET}
   expiration: 900000  # 15min in ms
 
 ai:

@@ -16,8 +16,8 @@ server:
 logging:
   level:
     com.smartlife: INFO
-    org.springframework.security: DEBUG
-    org.springframework.security.oauth2.client: DEBUG
+    org.springframework.security: WARN
+    org.springframework.security.oauth2.client: WARN
 
 sentry:
   dsn: ${SENTRY_DSN:}
