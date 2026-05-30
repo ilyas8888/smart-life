@@ -1,0 +1,11 @@
+# CVE-2024-38821 — Spring Security WebFlux: Authorization Bypass of Static Resources
+# This app uses Spring MVC security (not WebFlux). The vulnerability affects WebFlux
+# applications only. WebClient is used for outbound calls (AI service), not for inbound
+# request security. Not exploitable in this context.
+# Fixed in spring-security 6.2.7 / 6.3.4 — requires Spring Boot 3.3.x upgrade (planned).
+CVE-2024-38821
+
+# CVE-2026-22732 — Spring Security: policy bypass / information disclosure
+# Fixed in spring-security 6.5.9 / 7.0.4 — requires Spring Boot 3.5.x upgrade.
+# Scheduled for next infrastructure sprint when Spring Boot 3.5.x is stable.
+CVE-2026-22732
