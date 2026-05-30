@@ -3,6 +3,7 @@ import { CheckSquare, Bell, UtensilsCrossed, Dumbbell, FileText, BookOpen, Chevr
 import { format, differenceInCalendarDays, parseISO } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import api from '../api/axios'
+import SmartDayScore from './SmartDayScore'
 
 const QUOTES = [
   'La discipline est le pont entre les objectifs et les accomplissements.',
@@ -104,7 +105,7 @@ type AiAccessStatus = {
   lastRequestStatus: 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED'
 }
 
-type Panel = 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout' | 'prompt'
+type Panel = 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout' | 'sleep' | 'study' | 'social' | 'prompt'
 
 interface HomePanelProps {
   onNavigate: (panel: Panel) => void
@@ -257,6 +258,9 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
           )}
         </div>
       </div>
+
+      {/* ── Smart Day Score ──────────────────────────────────────── */}
+      <SmartDayScore onNavigate={(panel) => onNavigate(panel as Panel)} />
 
       {/* ── Stats grid ───────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
