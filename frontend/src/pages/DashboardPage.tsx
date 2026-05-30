@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Brain, CheckSquare, Bell, FileText, Users, LogOut,
-  Send, Sparkles, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon, BookOpen, Dumbbell, Menu, X, Lock, ShieldCheck, ExternalLink, Globe
+  Send, Sparkles, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Moon, BookOpen, Dumbbell, Menu, X, Lock, ShieldCheck, ExternalLink, Globe
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
-import { useThemeStore } from '../store/themeStore'
 import api from '../api/axios'
 const HomePanel      = lazy(() => import('../components/HomePanel'))
 const AgendaPage     = lazy(() => import('./AgendaPage'))
@@ -53,8 +52,6 @@ function panelFromHash(): Panel {
 export default function DashboardPage() {
   const navigate = useNavigate()
   const { firstName, lastName, email, logout } = useAuthStore()
-  const isDark = useThemeStore((s) => s.isDark)
-  const toggle = useThemeStore((s) => s.toggle)
   const [activePanel, setActivePanel] = useState<Panel>(panelFromHash)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -346,15 +343,6 @@ export default function DashboardPage() {
                 {navItems.find((n) => n.id === activePanel)?.label}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={toggle}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-              aria-label={isDark ? 'Activer le mode clair' : 'Activer le mode sombre'}
-            >
-              {isDark ? <Sun size={16} /> : <Moon size={16} />}
-              <span className="hidden sm:inline">{isDark ? 'Mode clair' : 'Mode sombre'}</span>
-            </button>
           </div>
         </header>
 
