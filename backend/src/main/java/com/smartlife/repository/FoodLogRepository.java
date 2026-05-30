@@ -9,4 +9,5 @@ import java.util.List;
 public interface FoodLogRepository extends JpaRepository<FoodLog, Long> {
     List<FoodLog> findByUserIdOrderByLogDateDescLoggedAtDesc(Long userId);
     List<FoodLog> findByUserIdAndLogDate(Long userId, LocalDate date);
+    long countByUserId(Long userId);
 }

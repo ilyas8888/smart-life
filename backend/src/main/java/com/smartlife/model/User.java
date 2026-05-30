@@ -44,6 +44,16 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean localLoginAllowed = false;
 
+    @Column(unique = true, length = 50)
+    private String username;
+
+    @Column(columnDefinition = "TEXT")
+    private String bio;
+
+    @Builder.Default
+    @Column(name = "avatar_color", length = 7)
+    private String avatarColor = "#6366F1";
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

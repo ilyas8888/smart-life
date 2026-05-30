@@ -241,7 +241,12 @@ public class SocialController {
                 ? user.getFirstName()
                 : user.getEmail().split("@")[0];
         String initials = name.length() >= 2 ? name.substring(0, 2).toUpperCase() : name.toUpperCase();
-        return Map.of("name", name, "initials", initials);
+        return Map.of(
+                "name",        name,
+                "initials",    initials,
+                "username",    user.getUsername() != null ? user.getUsername() : "",
+                "avatarColor", user.getAvatarColor() != null ? user.getAvatarColor() : "#6366F1"
+        );
     }
 
     private Map<String, Object> reactionSummary(Long postId) {
