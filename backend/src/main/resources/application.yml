@@ -37,6 +37,10 @@ spring:
         provider:
           keycloak:
             issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/smartlife}
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
 
 server:
   port: 8080
@@ -71,12 +75,6 @@ app:
     security-alert-recipient: ${SECURITY_ALERT_EMAIL:}
   otp:
     enabled: ${OTP_ENABLED:false}
-
-spring:
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
 
 management:
   endpoints:
