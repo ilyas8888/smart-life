@@ -4,12 +4,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartlife.model.*;
 import com.smartlife.repository.*;
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.Refill;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
@@ -18,12 +23,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequiredArgsConstructor
 public class SharedLinkController {
 
     private static final Set<String> RESOURCE_TYPES = Set.of("FOOD_LOG", "WORKOUT_PLAN", "SLEEP_LOG", "NOTE", "JOURNAL");
+    private static final Bandwidth PUBLIC_SHARE_LIMIT = Bandwidth.classic(60, Refill.intervally(60, Duration.ofMinutes(1)));
 
     private final SharedLinkRepository sharedLinkRepository;
     private final FoodLogRepository foodLogRepository;
@@ -32,6 +39,7 @@ public class SharedLinkController {
     private final NoteRepository noteRepository;
     private final DiaryEntryRepository diaryEntryRepository;
     private final ObjectMapper objectMapper;
+    private final ConcurrentHashMap<String, Bucket> publicShareBuckets = new ConcurrentHashMap<>();
 
     @PostMapping("/api/shares")
     public ResponseEntity<?> createShare(@RequestBody Map<String, Object> body) {
@@ -97,17 +105,24 @@ public class SharedLinkController {
     @PatchMapping("/api/shares/{id}/revoke")
     public ResponseEntity<?> revokeShare(@PathVariable Long id) {
         User user = currentUser();
-        return sharedLinkRepository.findById(id)
-                .filter(link -> link.getOwner().getId().equals(user.getId()))
-                .map(link -> {
-                    link.setRevoked(true);
-                    return ResponseEntity.ok(toListResponse(sharedLinkRepository.save(link)));
-                })
-                .orElse(ResponseEntity.notFound().build());
+        Optional<SharedLink> found = sharedLinkRepository.findById(id);
+        if (found.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        SharedLink link = found.get();
+        if (!link.getOwner().getId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        link.setRevoked(true);
+        return ResponseEntity.ok(toListResponse(sharedLinkRepository.save(link)));
     }
 
     @GetMapping("/api/public/shares/{token}")
-    public ResponseEntity<?> getPublicShare(@PathVariable UUID token) {
+    public ResponseEntity<?> getPublicShare(@PathVariable UUID token, HttpServletRequest request) {
+        if (!bucketForClient(request).tryConsume(1)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(Map.of("error", "RATE_LIMIT_EXCEEDED"));
+        }
+
         Optional<SharedLink> found = sharedLinkRepository.findByToken(token);
         if (found.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -345,6 +360,20 @@ public class SharedLinkController {
 
     private boolean asBoolean(Object value) {
         return value instanceof Boolean b && b;
+    }
+
+    private Bucket bucketForClient(HttpServletRequest request) {
+        return publicShareBuckets.computeIfAbsent(clientIp(request), ignored -> Bucket.builder()
+                .addLimit(PUBLIC_SHARE_LIMIT)
+                .build());
+    }
+
+    private String clientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 
     private User currentUser() {
