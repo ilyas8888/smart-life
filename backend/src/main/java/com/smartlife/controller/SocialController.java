@@ -246,7 +246,8 @@ public class SocialController {
                 "name",        name,
                 "initials",    initials,
                 "username",    user.getHandle() != null ? user.getHandle() : "",
-                "avatarColor", user.getAvatarColor() != null ? user.getAvatarColor() : "#6366F1"
+                "avatarColor", user.getAvatarColor() != null ? user.getAvatarColor() : "#6366F1",
+                "hasAvatar",   user.getAvatarData() != null && !user.getAvatarData().isBlank()
         );
     }
 
