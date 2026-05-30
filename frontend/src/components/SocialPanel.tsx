@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Globe, Plus, Copy, EyeOff, Trash2, Check, X,
-  Link2, Eye, Clock, Users2, Bookmark, Trophy, ChevronRight, ExternalLink,
+  Link2, Eye, Clock, Users2, Bookmark, Trophy, ChevronRight, ExternalLink, Sparkles,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
+import SocialPostCard from './SocialPostCard'
 
 interface SharedLink {
   id: number
@@ -21,6 +22,24 @@ interface SharedLink {
   recipientEmail: string | null
   createdAt: string
   isExpired: boolean
+}
+
+interface Post {
+  id: number
+  author: { name: string; initials: string }
+  resourceType: string
+  resourceId: number
+  title: string | null
+  caption: string | null
+  preview: Record<string, unknown>
+  reactions: Record<string, number>
+  myReaction: string | null
+  commentsCount: number
+  savesCount: number
+  reactionsCount: number
+  isSaved: boolean
+  createdAt: string
+  timeAgo: string
 }
 
 interface ReceivedLink {
@@ -56,8 +75,8 @@ const EXPIRY_OPTIONS = [
 const TABS = [
   { id: 'shares',     label: 'Mes Partages',     icon: Link2,     active: true  },
   { id: 'received',   label: 'Partagé avec moi', icon: Users2,    active: true  },
-  { id: 'community',  label: 'Communauté',        icon: Globe,     active: false },
-  { id: 'saved',      label: 'Inspirations',      icon: Bookmark,  active: false },
+  { id: 'community',  label: 'Communauté',        icon: Globe,     active: true  },
+  { id: 'saved',      label: 'Inspirations',      icon: Bookmark,  active: true  },
   { id: 'challenges', label: 'Défis',             icon: Trophy,    active: false },
 ]
 
@@ -79,6 +98,14 @@ interface CreateForm {
   allowReactions: boolean
   maskCalories: boolean
   recipientEmail: string
+}
+
+interface PostForm {
+  resourceType: string
+  resourceId: string
+  title: string
+  caption: string
+  filterType: string
 }
 
 interface ShareResourceOption {
@@ -153,12 +180,18 @@ function toResourceOption(type: string, item: Record<string, unknown>): ShareRes
   return { id, label: `#${id} - ${label}` }
 }
 
+function defaultPostForm(): PostForm {
+  return { resourceType: 'WORKOUT_PLAN', resourceId: '', title: '', caption: '', filterType: '' }
+}
+
 export default function SocialPanel() {
   const qc = useQueryClient()
-  const [activeTab, setActiveTab]   = useState('shares')
-  const [showModal, setShowModal]   = useState(false)
-  const [form, setForm]             = useState<CreateForm>(defaultForm())
-  const [copiedId, setCopiedId]     = useState<number | null>(null)
+  const [activeTab, setActiveTab]     = useState('shares')
+  const [showModal, setShowModal]     = useState(false)
+  const [showPostModal, setShowPostModal] = useState(false)
+  const [form, setForm]               = useState<CreateForm>(defaultForm())
+  const [postForm, setPostForm]       = useState<PostForm>(defaultPostForm())
+  const [copiedId, setCopiedId]       = useState<number | null>(null)
 
   const { data: links = [], isLoading } = useQuery<SharedLink[]>({
     queryKey: ['shared-links'],
@@ -170,6 +203,53 @@ export default function SocialPanel() {
     queryFn: () => api.get('/shares/received').then(r => r.data),
     enabled: activeTab === 'received',
   })
+
+  const { data: feed = [], isLoading: feedLoading } = useQuery<Post[]>({
+    queryKey: ['social-feed', postForm.filterType],
+    queryFn: () => api.get('/social/posts', {
+      params: postForm.filterType ? { type: postForm.filterType } : {},
+    }).then(r => r.data),
+    enabled: activeTab === 'community',
+  })
+
+  const { data: saved = [], isLoading: savedLoading } = useQuery<Post[]>({
+    queryKey: ['social-saved'],
+    queryFn: () => api.get('/social/saved').then(r => r.data),
+    enabled: activeTab === 'saved',
+  })
+
+  const { data: postResources = [], isLoading: postResourcesLoading } = useQuery<ShareResourceOption[]>({
+    queryKey: ['share-resources', postForm.resourceType],
+    queryFn: () => api.get(RESOURCE_ENDPOINTS[postForm.resourceType]).then(r => {
+      const items = Array.isArray(r.data) ? r.data : []
+      return items
+        .map((item: Record<string, unknown>) => toResourceOption(postForm.resourceType, item))
+        .filter((item: ShareResourceOption | null): item is ShareResourceOption => item !== null)
+    }),
+    enabled: showPostModal && Boolean(RESOURCE_ENDPOINTS[postForm.resourceType]),
+  })
+
+  const publishMutation = useMutation({
+    mutationFn: (payload: object) => api.post('/social/posts', payload).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['social-feed'] })
+      toast.success('Publié dans la Communauté !')
+      setShowPostModal(false)
+      setPostForm(defaultPostForm())
+      setActiveTab('community')
+    },
+    onError: () => toast.error('Erreur lors de la publication'),
+  })
+
+  function handlePublish() {
+    if (!postForm.resourceId) { toast.error('Ressource requise'); return }
+    publishMutation.mutate({
+      resourceType: postForm.resourceType,
+      resourceId: Number(postForm.resourceId),
+      title: postForm.title.trim() || undefined,
+      caption: postForm.caption.trim() || undefined,
+    })
+  }
 
   const cloneMutation = useMutation({
     mutationFn: (token: string) => api.post(`/shares/${token}/clone`).then(r => r.data),
@@ -268,15 +348,26 @@ export default function SocialPanel() {
             <p className="text-sm text-gray-500 dark:text-gray-400">Partage contrôlé, social utile</p>
           </div>
         </div>
-        {activeTab === 'shares' && (
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-xl hover:bg-sky-700 text-sm font-medium transition-colors"
-          >
-            <Plus size={16} />
-            Nouveau partage
-          </button>
-        )}
+        <div className="flex gap-2">
+          {activeTab === 'community' && (
+            <button
+              onClick={() => setShowPostModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-xl hover:bg-sky-700 text-sm font-medium transition-colors"
+            >
+              <Sparkles size={16} />
+              Publier
+            </button>
+          )}
+          {activeTab === 'shares' && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-xl hover:bg-sky-700 text-sm font-medium transition-colors"
+            >
+              <Plus size={16} />
+              Nouveau partage
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}
@@ -443,8 +534,85 @@ export default function SocialPanel() {
         </div>
       )}
 
+      {/* Communauté */}
+      {activeTab === 'community' && (
+        <div className="space-y-4">
+          {/* Filtres */}
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
+            {[
+              { value: '', label: 'Tout' },
+              { value: 'WORKOUT_PLAN', label: '💪 Sport' },
+              { value: 'FOOD_LOG', label: '🍎 Food' },
+              { value: 'NOTE', label: '📝 Notes' },
+              { value: 'JOURNAL', label: '📖 Journal' },
+              { value: 'SLEEP_LOG', label: '😴 Sommeil' },
+              { value: 'STUDY_SESSION', label: '📚 Étude' },
+            ].map(f => (
+              <button
+                key={f.value}
+                onClick={() => { setPostForm(pf => ({ ...pf, filterType: f.value })); qc.invalidateQueries({ queryKey: ['social-feed'] }) }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors ${
+                  postForm.filterType === f.value
+                    ? 'bg-sky-600 text-white'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {feedLoading ? (
+            <div className="flex justify-center py-16">
+              <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : feed.length === 0 ? (
+            <div className="text-center py-16">
+              <Globe size={36} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+              <p className="font-semibold text-gray-600 dark:text-gray-400">Aucun post dans la communauté</p>
+              <p className="text-sm text-gray-400 mt-1 mb-5">Soyez le premier à partager quelque chose !</p>
+              <button
+                onClick={() => setShowPostModal(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition-colors"
+              >
+                <Sparkles size={16} /> Publier maintenant
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {feed.map(post => (
+                <SocialPostCard key={post.id} post={post} onDeleted={() => qc.invalidateQueries({ queryKey: ['social-feed'] })} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Inspirations */}
+      {activeTab === 'saved' && (
+        <div className="space-y-4">
+          {savedLoading ? (
+            <div className="flex justify-center py-16">
+              <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : saved.length === 0 ? (
+            <div className="text-center py-16">
+              <Bookmark size={36} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+              <p className="font-semibold text-gray-600 dark:text-gray-400">Aucune inspiration sauvegardée</p>
+              <p className="text-sm text-gray-400 mt-1">Sauvegardez des posts depuis la Communauté.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {saved.map(post => (
+                <SocialPostCard key={post.id} post={post} onDeleted={() => qc.invalidateQueries({ queryKey: ['social-saved'] })} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Coming soon tabs */}
-      {activeTab !== 'shares' && activeTab !== 'received' && (
+      {activeTab !== 'shares' && activeTab !== 'received' && activeTab !== 'community' && activeTab !== 'saved' && (
         <div className="text-center py-20">
           {(() => {
             const tab = TABS.find(t => t.id === activeTab)!
@@ -459,11 +627,115 @@ export default function SocialPanel() {
                   Disponible prochainement dans SmartLife Together.
                 </p>
                 <div className="mt-4 inline-flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 font-medium">
-                  Roadmap S3 → S4 <ChevronRight size={12} />
+                  Roadmap S4 <ChevronRight size={12} />
                 </div>
               </>
             )
           })()}
+        </div>
+      )}
+
+      {/* Publish to community modal */}
+      {showPostModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Publier dans la Communauté</h2>
+              <button onClick={() => setShowPostModal(false)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                <X size={18} className="text-gray-400" />
+              </button>
+            </div>
+
+            {/* Resource type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type de ressource</label>
+              <div className="grid grid-cols-3 gap-2">
+                {RESOURCE_TYPES.map(rt => (
+                  <button
+                    key={rt.value}
+                    onClick={() => setPostForm(f => ({ ...f, resourceType: rt.value, resourceId: '' }))}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${
+                      postForm.resourceType === rt.value
+                        ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20'
+                        : 'border-gray-200 dark:border-gray-600 hover:border-sky-300 dark:hover:border-sky-700'
+                    }`}
+                  >
+                    <span className="text-xl">{rt.icon}</span>
+                    <span className={`text-xs font-medium leading-tight ${postForm.resourceType === rt.value ? 'text-sky-700 dark:text-sky-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                      {rt.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Resource selector */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ressource</label>
+              <select
+                value={postForm.resourceId}
+                onChange={e => setPostForm(f => ({ ...f, resourceId: e.target.value }))}
+                disabled={postResourcesLoading || postResources.length === 0}
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+              >
+                {postResourcesLoading ? (
+                  <option>Chargement...</option>
+                ) : postResources.length === 0 ? (
+                  <option disabled>Aucune ressource disponible</option>
+                ) : (
+                  <>
+                    <option value="">Choisir une ressource</option>
+                    {postResources.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+                  </>
+                )}
+              </select>
+            </div>
+
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Titre <span className="text-gray-400 font-normal">(optionnel)</span>
+              </label>
+              <input
+                type="text"
+                value={postForm.title}
+                onChange={e => setPostForm(f => ({ ...f, title: e.target.value }))}
+                placeholder="Ex: Mon programme été 2026"
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+              />
+            </div>
+
+            {/* Caption */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Légende <span className="text-gray-400 font-normal">(optionnel)</span>
+              </label>
+              <textarea
+                value={postForm.caption}
+                onChange={e => setPostForm(f => ({ ...f, caption: e.target.value }))}
+                placeholder="Quelques mots sur ce que tu partages..."
+                rows={3}
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setShowPostModal(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handlePublish}
+                disabled={publishMutation.isPending}
+                className="flex-1 py-2.5 rounded-xl bg-sky-600 text-white text-sm font-medium hover:bg-sky-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              >
+                <Sparkles size={15} />
+                {publishMutation.isPending ? 'Publication...' : 'Publier'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
