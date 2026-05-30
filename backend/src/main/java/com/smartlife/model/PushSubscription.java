@@ -7,9 +7,9 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "reminders")
+@Table(name = "push_subscriptions")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
-public class Reminder {
+public class PushSubscription {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,26 +20,14 @@ public class Reminder {
     @JsonIgnore
     private User user;
 
-    @Column(nullable = false)
-    private String title;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String endpoint;
 
-    @Column(columnDefinition = "TEXT")
-    private String description;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String p256dh;
 
-    @Column(nullable = false)
-    private LocalDateTime remindAt;
-
-    @Builder.Default
-    private boolean isRecurring = false;
-    private String recurrenceRule;
-
-    @Builder.Default
-    private boolean isDone = false;
-
-    @Builder.Default
-    private String priority = "MEDIUM";
-
-    private LocalDateTime pushSentAt;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String auth;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
