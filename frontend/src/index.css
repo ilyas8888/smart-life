@@ -21,6 +21,13 @@
     min-width: 0;
   }
 
+  /* Light mode — slightly lighter surface, glass stays dark */
+  :root:not(.dark) body { background: #0F1623; }
+  :root:not(.dark) .glass-card {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.14);
+  }
+
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
