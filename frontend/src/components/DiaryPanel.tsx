@@ -152,7 +152,7 @@ function MoodTrend({ entries }: { entries: DiaryEntry[] }) {
         />
         {points.map((p) => {
           const mood = MOODS[4 - p.moodIndex] ?? MOODS[2]
-          return <circle key={`${p.x}-${p.y}`} cx={p.x} cy={p.y} r="4" className={`${mood.dot} stroke-white dark:stroke-gray-800`} strokeWidth="2" />
+          return <circle key={`${p.x}-${p.y}`} cx={p.x} cy={p.y} r="4" className={mood.dot} strokeWidth="2" stroke="rgba(7,11,20,0.8)" />
         })}
         {days.map((d, i) => (
           <text key={d.key} x={12 + i * 46} y={72} textAnchor="middle" className="fill-gray-400 text-[10px]">
@@ -177,7 +177,7 @@ function EntryContent({ entry }: { entry: DiaryEntry }) {
       {shouldTruncate && (
         <button type="button" onClick={() => setExpanded(v => !v)}
           className="text-xs font-medium text-primary-600 dark:text-primary-400 mt-2 hover:underline">
-          {expanded ? 'Réduire' : 'Lire la suite'}
+          {expanded ? 'Rï¿½duire' : 'Lire la suite'}
         </button>
       )}
     </div>
@@ -206,14 +206,14 @@ export default function DiaryPanel() {
       qc.invalidateQueries({ queryKey: ['diary'] })
       setContent('')
       setMood('')
-      toast.success('Entrée ajoutée')
+      toast.success('Entrï¿½e ajoutï¿½e')
     },
     onError: () => toast.error("Erreur lors de l'ajout"),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/diary/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['diary'] }); toast.success('Entrée supprimée') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['diary'] }); toast.success('Entrï¿½e supprimï¿½e') },
   })
 
   const totalWords = entries.reduce((s, e) => s + wordCount(e.content), 0)
@@ -279,7 +279,7 @@ export default function DiaryPanel() {
   }
   const saveEdit = (id: number) => {
     api.put(`/diary/${id}`, { content: editContent, mood: editMood || null })
-      .then(() => { qc.invalidateQueries({ queryKey: ['diary'] }); cancelEdit(); toast.success('Modifié') })
+      .then(() => { qc.invalidateQueries({ queryKey: ['diary'] }); cancelEdit(); toast.success('Modifiï¿½') })
       .catch(() => toast.error('Erreur'))
   }
 
@@ -292,17 +292,17 @@ export default function DiaryPanel() {
         Journal Personnel
       </h2>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'Streak', value: `${streak}j`, icon: <Flame size={15} /> },
-          { label: 'Entrées', value: String(entries.length), icon: <BookMarked size={15} /> },
-          { label: 'Mots', value: totalWords.toLocaleString('fr'), icon: <span>??</span> },
-          { label: 'Humeur', value: avgMood ? avgMood.label.split(' ')[0] : '—', icon: <TrendingUp size={15} /> },
+          { label: 'Streak', value: `${streak}j`, icon: <Flame size={16} />, gradient: 'from-orange-500 to-red-500', glow: 'rgba(249,115,22,0.3)' },
+          { label: 'EntrÃ©es', value: String(entries.length), icon: <BookMarked size={16} />, gradient: 'from-rose-500 to-pink-500', glow: 'rgba(244,63,94,0.3)' },
+          { label: 'Mots', value: totalWords.toLocaleString('fr'), icon: <TrendingUp size={16} />, gradient: 'from-violet-500 to-indigo-500', glow: 'rgba(139,92,246,0.3)' },
+          { label: 'Humeur', value: avgMood ? avgMood.label.split(' ')[0] : 'â€”', icon: <TrendingUp size={16} />, gradient: 'from-fuchsia-500 to-violet-400', glow: 'rgba(217,70,239,0.3)' },
         ].map(stat => (
-          <div key={stat.label} className="rounded-xl bg-white/[0.03] px-3 py-3 text-center">
-            <div className="flex justify-center text-primary-600 dark:text-primary-400 mb-1">{stat.icon}</div>
-            <p className="text-lg font-black text-white leading-none">{stat.value}</p>
-            <p className="text-[10px] text-gray-500 mt-1">{stat.label}</p>
+          <div key={stat.label} className="glass-card px-4 py-4 text-center" style={{ boxShadow: `0 0 20px ${stat.glow}` }}>
+            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center mx-auto mb-2 text-white`}>{stat.icon}</div>
+            <p className="text-3xl font-black text-white leading-none">{stat.value}</p>
+            <p className="text-[11px] text-gray-500 mt-1.5">{stat.label}</p>
           </div>
         ))}
       </div>
@@ -341,7 +341,7 @@ export default function DiaryPanel() {
         <textarea
           ref={textareaRef}
           className="w-full resize-none border-0 outline-none text-white placeholder-gray-400 dark:placeholder-gray-500 bg-transparent text-[15px] leading-relaxed min-h-[160px]"
-          placeholder="Comment s'est passée ta journée ? Tes pensées, tes émotions..."
+          placeholder="Comment s'est passï¿½e ta journï¿½e ? Tes pensï¿½es, tes ï¿½motions..."
           value={content}
           onChange={(e) => setContent(e.target.value)}
           disabled={createMutation.isPending}
@@ -392,20 +392,20 @@ export default function DiaryPanel() {
           illustration={<IllustrationDiary />}
           gradient="from-rose-500 to-fuchsia-500"
           headline="Ton journal t'attend"
-          description="5 minutes par jour pour mieux te connaître. Humeur, pensées, accomplissements — tout compte."
+          description="5 minutes par jour pour mieux te connaï¿½tre. Humeur, pensï¿½es, accomplissements ï¿½ tout compte."
           preview={
             <div className="card border-l-4 border-l-blue-400">
               <div className="flex items-start gap-3 mb-3">
                 <div className="text-2xl">??</div>
                 <div className="flex-1">
                   <p className="font-semibold text-white">Lundi 25 mai 2026</p>
-                  <p className="text-xs text-gray-400">Bonne humeur · 124 mots</p>
+                  <p className="text-xs text-gray-400">Bonne humeur ï¿½ 124 mots</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-400 line-clamp-2 italic">"Bonne journée aujourd'hui. J'ai terminé le rapport de stage et préparé la soutenance. Je me sens prêt..."</p>
+              <p className="text-sm text-gray-400 line-clamp-2 italic">"Bonne journï¿½e aujourd'hui. J'ai terminï¿½ le rapport de stage et prï¿½parï¿½ la soutenance. Je me sens prï¿½t..."</p>
             </div>
           }
-          primaryLabel="?? Écrire ma première entrée"
+          primaryLabel="?? ï¿½crire ma premiï¿½re entrï¿½e"
           onPrimary={() => { textareaRef.current?.scrollIntoView({ behavior: 'smooth' }); textareaRef.current?.focus() }}
         />
       ) : (
@@ -420,13 +420,13 @@ export default function DiaryPanel() {
                 <div className="flex items-center gap-3 mb-3">
                   <h3 className="text-sm font-bold text-gray-300 capitalize">{monthLabel}</h3>
                   <div className="flex-1 h-px bg-white/[0.05]" />
-                  <span className="text-xs text-gray-400">{monthEntries.length} entrée{monthEntries.length > 1 ? 's' : ''}</span>
+                  <span className="text-xs text-gray-400">{monthEntries.length} entrï¿½e{monthEntries.length > 1 ? 's' : ''}</span>
                 </div>
                 <div className="space-y-4">
                   {monthEntries.map((e) => {
                     const moodMeta = getMoodMeta(e.mood)
                     return (
-                      <div key={e.id} className={`card overflow-hidden group ${moodMeta ? moodMeta.border : ''}`}>
+                      <div key={e.id} className={`glass-card overflow-hidden group ${moodMeta ? moodMeta.border : ''}`}>
                         <div className="flex items-start gap-3 mb-3">
                           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${
                             moodMeta ? `${moodMeta.color} bg-opacity-10` : 'bg-white/[0.05]'
@@ -438,16 +438,16 @@ export default function DiaryPanel() {
                               {format(parseISO(e.entryDate), 'EEEE dd MMMM', { locale: fr })}
                             </p>
                             <p className="text-xs text-gray-400">
-                              {moodMeta ? moodMeta.label : 'Sans humeur'} · {wordCount(e.content)} mots
+                              {moodMeta ? moodMeta.label : 'Sans humeur'} ï¿½ {wordCount(e.content)} mots
                             </p>
                           </div>
                           <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                             <button type="button" onClick={() => startEdit(e)}
-                              className="p-1.5 rounded-xl text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                              className="p-1.5 rounded-xl text-gray-400 hover:text-blue-400 hover:bg-blue-900/20 transition-colors">
                               <Edit2 size={14} />
                             </button>
                             <button type="button" onClick={() => deleteMutation.mutate(e.id)}
-                              className="p-1.5 rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                              className="p-1.5 rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-900/20 transition-colors">
                               <Trash2 size={14} />
                             </button>
                           </div>
@@ -475,9 +475,9 @@ export default function DiaryPanel() {
                         )}
 
                         {e.tags && e.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-white/10 border-white/10">
+                          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-white/[0.06]">
                             {e.tags.map(tag => (
-                              <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 flex items-center gap-1">
+                              <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-primary-900/20 text-primary-300 flex items-center gap-1">
                                 <Tag size={9} /> {tag}
                               </span>
                             ))}

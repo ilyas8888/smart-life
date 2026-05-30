@@ -356,7 +356,7 @@ export default function SleepPanel() {
               </div>
               <span className="text-xs font-medium text-gray-400">{logs.length} nuit{logs.length > 1 ? 's' : ''}</span>
             </div>
-            <div className="divide-y divide-gray-100 dark:divide-gray-700">
+            <div className="divide-y divide-white/[0.06]">
               {logs.map(log => (
                 <SleepRow key={log.id} log={log} onEdit={openEdit} onDelete={id => deleteMutation.mutate(id)} />
               ))}
@@ -436,7 +436,7 @@ function WeeklyChart({ logs }: { logs: SleepLog[] }) {
         <span className="text-xs text-gray-400">Ligne cible: 8h</span>
       </div>
       <div className="relative h-44">
-        <div className="absolute left-0 right-0 top-[33%] border-t border-dashed border-indigo-300 dark:border-indigo-800" />
+        <div className="absolute left-0 right-0 top-[33%] border-t border-dashed border-indigo-800" />
         <div className="h-full flex items-end gap-2">
           {[...logs].reverse().map(log => {
             const pct = Math.min(100, Math.round((log.durationMinutes / (10 * 60)) * 100))
@@ -546,9 +546,9 @@ function SleepModal({ form, editing, saving, onClose, onChange, onToggleFactor, 
             />
           </div>
 
-          <div className="rounded-xl bg-indigo-50 dark:bg-indigo-900/20 px-4 py-3 flex items-center justify-between">
-            <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">Duree calculee</span>
-            <span className="text-lg font-bold text-indigo-700 dark:text-indigo-300">{duration ? formatDuration(duration) : '--'}</span>
+          <div className="rounded-xl bg-indigo-900/20 px-4 py-3 flex items-center justify-between border border-indigo-500/20">
+            <span className="text-sm font-medium text-indigo-300">Duree calculee</span>
+            <span className="text-lg font-bold text-indigo-300">{duration ? formatDuration(duration) : '--'}</span>
           </div>
 
           <div className="grid md:grid-cols-2 gap-5">
@@ -595,8 +595,8 @@ function SleepModal({ form, editing, saving, onClose, onChange, onToggleFactor, 
                     onClick={() => onToggleFactor(factor.id)}
                     className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition-colors ${
                       active
-                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
-                        : 'border-white/10 text-gray-400 hover:border-indigo-300'
+                        ? 'border-indigo-500 bg-indigo-900/20 text-indigo-300'
+                        : 'border-white/10 text-gray-400 hover:border-indigo-400'
                     }`}
                   >
                     <Icon size={14} />

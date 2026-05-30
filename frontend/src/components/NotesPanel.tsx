@@ -21,7 +21,7 @@ interface Note {
 }
 
 const NOTE_COLORS: { value: string; label: string; bg: string; dark: string }[] = [
-  { value: 'default', label: 'Défaut', bg: '', dark: '' },
+  { value: 'default', label: 'Dï¿½faut', bg: '', dark: '' },
   { value: 'yellow', label: 'Jaune', bg: 'bg-yellow-100 border-yellow-300', dark: 'dark:bg-yellow-800/40 dark:border-yellow-600' },
   { value: 'pink', label: 'Rose', bg: 'bg-pink-100 border-pink-300', dark: 'dark:bg-pink-800/40 dark:border-pink-600' },
   { value: 'green', label: 'Vert', bg: 'bg-green-100 border-green-300', dark: 'dark:bg-green-800/40 dark:border-green-600' },
@@ -115,7 +115,7 @@ function NoteModal({
 
   const saveEdit = () => {
     api.put(`/notes/${note.id}`, { title: editTitle || null, content: editContent })
-      .then(() => { onUpdate(); setEditMode(false); toast.success('Note mise à jour') })
+      .then(() => { onUpdate(); setEditMode(false); toast.success('Note mise ï¿½ jour') })
       .catch(() => toast.error('Erreur'))
   }
 
@@ -180,7 +180,7 @@ function NoteModal({
         </div>
 
         <div className="px-5 py-3 border-t border-black/5 border-white/10 text-xs text-gray-400">
-          Créée le {format(new Date(note.createdAt), 'dd MMMM yyyy à HH:mm', { locale: fr })}
+          Crï¿½ï¿½e le {format(new Date(note.createdAt), 'dd MMMM yyyy ï¿½ HH:mm', { locale: fr })}
         </div>
       </div>
     </div>
@@ -227,9 +227,9 @@ export default function NotesPanel() {
       setFormTags([])
       setNewTag('')
       setFormExpanded(false)
-      toast.success('Note créée')
+      toast.success('Note crï¿½ï¿½e')
     },
-    onError: () => toast.error('Erreur lors de la création'),
+    onError: () => toast.error('Erreur lors de la crï¿½ation'),
   })
 
   const pinMutation = useMutation({
@@ -245,7 +245,7 @@ export default function NotesPanel() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/notes/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['notes'] }); toast.success('Note supprimée') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['notes'] }); toast.success('Note supprimï¿½e') },
   })
 
   const stats = useMemo(() => ({
@@ -290,7 +290,7 @@ export default function NotesPanel() {
       {items.map((n) => (
         <div key={n.id}
           onClick={() => setOpenNote(n)}
-          className={`card break-inside-avoid mb-4 relative cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all group ${noteCardClass(n.color, n.isPinned)}`}>
+          className={`glass-card-hover break-inside-avoid mb-4 relative cursor-pointer group ${noteCardClass(n.color, n.isPinned)}`}>
           {n.isPinned && (
             <Pin size={14} className="absolute top-3 right-3 text-yellow-500" />
           )}
@@ -303,13 +303,13 @@ export default function NotesPanel() {
               />
               <button type="button"
                 onClick={(e) => { e.stopPropagation(); pinMutation.mutate(n.id) }}
-                className={`p-1.5 rounded-xl transition-colors ${n.isPinned ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-500 hover:text-yellow-400'}`}
+                className={`p-1.5 rounded-xl transition-colors ${n.isPinned ? 'text-yellow-500' : 'text-gray-500 hover:text-yellow-400'}`}
               >
                 <Pin size={14} />
               </button>
               <button type="button"
                 onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(n.id) }}
-                className="p-1.5 rounded-xl text-gray-300 dark:text-gray-500 hover:text-red-400 transition-colors"
+                className="p-1.5 rounded-xl text-gray-500 hover:text-red-400 transition-colors"
               >
                 <Trash2 size={14} />
               </button>
@@ -326,7 +326,7 @@ export default function NotesPanel() {
             </div>
           )}
           <p className="text-xs text-gray-500 mt-3">
-            {format(new Date(n.createdAt), 'dd MMM yyyy', { locale: fr })} · {wordCount(n.content)} mots
+            {format(new Date(n.createdAt), 'dd MMM yyyy', { locale: fr })} ï¿½ {wordCount(n.content)} mots
           </p>
         </div>
       ))}
@@ -342,17 +342,17 @@ export default function NotesPanel() {
         Notes
       </h2>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'Total', value: stats.total, icon: <FileText size={15} /> },
-          { label: 'Épinglées', value: stats.pinned, icon: <Pin size={15} /> },
-          { label: 'Colorées', value: stats.colored, icon: <Palette size={15} /> },
-          { label: 'Tags', value: stats.tagged, icon: <BookMarked size={15} /> },
+          { label: 'Total', value: stats.total, icon: <FileText size={16} />, gradient: 'from-violet-500 to-fuchsia-500', glow: 'rgba(139,92,246,0.3)' },
+          { label: 'Ã‰pinglÃ©es', value: stats.pinned, icon: <Pin size={16} />, gradient: 'from-yellow-500 to-amber-400', glow: 'rgba(234,179,8,0.3)' },
+          { label: 'ColorÃ©es', value: stats.colored, icon: <Palette size={16} />, gradient: 'from-pink-500 to-rose-400', glow: 'rgba(236,72,153,0.3)' },
+          { label: 'Tags', value: stats.tagged, icon: <BookMarked size={16} />, gradient: 'from-teal-500 to-cyan-400', glow: 'rgba(20,184,166,0.3)' },
         ].map(stat => (
-          <div key={stat.label} className="rounded-xl bg-white/[0.03] px-3 py-3 text-center">
-            <div className="flex justify-center text-primary-600 dark:text-primary-400 mb-1">{stat.icon}</div>
-            <p className="text-lg font-black text-white leading-none">{stat.value}</p>
-            <p className="text-[10px] text-gray-500 mt-1">{stat.label}</p>
+          <div key={stat.label} className="glass-card px-4 py-4 text-center" style={{ boxShadow: `0 0 20px ${stat.glow}` }}>
+            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center mx-auto mb-2 text-white`}>{stat.icon}</div>
+            <p className="text-3xl font-black text-white leading-none">{stat.value}</p>
+            <p className="text-[11px] text-gray-500 mt-1.5">{stat.label}</p>
           </div>
         ))}
       </div>
@@ -453,7 +453,7 @@ export default function NotesPanel() {
           </button>
           {NOTE_COLORS.map(nc => (
             <button key={nc.value} type="button" onClick={() => setFilterColor(filterColor === nc.value ? null : nc.value)}
-              className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 ${COLOR_DOT[nc.value]} ${filterColor === nc.value ? 'border-white/10 dark:border-white scale-125' : 'border-transparent'}`}
+              className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 ${COLOR_DOT[nc.value]} ${filterColor === nc.value ? 'border-white scale-125' : 'border-transparent'}`}
               title={nc.label} />
           ))}
         </div>
@@ -463,17 +463,17 @@ export default function NotesPanel() {
         <EmptyPanel
           illustration={<IllustrationNotes />}
           gradient="from-violet-600 to-fuchsia-400"
-          headline="Tes idées méritent d'être capturées"
-          description="Notes colorées, épinglées, étiquetées. Retrouve n'importe quelle idée en quelques secondes."
+          headline="Tes idï¿½es mï¿½ritent d'ï¿½tre capturï¿½es"
+          description="Notes colorï¿½es, ï¿½pinglï¿½es, ï¿½tiquetï¿½es. Retrouve n'importe quelle idï¿½e en quelques secondes."
           preview={
             <div className="card border border-yellow-300 bg-yellow-50 dark:bg-yellow-800/40 dark:border-yellow-600">
               <div className="flex items-center gap-2 mb-2">
                 <Pin size={13} className="text-yellow-600 dark:text-yellow-400" />
-                <span className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-widest">Épinglée</span>
+                <span className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-widest">ï¿½pinglï¿½e</span>
                 <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">#PFE</span>
               </div>
               <p className="font-semibold text-white mb-1">Architecture SmartLife</p>
-              <p className="text-sm text-gray-400 line-clamp-2">Spring Boot + React + Keycloak + Neon PostgreSQL. Déploiement HF Spaces avec supervisord...</p>
+              <p className="text-sm text-gray-400 line-clamp-2">Spring Boot + React + Keycloak + Neon PostgreSQL. Dï¿½ploiement HF Spaces avec supervisord...</p>
             </div>
           }
           primaryLabel="+ Prendre une note"
@@ -483,7 +483,7 @@ export default function NotesPanel() {
         <>
           {pinnedNotes.length > 0 && (
             <>
-              <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-3">Épinglées</p>
+              <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-3">ï¿½pinglï¿½es</p>
               {renderNotes(pinnedNotes)}
               {unpinnedNotes.length > 0 && (
                 <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-6">Autres</p>

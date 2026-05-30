@@ -53,12 +53,12 @@ const rowBorderStyles = {
 }
 
 const badgeStyles = {
-  TASK: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  REMINDER: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
-  NOTE: 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
-  FOOD: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  DIARY: 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
-  WORKOUT: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+  TASK: 'bg-blue-900/30 text-blue-300 border border-blue-500/20',
+  REMINDER: 'bg-orange-900/30 text-orange-300 border border-orange-500/20',
+  NOTE: 'bg-violet-900/30 text-violet-300 border border-violet-500/20',
+  FOOD: 'bg-green-900/30 text-green-300 border border-green-500/20',
+  DIARY: 'bg-rose-900/30 text-rose-300 border border-rose-500/20',
+  WORKOUT: 'bg-amber-900/30 text-amber-300 border border-amber-500/20',
 }
 
 const typeLabels = {
@@ -99,10 +99,10 @@ const mealEmojis: Record<string, string> = {
 }
 
 const mealBg: Record<string, string> = {
-  BREAKFAST: 'bg-yellow-50 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
-  LUNCH: 'bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  DINNER: 'bg-blue-50 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  SNACK: 'bg-gray-50 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  BREAKFAST: 'bg-yellow-900/30 text-yellow-300',
+  LUNCH: 'bg-green-900/30 text-green-300',
+  DINNER: 'bg-blue-900/30 text-blue-300',
+  SNACK: 'bg-white/[0.06] text-gray-300',
 }
 
 function getString(value: unknown) {
@@ -215,16 +215,16 @@ function MonthCalendar({
           type="button"
           onClick={() => onChangeMonth(addMonths(viewMonth, -1))}
           aria-label="Afficher le mois precedent"
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700 transition-colors"
+          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-white/[0.06] transition-colors"
         >
           <ChevronLeft size={16} />
         </button>
-        <h2 aria-live="polite" className="text-sm font-semibold text-gray-800 dark:text-gray-100 capitalize">{monthTitle(viewMonth)}</h2>
+        <h2 aria-live="polite" className="text-sm font-semibold text-gray-100 capitalize">{monthTitle(viewMonth)}</h2>
         <button
           type="button"
           onClick={() => onChangeMonth(addMonths(viewMonth, 1))}
           aria-label="Afficher le mois suivant"
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-700 transition-colors"
+          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-white/[0.06] transition-colors"
         >
           <ChevronRight size={16} />
         </button>
@@ -259,15 +259,15 @@ function MonthCalendar({
               aria-label={format(day, 'EEEE d MMMM yyyy', { locale: fr })}
               aria-pressed={selected}
               aria-current={currentDay ? 'date' : undefined}
-              className="relative flex min-h-14 flex-col items-center justify-center py-1 rounded-xl transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="relative flex min-h-14 flex-col items-center justify-center py-1 rounded-xl transition-colors hover:bg-white/[0.06]"
             >
               <span
                 className={`w-9 h-9 rounded-full text-sm font-medium flex items-center justify-center transition-colors ${
                   selected
                     ? 'bg-primary-600 text-white'
                     : currentDay
-                      ? 'border border-primary-600 text-primary-700 dark:text-primary-300'
-                      : 'text-gray-700 dark:text-gray-200'
+                      ? 'ring-2 ring-primary-500 text-primary-300'
+                      : 'text-gray-300'
                 }`}
               >
                 {format(day, 'd')}
@@ -368,7 +368,7 @@ function TimelineRow({
             {mealEmojis[mealType]} {mealLabels[mealType]}
           </span>
         )}
-        <span className="ml-2 text-sm text-gray-800 dark:text-gray-200 min-w-0 truncate">{item.title}</span>
+        <span className="ml-2 text-sm text-gray-200 min-w-0 truncate">{item.title}</span>
         {meta && <span className="text-xs text-gray-400 ml-2">{meta}</span>}
         <div className="ml-auto pl-3 shrink-0">
           {item.type === 'TASK' && (
@@ -384,14 +384,14 @@ function TimelineRow({
                 {statusFr[status ?? ''] ?? status ?? 'Statut'} <ChevronDown size={12} className="inline" />
               </button>
               {openMenu === item.id && (
-                <div className="absolute right-0 top-9 z-20 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl overflow-hidden min-w-[126px]">
+                <div className="absolute right-0 top-9 z-20 bg-[#0D1117] border border-white/10 rounded-xl shadow-2xl overflow-hidden min-w-[126px]">
                   {(['TODO', 'IN_PROGRESS', 'DONE'] as const).map((nextStatus) => (
                     <button
                       key={nextStatus}
                       type="button"
                       onClick={() => onTaskStatus(item.id, nextStatus)}
-                      className={`block w-full text-left px-3 py-2 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                        nextStatus === status ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-300'
+                      className={`block w-full text-left px-3 py-2 text-xs hover:bg-white/[0.06] transition-colors ${
+                        nextStatus === status ? 'font-semibold text-white' : 'text-gray-400'
                       }`}
                     >
                       {statusFr[nextStatus]}
@@ -402,7 +402,7 @@ function TimelineRow({
             </>
           )}
           {item.type === 'REMINDER' && getBoolean(item.metadata.done) !== true && (
-            <button type="button" onClick={() => onCompleteReminder(item.id)} className="text-xs px-2 py-1 rounded-lg text-orange-700 bg-orange-50 dark:bg-orange-900/30 dark:text-orange-300">
+            <button type="button" onClick={() => onCompleteReminder(item.id)} className="text-xs px-2 py-1 rounded-lg text-orange-300 bg-orange-900/30 border border-orange-500/20 hover:bg-orange-900/50 transition-colors">
               Terminé
             </button>
           )}
@@ -410,7 +410,7 @@ function TimelineRow({
             <button
               type="button"
               onClick={() => onNavigate(panel)}
-              className={`text-xs px-2 py-1 rounded-lg ${item.type === 'FOOD' ? mealBg[mealType] ?? mealBg.SNACK : 'text-gray-500 dark:text-gray-300 bg-gray-100 dark:bg-gray-700'}`}
+              className={`text-xs px-2 py-1 rounded-lg transition-colors hover:brightness-110 ${item.type === 'FOOD' ? mealBg[mealType] ?? mealBg.SNACK : 'text-gray-300 bg-white/[0.06]'}`}
             >
               Ouvrir
             </button>
@@ -436,10 +436,10 @@ function WeekStrip({ selectedDate, onSelectDate }: { selectedDate: Date; onSelec
           aria-pressed={isSameDay(day, selectedDate)}
           aria-current={isToday(day) ? 'date' : undefined}
           aria-label={format(day, 'EEEE d MMMM yyyy', { locale: fr })}
-          className={`min-w-[64px] rounded-xl px-3 py-2 text-center ${
+          className={`min-w-[64px] rounded-xl px-3 py-2 text-center transition-colors ${
             isSameDay(day, selectedDate)
               ? 'bg-primary-600 text-white'
-              : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700'
+              : 'bg-white/[0.05] text-gray-300 border border-white/[0.06] hover:bg-white/[0.08]'
           }`}
         >
           <span className="block text-xs uppercase">{format(day, 'EEE', { locale: fr })}</span>
@@ -489,7 +489,7 @@ function MonthOverview({
             className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
               filter === item.value
                 ? 'bg-primary-600 text-white'
-                : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300'
+                : 'bg-white/[0.05] border border-white/[0.06] text-gray-300 hover:bg-white/[0.08]'
             }`}
           >
             {item.label}
@@ -498,11 +498,11 @@ function MonthOverview({
       </div>
       <div className="card p-4">
         <div className="flex items-center justify-between mb-4">
-          <button type="button" aria-label="Afficher le mois precedent" onClick={() => onChangeMonth(addMonths(viewMonth, -1))} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+          <button type="button" aria-label="Afficher le mois precedent" onClick={() => onChangeMonth(addMonths(viewMonth, -1))} className="p-2 text-gray-400 hover:text-gray-200 transition-colors rounded-lg hover:bg-white/[0.06]">
             <ChevronLeft size={20} />
           </button>
-          <h2 aria-live="polite" className="font-semibold text-lg text-gray-900 dark:text-gray-100">{monthTitle(viewMonth)}</h2>
-          <button type="button" aria-label="Afficher le mois suivant" onClick={() => onChangeMonth(addMonths(viewMonth, 1))} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+          <h2 aria-live="polite" className="font-semibold text-lg text-gray-100">{monthTitle(viewMonth)}</h2>
+          <button type="button" aria-label="Afficher le mois suivant" onClick={() => onChangeMonth(addMonths(viewMonth, 1))} className="p-2 text-gray-400 hover:text-gray-200 transition-colors rounded-lg hover:bg-white/[0.06]">
             <ChevronRight size={20} />
           </button>
         </div>
@@ -520,13 +520,13 @@ function MonthOverview({
                 onClick={() => onSelectDate(day)}
                 aria-label={format(day, 'EEEE d MMMM yyyy', { locale: fr })}
                 aria-current={isToday(day) ? 'date' : undefined}
-                className={`min-w-0 min-h-16 sm:min-h-24 rounded-lg sm:rounded-xl border p-1 sm:p-2 text-left transition-colors hover:border-primary-400 ${
+                className={`min-w-0 min-h-16 sm:min-h-24 rounded-lg sm:rounded-xl border p-1 sm:p-2 text-left transition-colors hover:border-primary-500 ${
                   isToday(day)
-                    ? 'border-primary-500 bg-primary-50/60 dark:bg-primary-900/20'
-                    : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800'
+                    ? 'border-primary-500 bg-primary-900/20'
+                    : 'border-white/[0.06] bg-white/[0.03] hover:bg-white/[0.05]'
                 }`}
               >
-                <span className={`text-sm font-medium ${isToday(day) ? 'text-primary-600 dark:text-primary-300' : 'text-gray-600 dark:text-gray-300'}`}>
+                <span className={`text-sm font-medium ${isToday(day) ? 'text-primary-300' : 'text-gray-300'}`}>
                   {format(day, 'd')}
                 </span>
                 <div className="hidden sm:block mt-1 space-y-1">
@@ -549,10 +549,10 @@ function MonthOverview({
 function LoadingState() {
   return (
     <div className="w-full px-1 sm:px-4 py-4 sm:py-8 animate-pulse">
-      <div className="h-12 w-full bg-gray-100 dark:bg-gray-800 rounded-xl mb-6" />
+      <div className="h-12 w-full bg-white/[0.04] rounded-xl mb-6" />
       <div className="grid lg:grid-cols-[320px_1fr] gap-6">
-        <div className="h-96 bg-gray-100 dark:bg-gray-800 rounded-xl" />
-        <div className="h-[520px] bg-gray-100 dark:bg-gray-800 rounded-xl" />
+        <div className="h-96 bg-white/[0.04] rounded-xl" />
+        <div className="h-[520px] bg-white/[0.04] rounded-xl" />
       </div>
     </div>
   )
@@ -646,33 +646,33 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
   }
 
   return (
-    <div className="min-h-full bg-gray-50 dark:bg-gray-900" onClick={() => setOpenMenu(null)}>
+    <div className="min-h-full" onClick={() => setOpenMenu(null)}>
       <div className="w-full px-1 sm:px-4 py-4 sm:py-8">
         <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between mb-6">
           <div>
             <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-1">Agenda</p>
-            <h1 style={{ fontFamily: 'Caveat, cursive' }} className="text-4xl font-bold text-gray-900 dark:text-gray-100 leading-none">
+            <h1 style={{ fontFamily: 'Caveat, cursive' }} className="text-4xl font-bold text-gray-100 leading-none">
               {capitalize(format(selectedDate, 'EEEE', { locale: fr }))}
             </h1>
-            <p className="text-lg text-gray-500 dark:text-gray-400 mt-1">{format(selectedDate, 'd MMMM yyyy', { locale: fr })}</p>
+            <p className="text-lg text-gray-400 mt-1">{format(selectedDate, 'd MMMM yyyy', { locale: fr })}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               title={`${capitalize(formatDatePart('weekday'))} ${formatDatePart('date')}`}
               onClick={goToday}
-              className="px-3 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800"
+              className="px-3 py-2 rounded-lg text-sm border border-white/10 text-gray-300 bg-white/[0.05] hover:bg-white/[0.08] transition-colors"
             >
               Aujourd'hui
             </button>
-            <div className="flex rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-1">
+            <div className="flex rounded-lg bg-white/[0.04] border border-white/[0.06] p-1">
               {([['day', 'Jour'], ['week', 'Semaine'], ['month', 'Mois']] as const).map(([key, label]) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setView(key)}
                   aria-pressed={view === key}
-                  className={`px-3 py-1.5 rounded-md text-sm ${view === key ? 'bg-primary-600 text-white' : 'text-gray-500 dark:text-gray-300'}`}
+                  className={`px-3 py-1.5 rounded-md text-sm transition-colors ${view === key ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-gray-300'}`}
                 >
                   {label}
                 </button>
@@ -708,9 +708,9 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
               <div id="agenda-month-calendar" className={`${showMobileCalendar ? 'block' : 'hidden'} lg:block`}>
                 <MonthCalendar selectedDate={selectedDate} viewMonth={viewMonth} calendarData={calendarData} onSelectDate={openDay} onChangeMonth={setViewMonth} />
               </div>
-              <div className="card p-4 mb-4">
+              <div className="glass-card p-4 mb-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="font-semibold text-gray-900 dark:text-gray-100">À venir</h2>
+                  <h2 className="font-semibold text-gray-100">À venir</h2>
                   <span className="text-xs text-gray-400">{timelineTotal} planifiés</span>
                 </div>
                 {upcomingReminders.length === 0 ? (
@@ -731,11 +731,11 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
               </button>
             </aside>
 
-            <main className="card p-5 sm:p-6">
+            <main className="glass-card p-5 sm:p-6">
               {view === 'day' ? (
                 <>
                   <div className="mb-5">
-                    <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    <h2 className="text-base sm:text-lg font-semibold text-gray-100">
                       Journée du {format(selectedDate, 'EEEE d MMMM', { locale: fr })}
                     </h2>
                     <p className="text-sm text-gray-400 mt-1">{stats}</p>
@@ -743,7 +743,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
                   {dayItems.length === 0 ? (
                     <div className="text-center py-16">
                       <CalendarDays size={40} className="mx-auto mb-4 text-gray-400 opacity-30" />
-                      <p className="text-lg font-medium text-gray-600 dark:text-gray-400">Votre journée est libre</p>
+                      <p className="text-lg font-medium text-gray-400">Votre journée est libre</p>
                       <p className="text-sm text-gray-400 mt-1 mb-6">Aucun élément prévu pour ce jour.</p>
                       <div className="flex flex-wrap gap-3 justify-center">
                         <button type="button" onClick={() => onNavigate('tasks')} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">+ Ajouter une tâche</button>
@@ -767,8 +767,8 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
                         ))}
                       </div>
                       {untimedItems.length > 0 && (
-                        <div className="mt-5 pt-4 border-t border-gray-200 dark:border-gray-700">
-                          <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Sans horaire</h3>
+                        <div className="mt-5 pt-4 border-t border-white/[0.06]">
+                          <h3 className="text-sm font-semibold text-gray-400 mb-2">Sans horaire</h3>
                           {untimedItems.map((item) => (
                             <TimelineRow
                               key={`untimed-${item.type}-${item.id}`}
@@ -783,7 +783,7 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
                           ))}
                         </div>
                       )}
-                      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="mt-6 pt-4 border-t border-white/[0.06] grid grid-cols-2 sm:grid-cols-4 gap-4">
                         <div className="text-center"><p className="text-2xl font-bold text-blue-400">{tasksDone}/{tasks.length}</p><p className="text-xs text-gray-400">Tâches</p></div>
                         <div className="text-center"><p className="text-2xl font-bold text-green-400">{calories}</p><p className="text-xs text-gray-400">kcal</p></div>
                         <div className="text-center"><p className="text-2xl font-bold text-amber-400">{totalSportMinutes}</p><p className="text-xs text-gray-400">min sport</p></div>
@@ -798,22 +798,22 @@ export default function AgendaPage({ onNavigate }: AgendaPageProps) {
                     {weekDays.map((day) => {
                       const items = sortItems(calendarData[dateKey(day)] ?? [])
                       return (
-                        <div key={`week-${dateKey(day)}`} className={`rounded-xl p-2 min-h-[460px] ${isToday(day) ? 'bg-primary-50 dark:bg-primary-900/20' : 'bg-gray-50 dark:bg-gray-900/60'}`}>
+                        <div key={`week-${dateKey(day)}`} className={`rounded-xl p-2 min-h-[460px] ${isToday(day) ? 'bg-primary-900/20 ring-1 ring-primary-500' : 'bg-white/[0.02]'}`}>
                           <button
                             type="button"
                             onClick={() => openDay(day)}
                             aria-label={`Ouvrir la journee du ${format(day, 'EEEE d MMMM yyyy', { locale: fr })}`}
                             aria-current={isToday(day) ? 'date' : undefined}
-                            className="w-full text-center pb-3 mb-2 border-b border-gray-200 dark:border-gray-700"
+                            className="w-full text-center pb-3 mb-2 border-b border-white/[0.06]"
                           >
                             <span className="block text-xs uppercase text-gray-400">{format(day, 'EEE', { locale: fr })}</span>
-                            <span className="text-lg font-semibold text-gray-800 dark:text-gray-100">{format(day, 'd')}</span>
+                            <span className="text-lg font-semibold text-gray-100">{format(day, 'd')}</span>
                           </button>
                           <div className="space-y-2">
                             {items.map((item) => (
-                              <div key={`week-item-${item.type}-${item.id}`} className={`bg-white dark:bg-gray-800 rounded-lg border-l-2 p-2 ${itemBorderClass(item)}`}>
+                              <div key={`week-item-${item.type}-${item.id}`} className={`bg-white/[0.04] rounded-lg border-l-2 p-2 ${itemBorderClass(item)}`}>
                                 <span className={`inline-block text-[10px] px-1 py-0.5 rounded font-medium ${itemBadgeClass(item)}`}>{itemLabel(item)}</span>
-                                <p className="text-xs text-gray-700 dark:text-gray-200 mt-1 truncate">{item.title}</p>
+                                <p className="text-xs text-gray-200 mt-1 truncate">{item.title}</p>
                               </div>
                             ))}
                           </div>

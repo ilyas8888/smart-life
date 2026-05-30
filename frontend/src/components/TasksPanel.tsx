@@ -11,12 +11,12 @@ import DateTimePicker from './DateTimePicker'
 const TASK_CATEGORIES = {
   PERSONAL: { label: 'Personnel', emoji: '', color: 'bg-blue-500/10 text-blue-400 border border-blue-500/20' },
   WORK: { label: 'Travail', emoji: '', color: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' },
-  SCHOOL: { label: 'École', emoji: '', color: 'bg-violet-500/10 text-violet-400 border border-violet-500/20' },
+  SCHOOL: { label: 'ï¿½cole', emoji: '', color: 'bg-violet-500/10 text-violet-400 border border-violet-500/20' },
   FREELANCE: { label: 'Freelance', emoji: '', color: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' },
-  HEALTH: { label: 'Santé', emoji: '??', color: 'bg-red-500/10 text-red-400 border border-red-500/20' },
+  HEALTH: { label: 'Santï¿½', emoji: '??', color: 'bg-red-500/10 text-red-400 border border-red-500/20' },
   LEARNING: { label: 'Apprentissage', emoji: '', color: 'bg-green-500/10 text-green-400 border border-green-500/20' },
   SOCIAL: { label: 'Social', emoji: '', color: 'bg-pink-500/10 text-pink-400 border border-pink-500/20' },
-  PRODUCTIVITY: { label: 'Productivité', emoji: '?', color: 'bg-orange-500/10 text-orange-400 border border-orange-500/20' },
+  PRODUCTIVITY: { label: 'Productivitï¿½', emoji: '?', color: 'bg-orange-500/10 text-orange-400 border border-orange-500/20' },
 }
 
 interface Task {
@@ -45,12 +45,12 @@ const PRIORITY = {
   LOW: { label: 'Basse', strip: 'border-l-green-500', badge: 'bg-green-500/10 text-green-400 border border-green-500/20' },
 } satisfies Record<Task['priority'], { label: string; strip: string; badge: string }>
 
-const STATUS_LABEL = { TODO: 'À faire', IN_PROGRESS: 'En cours', DONE: 'Terminé' }
+const STATUS_LABEL = { TODO: 'ï¿½ faire', IN_PROGRESS: 'En cours', DONE: 'Terminï¿½' }
 const STATUS_NEXT: Record<Task['status'], Task['status']> = { TODO: 'IN_PROGRESS', IN_PROGRESS: 'DONE', DONE: 'TODO' }
 const STATUS_COLORS = {
   TODO: 'text-gray-400',
-  IN_PROGRESS: 'text-yellow-600 dark:text-yellow-400',
-  DONE: 'text-green-600 dark:text-green-400',
+  IN_PROGRESS: 'text-yellow-400',
+  DONE: 'text-green-400',
 }
 type TaskCategory = keyof typeof TASK_CATEGORIES
 type SortBy = 'date' | 'priority' | 'category'
@@ -74,7 +74,7 @@ function categoryOf(task: Task) {
 function CategoryPicker({ value, onChange }: { value: string; onChange: (category: string) => void }) {
   return (
     <div>
-      <p className="text-xs font-medium text-gray-400 mb-2">Catégorie</p>
+      <p className="text-xs font-medium text-gray-400 mb-2">Catï¿½gorie</p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {CATEGORY_KEYS.map(category => {
           const meta = TASK_CATEGORIES[category]
@@ -124,10 +124,10 @@ function TaskEditModal({
     })
       .then(() => {
         onSaved()
-        toast.success('Tâche mise à jour')
+        toast.success('Tï¿½che mise ï¿½ jour')
         onClose()
       })
-      .catch(() => toast.error('Erreur lors de la mise à jour'))
+      .catch(() => toast.error('Erreur lors de la mise ï¿½ jour'))
       .finally(() => setSaving(false))
   }
 
@@ -138,7 +138,7 @@ function TaskEditModal({
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-white/10 border-white/10">
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wide">Modifier</p>
-            <h3 className="font-black text-white">Tâche</h3>
+            <h3 className="font-black text-white">Tï¿½che</h3>
           </div>
           <button type="button" onClick={onClose} className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
             <X size={18} />
@@ -148,13 +148,13 @@ function TaskEditModal({
           <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Titre" />
           <textarea className="input min-h-[90px] resize-none" value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optionnel)" />
           <label className="block">
-            <span className="block text-xs font-medium text-gray-400 mb-1.5">Début (optionnel)</span>
+            <span className="block text-xs font-medium text-gray-400 mb-1.5">Dï¿½but (optionnel)</span>
             <input type="datetime-local" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} />
           </label>
           <DateTimePicker value={dueDate} onChange={setDueDate} placeholder="Choisir une date et heure..." />
           <CategoryPicker value={category} onChange={setCategory} />
           <div>
-            <p className="text-xs font-medium text-gray-400 mb-2">Priorité</p>
+            <p className="text-xs font-medium text-gray-400 mb-2">Prioritï¿½</p>
             <div className="grid grid-cols-3 gap-2">
               {(Object.keys(PRIORITY) as Task['priority'][]).map(p => (
                 <button key={p} type="button" onClick={() => setPriority(p)}
@@ -226,7 +226,7 @@ function TaskDetailPanel({
       dueDate: task.dueDate ?? null,
     })
       .then(() => onSaved())
-      .catch(() => toast.error('Erreur lors de la mise à jour'))
+      .catch(() => toast.error('Erreur lors de la mise ï¿½ jour'))
   }
 
   const addItem = () => {
@@ -242,10 +242,10 @@ function TaskDetailPanel({
       <aside className="absolute right-0 top-0 h-full w-full sm:w-96 bg-white/5 shadow-2xl flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 border-white/10">
           <div className="min-w-0">
-            <p className="text-xs text-gray-400 uppercase tracking-wide">Détail</p>
-            <p className="font-black text-white truncate">Tâche</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wide">Dï¿½tail</p>
+            <p className="font-black text-white truncate">Tï¿½che</p>
           </div>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <button type="button" onClick={onClose} className="p-1.5 rounded-xl text-gray-400 hover:text-white transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -292,8 +292,8 @@ function TaskDetailPanel({
 
           {(task.startDate || task.dueDate) && (
             <div className="rounded-xl bg-white/[0.03] p-3 text-xs text-gray-400 space-y-1">
-              {task.startDate && <p>Du {format(new Date(task.startDate), 'dd MMM yyyy à HH:mm', { locale: fr })}</p>}
-              {task.dueDate && <p>Au {format(new Date(task.dueDate), 'dd MMM yyyy à HH:mm', { locale: fr })}</p>}
+              {task.startDate && <p>Du {format(new Date(task.startDate), 'dd MMM yyyy ï¿½ HH:mm', { locale: fr })}</p>}
+              {task.dueDate && <p>Au {format(new Date(task.dueDate), 'dd MMM yyyy ï¿½ HH:mm', { locale: fr })}</p>}
             </div>
           )}
 
@@ -324,7 +324,7 @@ function TaskDetailPanel({
             <div className="flex gap-2 mt-3">
               <input className="input flex-1" value={newItem} onChange={e => setNewItem(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addItem() } }}
-                placeholder="Nouvelle sous-tâche" />
+                placeholder="Nouvelle sous-tï¿½che" />
               <button type="button" onClick={addItem} className="btn-primary px-3">
                 <Plus size={16} />
               </button>
@@ -334,8 +334,8 @@ function TaskDetailPanel({
 
         <div className="p-5 border-t border-white/10">
           <button type="button" onClick={() => onDelete(task.id)}
-            className="w-full rounded-xl bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 px-4 py-2 text-sm font-semibold hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">
-            Supprimer la tâche
+            className="w-full rounded-xl bg-red-900/30 text-red-300 px-4 py-2 text-sm font-semibold hover:bg-red-900/50 transition-colors border border-red-500/20">
+            Supprimer la t&#xe2;che
           </button>
         </div>
       </aside>
@@ -385,9 +385,9 @@ export default function TasksPanel() {
       setStartDate('')
       setDueDate('')
       setFormExpanded(false)
-      toast.success('Tâche créée')
+      toast.success('Tï¿½che crï¿½ï¿½e')
     },
-    onError: () => toast.error('Erreur lors de la création'),
+    onError: () => toast.error('Erreur lors de la crï¿½ation'),
   })
 
   const statusMutation = useMutation({
@@ -401,7 +401,7 @@ export default function TasksPanel() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks'] })
       setDetailTaskId(null)
-      toast.success('Tâche supprimée')
+      toast.success('Tï¿½che supprimï¿½e')
     },
   })
 
@@ -479,7 +479,7 @@ export default function TasksPanel() {
     const NextIcon = task.status === 'TODO' ? Play : task.status === 'IN_PROGRESS' ? Check : RotateCcw
 
     return (
-      <div className={`card border-l-4 ${meta.strip} ${overdue ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50' : task.status === 'DONE' ? 'opacity-75' : ''}`}>
+      <div className={`glass-card-hover border-l-4 ${meta.strip} ${overdue ? 'border-red-900/50' : task.status === 'DONE' ? 'opacity-60' : ''}`} style={overdue ? { boxShadow: '0 0 20px rgba(239,68,68,0.15)' } : undefined}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -504,7 +504,7 @@ export default function TasksPanel() {
             {checklist.length > 0 && (
               <div className="mt-2">
                 <div className="flex items-center justify-between text-[10px] text-gray-500 mb-1">
-                  <span>{checklistDone}/{checklist.length} sous-tâches</span>
+                  <span>{checklistDone}/{checklist.length} sous-tï¿½ches</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
                   <div className="h-full bg-primary-500 transition-all" style={{ width: `${checklistPercent}%` }} />
@@ -515,24 +515,24 @@ export default function TasksPanel() {
             {due && (
               <div className={`flex items-center gap-1.5 text-xs mt-2 ${overdue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-500'}`}>
                 <Clock size={12} />
-                <span>{format(due, 'dd MMM yyyy à HH:mm', { locale: fr })}</span>
+                <span>{format(due, 'dd MMM yyyy ï¿½ HH:mm', { locale: fr })}</span>
               </div>
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
             <button type="button"
               onClick={() => statusMutation.mutate({ id: task.id, status: nextStatus })}
-              className="p-1.5 rounded-full text-gray-400 hover:text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+              className="p-1.5 rounded-full text-gray-400 hover:text-primary-400 hover:bg-primary-900/20 transition-colors"
               title={STATUS_LABEL[nextStatus]}>
               <NextIcon size={15} />
             </button>
             <button type="button" onClick={() => setEditingTask(task)}
-              className="p-1.5 rounded-xl text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              className="p-1.5 rounded-xl text-gray-400 hover:text-blue-400 hover:bg-blue-900/20 transition-colors"
               title="Modifier">
               <Edit2 size={15} />
             </button>
             <button type="button" onClick={() => deleteMutation.mutate(task.id)}
-              className="p-1.5 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              className="p-1.5 rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-900/20 transition-colors"
               title="Supprimer">
               <Trash2 size={15} />
             </button>
@@ -548,20 +548,20 @@ export default function TasksPanel() {
     <div>
       <h2 className="font-black text-white text-2xl mb-4 flex items-center gap-2">
         <CheckSquare className="text-primary-600" />
-        Tâches
+        Tï¿½ches
       </h2>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
-          { label: 'Total', value: tasks.length, icon: <CheckSquare size={15} /> },
-          { label: 'À faire', value: tasks.filter(t => t.status === 'TODO').length, icon: <AlertTriangle size={15} /> },
-          { label: 'En cours', value: tasks.filter(t => t.status === 'IN_PROGRESS').length, icon: <Clock size={15} /> },
-          { label: 'Terminées', value: allDone.length, icon: <Check size={15} /> },
+          { label: 'Total', value: tasks.length, icon: <CheckSquare size={16} />, gradient: 'from-blue-500 to-cyan-500', glow: 'rgba(59,130,246,0.3)' },
+          { label: 'Ã€ faire', value: tasks.filter(t => t.status === 'TODO').length, icon: <AlertTriangle size={16} />, gradient: 'from-orange-500 to-amber-500', glow: 'rgba(249,115,22,0.3)' },
+          { label: 'En cours', value: tasks.filter(t => t.status === 'IN_PROGRESS').length, icon: <Clock size={16} />, gradient: 'from-yellow-500 to-amber-400', glow: 'rgba(234,179,8,0.3)' },
+          { label: 'TerminÃ©es', value: allDone.length, icon: <Check size={16} />, gradient: 'from-emerald-500 to-green-400', glow: 'rgba(16,185,129,0.3)' },
         ].map(stat => (
-          <div key={stat.label} className="rounded-xl bg-white/[0.03] px-3 py-3 text-center">
-            <div className="flex justify-center text-primary-600 dark:text-primary-400 mb-1">{stat.icon}</div>
-            <p className="text-lg font-black text-white leading-none">{stat.value}</p>
-            <p className="text-[10px] text-gray-500 mt-1">{stat.label}</p>
+          <div key={stat.label} className="glass-card px-4 py-4 text-center" style={{ boxShadow: `0 0 20px ${stat.glow}` }}>
+            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center mx-auto mb-2 text-white`}>{stat.icon}</div>
+            <p className="text-3xl font-black text-white leading-none">{stat.value}</p>
+            <p className="text-[11px] text-gray-500 mt-1.5">{stat.label}</p>
           </div>
         ))}
       </div>
@@ -570,18 +570,18 @@ export default function TasksPanel() {
         {!formExpanded ? (
           <input
             className="w-full bg-transparent outline-none text-sm text-gray-300 placeholder-gray-400"
-            placeholder="Ajouter une tâche..."
+            placeholder="Ajouter une tï¿½che..."
             onFocus={() => setFormExpanded(true)}
           />
         ) : (
           <div className="space-y-3">
-            <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titre de la tâche" autoFocus />
+            <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Titre de la tï¿½che" autoFocus />
             <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optionnel)" />
             <label className="block">
-              <span className="block text-xs font-medium text-gray-400 mb-1.5">Début (optionnel)</span>
+              <span className="block text-xs font-medium text-gray-400 mb-1.5">Dï¿½but (optionnel)</span>
               <input type="datetime-local" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} />
             </label>
-            <DateTimePicker value={dueDate} onChange={setDueDate} placeholder="Choisir une échéance..." />
+            <DateTimePicker value={dueDate} onChange={setDueDate} placeholder="Choisir une ï¿½chï¿½ance..." />
             <CategoryPicker value={newCategory} onChange={setNewCategory} />
             <div className="grid grid-cols-3 gap-2">
               {(Object.keys(PRIORITY) as Task['priority'][]).map(p => (
@@ -594,7 +594,7 @@ export default function TasksPanel() {
             <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2"
               disabled={!title.trim() || createMutation.isPending}>
               <Plus size={16} />
-              {createMutation.isPending ? 'Création...' : 'Ajouter'}
+              {createMutation.isPending ? 'Crï¿½ation...' : 'Ajouter'}
             </button>
           </div>
         )}
@@ -603,7 +603,7 @@ export default function TasksPanel() {
       <div className="flex flex-col gap-3 mb-5">
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input placeholder="Rechercher dans les tâches..."
+          <input placeholder="Rechercher dans les tï¿½ches..."
             className="input pl-9 py-2 text-sm w-full" value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)} />
           {searchQuery && (
@@ -633,7 +633,7 @@ export default function TasksPanel() {
           })}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-gray-400 font-medium">Priorité :</span>
+          <span className="text-xs text-gray-400 font-medium">Prioritï¿½ :</span>
           {(Object.keys(PRIORITY) as Task['priority'][]).map(p => (
             <button key={p} type="button" onClick={() => setFilterPriority(filterPriority === p ? null : p)}
               className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${
@@ -645,8 +645,8 @@ export default function TasksPanel() {
           <span className="h-5 w-px bg-white/10 mx-1" />
           {([
             ['date', 'Date'],
-            ['priority', 'Priorité'],
-            ['category', 'Catégorie'],
+            ['priority', 'Prioritï¿½'],
+            ['category', 'Catï¿½gorie'],
           ] as const).map(([key, label]) => (
             <button key={key} type="button" onClick={() => handleSort(key)}
               className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${
@@ -661,7 +661,7 @@ export default function TasksPanel() {
       {tasks.length > 0 && (
         <div className="mb-5">
           <div className="flex items-center justify-between text-sm text-gray-400 mb-1.5">
-            <span>{allDone.length} / {tasks.length} terminée{allDone.length !== 1 ? 's' : ''}</span>
+            <span>{allDone.length} / {tasks.length} terminï¿½e{allDone.length !== 1 ? 's' : ''}</span>
             <span className="font-semibold text-primary-600 dark:text-primary-400">{Math.round(progress)} %</span>
           </div>
           <div className="w-full h-2 bg-white/[0.05] rounded-full overflow-hidden">
@@ -677,8 +677,8 @@ export default function TasksPanel() {
         <EmptyPanel
           illustration={<IllustrationTasks />}
           gradient="from-blue-600 to-cyan-400"
-          headline="Prêt à conquérir ta journée ?"
-          description="Organise tes priorités, suis ta progression et coche chaque victoire — grande ou petite."
+          headline="Prï¿½t ï¿½ conquï¿½rir ta journï¿½e ?"
+          description="Organise tes prioritï¿½s, suis ta progression et coche chaque victoire ï¿½ grande ou petite."
           preview={
             <div className="card border-l-4 border-l-red-500">
               <div className="flex items-start gap-3">
@@ -688,26 +688,38 @@ export default function TasksPanel() {
                     <span className="text-[10px] font-semibold text-yellow-600 dark:text-yellow-400">En cours</span>
                   </div>
                   <p className="font-semibold text-white">Finaliser le rapport de stage</p>
-                  <div className="flex items-center gap-1.5 text-xs mt-2 text-gray-400"><Clock size={12} /><span>Vendredi 30 mai 2026 à 18:00</span></div>
+                  <div className="flex items-center gap-1.5 text-xs mt-2 text-gray-400"><Clock size={12} /><span>Vendredi 30 mai 2026 ï¿½ 18:00</span></div>
                 </div>
               </div>
             </div>
           }
-          primaryLabel="+ Créer ma première tâche"
+          primaryLabel="+ Crï¿½er ma premiï¿½re tï¿½che"
           onPrimary={() => setFormExpanded(true)}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <h3 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wide">À faire ({todo.length})</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-2 w-2 rounded-full bg-blue-400" />
+              <h3 className="text-sm font-bold text-blue-400 uppercase tracking-wide">Ã€ faire</h3>
+              <span className="ml-auto px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-bold">{todo.length}</span>
+            </div>
             <div className="space-y-3">{todo.map((t) => <TaskCard key={t.id} task={t} />)}</div>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-yellow-600 dark:text-yellow-300 mb-3 uppercase tracking-wide">En cours ({inProgress.length})</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-2 w-2 rounded-full bg-amber-400" />
+              <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wide">En cours</h3>
+              <span className="ml-auto px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-bold">{inProgress.length}</span>
+            </div>
             <div className="space-y-3">{inProgress.map((t) => <TaskCard key={t.id} task={t} />)}</div>
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-green-600 dark:text-green-300 mb-3 uppercase tracking-wide">Terminé ({done.length})</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="h-2 w-2 rounded-full bg-emerald-400" />
+              <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wide">TerminÃ©</h3>
+              <span className="ml-auto px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">{done.length}</span>
+            </div>
             <div className="space-y-3">{done.map((t) => <TaskCard key={t.id} task={t} />)}</div>
           </div>
         </div>
