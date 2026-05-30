@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -9,18 +9,18 @@ import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
 import { useThemeStore } from '../store/themeStore'
 import api from '../api/axios'
-import TasksPanel from '../components/TasksPanel'
-import RemindersPanel from '../components/RemindersPanel'
-import NotesPanel from '../components/NotesPanel'
-import ContactsPanel from '../components/ContactsPanel'
-import FoodLogsPanel from '../components/FoodLogsPanel'
-import AgendaPage from './AgendaPage'
-import DiaryPanel from '../components/DiaryPanel'
-import WorkoutPanel from '../components/WorkoutPanel'
-import HomePanel from '../components/HomePanel'
-import SleepPanel from '../components/SleepPanel'
-import StudyPanel from '../components/StudyPanel'
-import SocialPanel from '../components/SocialPanel'
+const HomePanel      = lazy(() => import('../components/HomePanel'))
+const AgendaPage     = lazy(() => import('./AgendaPage'))
+const TasksPanel     = lazy(() => import('../components/TasksPanel'))
+const RemindersPanel = lazy(() => import('../components/RemindersPanel'))
+const NotesPanel     = lazy(() => import('../components/NotesPanel'))
+const ContactsPanel  = lazy(() => import('../components/ContactsPanel'))
+const FoodLogsPanel  = lazy(() => import('../components/FoodLogsPanel'))
+const DiaryPanel     = lazy(() => import('../components/DiaryPanel'))
+const WorkoutPanel   = lazy(() => import('../components/WorkoutPanel'))
+const SleepPanel     = lazy(() => import('../components/SleepPanel'))
+const StudyPanel     = lazy(() => import('../components/StudyPanel'))
+const SocialPanel    = lazy(() => import('../components/SocialPanel'))
 
 type Panel = 'home' | 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout' | 'sleep' | 'study' | 'social' | 'admin'
 
@@ -356,6 +356,7 @@ export default function DashboardPage() {
           <div key={activePanel} className="w-full min-h-full animate-panel">
             <div className={`h-1.5 rounded-full mb-6 bg-gradient-to-r ${MODULE_GRADIENT[activePanel]}`} />
 
+          <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="w-7 h-7 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" /></div>}>
           {activePanel === 'home' && <HomePanel onNavigate={handleNavClick} displayName={displayName} />}
           {activePanel === 'agenda' && <AgendaPage onNavigate={handleNavClick} />}
 
@@ -520,6 +521,7 @@ export default function DashboardPage() {
           {activePanel === 'sleep' && <SleepPanel />}
           {activePanel === 'study' && <StudyPanel />}
           {activePanel === 'social' && <SocialPanel />}
+          </Suspense>
           {activePanel === 'admin' && aiStatus?.status === 'ADMIN' && (
             <div className="w-full flex flex-col items-center justify-center py-20 animate-panel">
               <div className="bg-slate-800 rounded-2xl p-8 max-w-sm w-full text-center space-y-4">
