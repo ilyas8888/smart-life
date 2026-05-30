@@ -16,9 +16,11 @@ interface PostSummary {
 
 interface PublicProfile {
   id: number; username: string | null; displayName: string; initials: string
-  bio: string | null; avatarColor: string; createdAt: string
+  bio: string | null; avatarColor: string; hasAvatar: boolean; createdAt: string
   badges: BadgeData[]; posts: PostSummary[]
 }
+
+const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
 const RESOURCE_ICONS: Record<string, string> = {
   FOOD_LOG: '🥗', WORKOUT_PLAN: '💪', SLEEP_LOG: '😴',
@@ -64,10 +66,12 @@ export default function PublicProfileModal({ userId, onClose }: Props) {
           ) : data ? (
             <div className="flex items-center gap-4">
               <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black text-white shrink-0"
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black text-white shrink-0 overflow-hidden"
                 style={{ background: data.avatarColor }}
               >
-                {data.initials}
+                {data.hasAvatar
+                  ? <img src={`${API_BASE}/api/profile/avatar/${data.id}`} alt="avatar" className="w-full h-full object-cover" />
+                  : data.initials}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-lg font-black text-white">{data.displayName}</p>

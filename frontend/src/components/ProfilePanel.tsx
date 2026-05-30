@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { User, Save, Globe, Zap, Award, MessageSquare, Heart, Bookmark, ChevronRight } from 'lucide-react'
+import { User, Save, Globe, Zap, Award, MessageSquare, Heart, Bookmark, ChevronRight, Camera, Trash2, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -24,8 +24,32 @@ interface BadgeData {
 interface ProfileData {
   id: number; username: string | null; displayName: string; initials: string
   firstName: string | null; lastName: string | null; bio: string | null
-  avatarColor: string; email: string; createdAt: string
+  avatarColor: string; hasAvatar: boolean; email: string; createdAt: string
   badges: BadgeData[]
+}
+
+const API_BASE = import.meta.env.VITE_API_URL ?? ''
+
+function avatarUrl(userId: number, v: number) {
+  return `${API_BASE}/api/profile/avatar/${userId}?v=${v}`
+}
+
+async function cropAndResize(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      const size = Math.min(img.width, img.height)
+      const canvas = document.createElement('canvas')
+      canvas.width = 200; canvas.height = 200
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, (img.width - size) / 2, (img.height - size) / 2, size, size, 0, 0, 200, 200)
+      URL.revokeObjectURL(url)
+      resolve(canvas.toDataURL('image/jpeg', 0.78))
+    }
+    img.onerror = reject
+    img.src = url
+  })
 }
 
 interface PostSummary {
@@ -38,6 +62,9 @@ export default function ProfilePanel() {
   const [activeTab, setActiveTab] = useState<'profile' | 'badges' | 'posts'>('profile')
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState<Partial<ProfileData>>({})
+  const [avatarVersion, setAvatarVersion] = useState(Date.now())
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { data: profile, isLoading } = useQuery<ProfileData>({
     queryKey: ['profile-me'],
@@ -82,17 +109,75 @@ export default function ProfilePanel() {
   const displayColor = form.avatarColor ?? profile.avatarColor ?? '#6366F1'
   const earnedCount  = profile.badges.filter(b => b.earned).length
 
+  async function handleAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingAvatar(true)
+    try {
+      const avatarData = await cropAndResize(file)
+      await api.put('/profile/me/avatar', { avatarData })
+      setAvatarVersion(Date.now())
+      qc.invalidateQueries({ queryKey: ['profile-me'] })
+      toast.success('Photo de profil mise à jour')
+    } catch {
+      toast.error('Erreur lors du téléchargement')
+    } finally {
+      setUploadingAvatar(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  async function handleDeleteAvatar() {
+    await api.delete('/profile/me/avatar')
+    setAvatarVersion(Date.now())
+    qc.invalidateQueries({ queryKey: ['profile-me'] })
+    toast.success('Photo supprimée')
+  }
+
   return (
     <div className="max-w-2xl mx-auto space-y-5">
 
       {/* ── Avatar + header ─────────────────────────────────── */}
       <div className="glass-card p-6 flex items-center gap-5"
         style={{ boxShadow: `0 0 40px ${displayColor}18, 0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)` }}>
-        <div
-          className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-black text-white shrink-0 shadow-lg"
-          style={{ background: displayColor }}
-        >
-          {profile.initials}
+
+        {/* Hidden file input */}
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarFile} />
+
+        {/* Avatar — click to upload */}
+        <div className="relative shrink-0 group">
+          <div
+            className="w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-black text-white shadow-lg overflow-hidden cursor-pointer"
+            style={{ background: displayColor }}
+            onClick={() => fileInputRef.current?.click()}
+            title="Changer la photo"
+          >
+            {uploadingAvatar ? (
+              <Loader2 size={28} className="animate-spin text-white/80" />
+            ) : profile.hasAvatar ? (
+              <img src={avatarUrl(profile.id, avatarVersion)} alt="avatar" className="w-full h-full object-cover" />
+            ) : (
+              profile.initials
+            )}
+          </div>
+          {/* Overlay on hover */}
+          <div
+            className="absolute inset-0 rounded-2xl bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Camera size={20} className="text-white" />
+          </div>
+          {/* Delete button if has avatar */}
+          {profile.hasAvatar && !uploadingAvatar && (
+            <button
+              type="button"
+              onClick={handleDeleteAvatar}
+              className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-400"
+              title="Supprimer la photo"
+            >
+              <Trash2 size={10} className="text-white" />
+            </button>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-2xl font-black text-white truncate">{profile.displayName}</p>
