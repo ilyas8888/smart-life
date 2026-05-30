@@ -18,9 +18,9 @@ interface Reminder {
 }
 
 const PRIORITY = {
-  HIGH: { label: 'Haute', strip: 'border-l-red-500', badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
-  MEDIUM: { label: 'Moyenne', strip: 'border-l-yellow-400', badge: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-  LOW: { label: 'Basse', strip: 'border-l-green-500', badge: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
+  HIGH: { label: 'Haute', strip: 'border-l-red-500', badge: 'bg-red-500/10 text-red-400 border border-red-500/20' },
+  MEDIUM: { label: 'Moyenne', strip: 'border-l-yellow-400', badge: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' },
+  LOW: { label: 'Basse', strip: 'border-l-green-500', badge: 'bg-green-500/10 text-green-400 border border-green-500/20' },
 } satisfies Record<Reminder['priority'], { label: string; strip: string; badge: string }>
 
 function toInputDateTime(value: string) {
@@ -55,23 +55,23 @@ function ReminderEditModal({
     })
       .then(() => {
         onSaved()
-        toast.success('Rappel mis Ã  jour')
+        toast.success('Rappel mis à jour')
         onClose()
       })
-      .catch(() => toast.error('Erreur lors de la mise Ã  jour'))
+      .catch(() => toast.error('Erreur lors de la mise à jour'))
       .finally(() => setSaving(false))
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] overflow-y-auto">
-        <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white/5 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] overflow-y-auto">
+        <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-white/10 border-white/10">
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wide">Modifier</p>
-            <h3 className="font-bold text-gray-900 dark:text-gray-100">Rappel</h3>
+            <h3 className="font-black text-white">Rappel</h3>
           </div>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          <button type="button" onClick={onClose} className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
             <X size={18} />
           </button>
         </div>
@@ -82,7 +82,7 @@ function ReminderEditModal({
           <div className="grid grid-cols-3 gap-2">
             {(Object.keys(PRIORITY) as Reminder['priority'][]).map(p => (
               <button key={p} type="button" onClick={() => setPriority(p)}
-                className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all ${priority === p ? PRIORITY[p].badge : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'}`}>
+                className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all ${priority === p ? PRIORITY[p].badge : 'bg-white/[0.05] text-gray-400'}`}>
                 {PRIORITY[p].label}
               </button>
             ))}
@@ -123,9 +123,9 @@ export default function RemindersPanel() {
       setRemindAt('')
       setPriority('MEDIUM')
       setFormExpanded(false)
-      toast.success('Rappel crÃ©Ã©')
+      toast.success('Rappel créé')
     },
-    onError: () => toast.error('Erreur lors de la crÃ©ation'),
+    onError: () => toast.error('Erreur lors de la création'),
   })
 
   const doneMutation = useMutation({
@@ -135,7 +135,7 @@ export default function RemindersPanel() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/reminders/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['reminders'] }); toast.success('Rappel supprimÃ©') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['reminders'] }); toast.success('Rappel supprimé') },
   })
 
   const normalizedReminders = useMemo(() =>
@@ -185,42 +185,42 @@ export default function RemindersPanel() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <p className={`font-semibold ${reminder.done ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'}`}>
+              <p className={`font-semibold ${reminder.done ? 'line-through text-gray-500' : 'text-white'}`}>
                 {reminder.title}
               </p>
               <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${meta.badge}`}>
                 <Flag size={9} className="inline mr-1" />{meta.label}
               </span>
               {isOverdue && (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                  âš  En retard
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+                  ? En retard
                 </span>
               )}
             </div>
-            {reminder.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{reminder.description}</p>}
-            <div className={`flex flex-wrap items-center gap-2 text-xs mt-2 ${isOverdue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-400 dark:text-gray-500'}`}>
+            {reminder.description && <p className="text-sm text-gray-400 mt-1">{reminder.description}</p>}
+            <div className={`flex flex-wrap items-center gap-2 text-xs mt-2 ${isOverdue ? 'text-red-500 dark:text-red-400 font-medium' : 'text-gray-500'}`}>
               <Calendar size={12} />
-              <span>{format(date, 'dd MMM yyyy Ã  HH:mm', { locale: fr })}</span>
-              <span>Â·</span>
+              <span>{format(date, 'dd MMM yyyy à HH:mm', { locale: fr })}</span>
+              <span>·</span>
               <Clock size={12} />
               <span>{formatDistanceToNow(date, { addSuffix: true, locale: fr })}</span>
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
             <button type="button" onClick={() => setEditingReminder(reminder)}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              className="p-1.5 rounded-xl text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
               title="Modifier">
               <Edit2 size={15} />
             </button>
             {!reminder.done && (
               <button type="button" onClick={() => doneMutation.mutate(reminder.id)}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                className="p-1.5 rounded-xl text-gray-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
                 title="Marquer comme fait">
                 <Check size={15} />
               </button>
             )}
             <button type="button" onClick={() => deleteMutation.mutate(reminder.id)}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              className="p-1.5 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               title="Supprimer">
               <Trash2 size={15} />
             </button>
@@ -231,7 +231,7 @@ export default function RemindersPanel() {
   }
 
   const Section = ({
-    title, items, icon, tone = 'text-gray-600 dark:text-gray-400',
+    title, items, icon, tone = 'text-gray-400',
   }: {
     title: string
     items: Reminder[]
@@ -254,11 +254,11 @@ export default function RemindersPanel() {
     )
   }
 
-  if (isLoading) return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement...</div>
+  if (isLoading) return <div className="text-center py-12 text-gray-500">Chargement...</div>
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+      <h2 className="font-black text-white text-2xl mb-4 flex items-center gap-2">
         <Bell className="text-primary-600" />
         Rappels
       </h2>
@@ -267,13 +267,13 @@ export default function RemindersPanel() {
         {[
           { label: 'Total', value: stats.total, icon: <Bell size={15} /> },
           { label: 'En retard', value: stats.overdue, icon: <AlertTriangle size={15} /> },
-          { label: 'Ã€ venir', value: stats.upcoming, icon: <Clock size={15} /> },
-          { label: 'ComplÃ©tÃ©s', value: stats.done, icon: <Check size={15} /> },
+          { label: 'À venir', value: stats.upcoming, icon: <Clock size={15} /> },
+          { label: 'Complétés', value: stats.done, icon: <Check size={15} /> },
         ].map(stat => (
-          <div key={stat.label} className="rounded-xl bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center">
+          <div key={stat.label} className="rounded-xl bg-white/[0.03] px-3 py-3 text-center">
             <div className="flex justify-center text-primary-600 dark:text-primary-400 mb-1">{stat.icon}</div>
-            <p className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-none">{stat.value}</p>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{stat.label}</p>
+            <p className="text-lg font-black text-white leading-none">{stat.value}</p>
+            <p className="text-[10px] text-gray-500 mt-1">{stat.label}</p>
           </div>
         ))}
       </div>
@@ -281,7 +281,7 @@ export default function RemindersPanel() {
       <form onSubmit={handleCreate} onBlur={handleFormBlur} className="card mb-6 max-w-2xl">
         {!formExpanded ? (
           <input
-            className="w-full bg-transparent outline-none text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400"
+            className="w-full bg-transparent outline-none text-sm text-gray-300 placeholder-gray-400"
             placeholder="Ajouter un rappel..."
             onFocus={() => setFormExpanded(true)}
           />
@@ -293,7 +293,7 @@ export default function RemindersPanel() {
             <div className="grid grid-cols-3 gap-2">
               {(Object.keys(PRIORITY) as Reminder['priority'][]).map(p => (
                 <button key={p} type="button" onClick={() => setPriority(p)}
-                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all ${priority === p ? PRIORITY[p].badge : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300'}`}>
+                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all ${priority === p ? PRIORITY[p].badge : 'bg-white/[0.05] text-gray-400'}`}>
                   {PRIORITY[p].label}
                 </button>
               ))}
@@ -301,7 +301,7 @@ export default function RemindersPanel() {
             <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2"
               disabled={!title.trim() || !remindAt || createMutation.isPending}>
               <Plus size={16} />
-              {createMutation.isPending ? 'CrÃ©ation...' : 'Ajouter'}
+              {createMutation.isPending ? 'Création...' : 'Ajouter'}
             </button>
           </div>
         )}
@@ -312,25 +312,25 @@ export default function RemindersPanel() {
           illustration={<IllustrationReminders />}
           gradient="from-orange-500 to-amber-400"
           headline="Ne rate plus aucun rendez-vous"
-          description="Rappels horodatÃ©s avec prioritÃ© â€” SmartLife te prÃ©vient au bon moment, pour que tu n'oublies jamais rien."
+          description="Rappels horodatés avec priorité — SmartLife te prévient au bon moment, pour que tu n'oublies jamais rien."
           preview={
             <div className="card border-l-4 border-l-orange-500">
               <div className="flex items-start gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <p className="font-semibold text-gray-900 dark:text-gray-100">Appeler le mÃ©decin</p>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">ðŸš© Haute</span>
+                    <p className="font-semibold text-white">Appeler le médecin</p>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">?? Haute</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
                     <Calendar size={12} /><span>Demain 09:00</span>
-                    <span>Â·</span>
+                    <span>·</span>
                     <Clock size={12} /><span>dans 18 heures</span>
                   </div>
                 </div>
               </div>
             </div>
           }
-          primaryLabel="+ CrÃ©er mon premier rappel"
+          primaryLabel="+ Créer mon premier rappel"
           onPrimary={() => setFormExpanded(true)}
         />
       ) : (
@@ -344,9 +344,9 @@ export default function RemindersPanel() {
           {done.length > 0 && (
             <div>
               <button type="button" onClick={() => setShowCompleted(v => !v)}
-                className="flex items-center gap-2 text-sm font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">
+                className="flex items-center gap-2 text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
                 <ChevronDown size={15} className={`transition-transform ${showCompleted ? '' : '-rotate-90'}`} />
-                ComplÃ©tÃ©s ({done.length})
+                Complétés ({done.length})
               </button>
               {showCompleted && (
                 <div className="space-y-3">

@@ -57,12 +57,12 @@ interface ReceivedLink {
 }
 
 const RESOURCE_TYPES = [
-  { value: 'FOOD_LOG',       label: 'Food Diary',       icon: 'üçé', bg: 'bg-green-100 dark:bg-green-900/30',   text: 'text-green-700 dark:text-green-400' },
-  { value: 'WORKOUT_PLAN',   label: 'Programme Sport',  icon: 'üí™', bg: 'bg-amber-100 dark:bg-amber-900/30',   text: 'text-amber-700 dark:text-amber-400' },
-  { value: 'SLEEP_LOG',      label: 'Sommeil',          icon: 'üò¥', bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-700 dark:text-indigo-400' },
-  { value: 'STUDY_SESSION',  label: 'Session √âtude',    icon: 'üìö', bg: 'bg-cyan-100 dark:bg-cyan-900/30',    text: 'text-cyan-700 dark:text-cyan-400' },
-  { value: 'NOTE',           label: 'Note',             icon: 'üìù', bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-700 dark:text-violet-400' },
-  { value: 'JOURNAL',        label: 'Journal',          icon: 'üìñ', bg: 'bg-rose-100 dark:bg-rose-900/30',    text: 'text-rose-700 dark:text-rose-400' },
+  { value: 'FOOD_LOG',       label: 'Food Diary',       icon: '??', bg: 'bg-green-100 dark:bg-green-900/30',   text: 'text-green-700 dark:text-green-400' },
+  { value: 'WORKOUT_PLAN',   label: 'Programme Sport',  icon: '??', bg: 'bg-amber-100 dark:bg-amber-900/30',   text: 'text-amber-700 dark:text-amber-400' },
+  { value: 'SLEEP_LOG',      label: 'Sommeil',          icon: '??', bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-700 dark:text-indigo-400' },
+  { value: 'STUDY_SESSION',  label: 'Session …tude',    icon: '??', bg: 'bg-cyan-100 dark:bg-cyan-900/30',    text: 'text-cyan-700 dark:text-cyan-400' },
+  { value: 'NOTE',           label: 'Note',             icon: '??', bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-700 dark:text-violet-400' },
+  { value: 'JOURNAL',        label: 'Journal',          icon: '??', bg: 'bg-rose-100 dark:bg-rose-900/30',    text: 'text-rose-700 dark:text-rose-400' },
 ]
 
 const EXPIRY_OPTIONS = [
@@ -74,10 +74,10 @@ const EXPIRY_OPTIONS = [
 
 const TABS = [
   { id: 'shares',     label: 'Mes Partages',     icon: Link2,     active: true  },
-  { id: 'received',   label: 'Partag√© avec moi', icon: Users2,    active: true  },
-  { id: 'community',  label: 'Communaut√©',        icon: Globe,     active: true  },
+  { id: 'received',   label: 'PartagÈ avec moi', icon: Users2,    active: true  },
+  { id: 'community',  label: 'CommunautÈ',        icon: Globe,     active: true  },
   { id: 'saved',      label: 'Inspirations',      icon: Bookmark,  active: true  },
-  { id: 'challenges', label: 'D√©fis',             icon: Trophy,    active: false },
+  { id: 'challenges', label: 'DÈfis',             icon: Trophy,    active: false },
 ]
 
 const RESOURCE_ENDPOINTS: Record<string, string> = {
@@ -233,7 +233,7 @@ export default function SocialPanel() {
     mutationFn: (payload: object) => api.post('/social/posts', payload).then(r => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['social-feed'] })
-      toast.success('Publi√© dans la Communaut√© !')
+      toast.success('PubliÈ dans la CommunautÈ !')
       setShowPostModal(false)
       setPostForm(defaultPostForm())
       setActiveTab('community')
@@ -254,7 +254,7 @@ export default function SocialPanel() {
   const cloneMutation = useMutation({
     mutationFn: (token: string) => api.post(`/shares/${token}/clone`).then(r => r.data),
     onSuccess: () => {
-      toast.success('Ressource clon√©e dans ton compte !')
+      toast.success('Ressource clonÈe dans ton compte !')
       qc.invalidateQueries({ queryKey: ['shared-links-received'] })
     },
     onError: (err: any) => {
@@ -283,27 +283,27 @@ export default function SocialPanel() {
     mutationFn: (payload: object) => api.post('/shares', payload).then(r => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['shared-links'] })
-      toast.success('Lien de partage cr√©√© !')
+      toast.success('Lien de partage crÈÈ !')
       setShowModal(false)
       setForm(defaultForm())
     },
-    onError: () => toast.error('Erreur lors de la cr√©ation'),
+    onError: () => toast.error('Erreur lors de la crÈation'),
   })
 
   const revokeMutation = useMutation({
     mutationFn: (id: number) => api.patch(`/shares/${id}/revoke`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['shared-links'] })
-      toast.success('Lien r√©voqu√©')
+      toast.success('Lien rÈvoquÈ')
     },
-    onError: () => toast.error('Erreur lors de la r√©vocation'),
+    onError: () => toast.error('Erreur lors de la rÈvocation'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/shares/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['shared-links'] })
-      toast.success('Lien supprim√©')
+      toast.success('Lien supprimÈ')
     },
     onError: () => toast.error('Erreur lors de la suppression'),
   })
@@ -311,7 +311,7 @@ export default function SocialPanel() {
   function handleCopy(link: SharedLink) {
     navigator.clipboard.writeText(linkUrl(link.token))
     setCopiedId(link.id)
-    toast.success('Lien copi√© !')
+    toast.success('Lien copiÈ !')
     setTimeout(() => setCopiedId(null), 2000)
   }
 
@@ -344,8 +344,8 @@ export default function SocialPanel() {
             <Globe size={22} className="text-sky-500" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Together</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Partage contr√¥l√©, social utile</p>
+            <h1 className="text-xl font-black text-white">Together</h1>
+            <p className="text-sm text-gray-400">Partage contrÙlÈ, social utile</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -381,16 +381,16 @@ export default function SocialPanel() {
               onClick={() => tab.active && setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
                 isActive
-                  ? 'bg-sky-600 text-white shadow-sm'
+                  ? 'bg-sky-600 text-white '
                   : tab.active
-                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                    : 'bg-gray-50 dark:bg-gray-800/50 text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                    ? 'bg-white/[0.05] text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    : 'bg-white/[0.03]/50 text-gray-500 cursor-not-allowed'
               }`}
             >
               <Icon size={15} />
               {tab.label}
               {!tab.active && (
-                <span className="text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-400 rounded-full px-1.5 py-0.5 ml-0.5">
+                <span className="text-[10px] bg-white/10 text-gray-400 rounded-full px-1.5 py-0.5 ml-0.5">
                   S2+
                 </span>
               )}
@@ -411,23 +411,23 @@ export default function SocialPanel() {
               <div className="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center mx-auto mb-4">
                 <Link2 size={28} className="text-sky-400" />
               </div>
-              <p className="font-semibold text-gray-700 dark:text-gray-300">Aucun lien partag√©</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-5 max-w-xs mx-auto">
-                Partagez un programme sport, une journ√©e food ou un journal avec n'importe qui ‚Äî sans qu'ils aient un compte.
+              <p className="font-semibold text-gray-300">Aucun lien partagÈ</p>
+              <p className="text-sm text-gray-400 mt-1 mb-5 max-w-xs mx-auto">
+                Partagez un programme sport, une journÈe food ou un journal avec n'importe qui ó sans qu'ils aient un compte.
               </p>
               <button
                 onClick={() => setShowModal(true)}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition-colors"
               >
                 <Plus size={16} />
-                Cr√©er mon premier lien
+                CrÈer mon premier lien
               </button>
             </div>
           ) : (
             <>
               {activeLinks.length > 0 && (
                 <div className="space-y-3">
-                  <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                     Actifs ({activeLinks.length})
                   </p>
                   {activeLinks.map(link => (
@@ -444,8 +444,8 @@ export default function SocialPanel() {
               )}
               {inactiveLinks.length > 0 && (
                 <div className="space-y-3">
-                  <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
-                    Expir√©s / R√©voqu√©s ({inactiveLinks.length})
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    ExpirÈs / RÈvoquÈs ({inactiveLinks.length})
                   </p>
                   {inactiveLinks.map(link => (
                     <LinkCard
@@ -464,7 +464,7 @@ export default function SocialPanel() {
         </div>
       )}
 
-      {/* Partag√© avec moi */}
+      {/* PartagÈ avec moi */}
       {activeTab === 'received' && (
         <div className="space-y-4">
           {receivedLoading ? (
@@ -476,26 +476,26 @@ export default function SocialPanel() {
               <div className="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center mx-auto mb-4">
                 <Users2 size={28} className="text-sky-400" />
               </div>
-              <p className="font-semibold text-gray-700 dark:text-gray-300">Aucun contenu re√ßu</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
-                Les ressources partag√©es avec ton email SmartLife appara√Ætront ici.
+              <p className="font-semibold text-gray-300">Aucun contenu reÁu</p>
+              <p className="text-sm text-gray-400 mt-1 max-w-xs mx-auto">
+                Les ressources partagÈes avec ton email SmartLife apparaÓtront ici.
               </p>
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
-                Re√ßus ({received.length})
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                ReÁus ({received.length})
               </p>
               {received.map(link => {
                 const rt = rtConfig(link.resourceType)
                 return (
-                  <div key={link.id} className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
+                  <div key={link.id} className="glass-card p-4 border-white/10">
                     <div className="flex items-start gap-3">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${rt.bg}`}>
                         {rt.icon}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                        <p className="font-semibold text-sm text-white truncate">
                           {link.title ?? rt.label}
                         </p>
                         <div className="flex items-center gap-3 mt-1 text-xs text-gray-400 flex-wrap">
@@ -509,7 +509,7 @@ export default function SocialPanel() {
                           href={`${import.meta.env.BASE_URL}share/${link.token}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-sky-500 transition-colors"
+                          className="p-2 rounded-xl hover:bg-white/[0.05] text-gray-400 hover:text-sky-500 transition-colors"
                           title="Voir"
                         >
                           <ExternalLink size={15} />
@@ -518,7 +518,7 @@ export default function SocialPanel() {
                           <button
                             onClick={() => cloneMutation.mutate(link.token)}
                             disabled={cloneMutation.isPending}
-                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-green-500 transition-colors disabled:opacity-50"
+                            className="p-2 rounded-xl hover:bg-white/[0.05] text-gray-400 hover:text-green-500 transition-colors disabled:opacity-50"
                             title="Cloner dans mon compte"
                           >
                             <Copy size={15} />
@@ -534,19 +534,19 @@ export default function SocialPanel() {
         </div>
       )}
 
-      {/* Communaut√© */}
+      {/* CommunautÈ */}
       {activeTab === 'community' && (
         <div className="space-y-4">
           {/* Filtres */}
           <div className="flex gap-1.5 overflow-x-auto pb-1">
             {[
               { value: '', label: 'Tout' },
-              { value: 'WORKOUT_PLAN', label: 'üí™ Sport' },
-              { value: 'FOOD_LOG', label: 'üçé Food' },
-              { value: 'NOTE', label: 'üìù Notes' },
-              { value: 'JOURNAL', label: 'üìñ Journal' },
-              { value: 'SLEEP_LOG', label: 'üò¥ Sommeil' },
-              { value: 'STUDY_SESSION', label: 'üìö √âtude' },
+              { value: 'WORKOUT_PLAN', label: '?? Sport' },
+              { value: 'FOOD_LOG', label: '?? Food' },
+              { value: 'NOTE', label: '?? Notes' },
+              { value: 'JOURNAL', label: '?? Journal' },
+              { value: 'SLEEP_LOG', label: '?? Sommeil' },
+              { value: 'STUDY_SESSION', label: '?? …tude' },
             ].map(f => (
               <button
                 key={f.value}
@@ -554,7 +554,7 @@ export default function SocialPanel() {
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-colors ${
                   postForm.filterType === f.value
                     ? 'bg-sky-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    : 'bg-white/[0.05] text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
                 }`}
               >
                 {f.label}
@@ -568,9 +568,9 @@ export default function SocialPanel() {
             </div>
           ) : feed.length === 0 ? (
             <div className="text-center py-16">
-              <Globe size={36} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-              <p className="font-semibold text-gray-600 dark:text-gray-400">Aucun post dans la communaut√©</p>
-              <p className="text-sm text-gray-400 mt-1 mb-5">Soyez le premier √† partager quelque chose !</p>
+              <Globe size={36} className="mx-auto mb-3 text-gray-500" />
+              <p className="font-semibold text-gray-400">Aucun post dans la communautÈ</p>
+              <p className="text-sm text-gray-400 mt-1 mb-5">Soyez le premier ‡ partager quelque chose !</p>
               <button
                 onClick={() => setShowPostModal(true)}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition-colors"
@@ -597,9 +597,9 @@ export default function SocialPanel() {
             </div>
           ) : saved.length === 0 ? (
             <div className="text-center py-16">
-              <Bookmark size={36} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-              <p className="font-semibold text-gray-600 dark:text-gray-400">Aucune inspiration sauvegard√©e</p>
-              <p className="text-sm text-gray-400 mt-1">Sauvegardez des posts depuis la Communaut√©.</p>
+              <Bookmark size={36} className="mx-auto mb-3 text-gray-500" />
+              <p className="font-semibold text-gray-400">Aucune inspiration sauvegardÈe</p>
+              <p className="text-sm text-gray-400 mt-1">Sauvegardez des posts depuis la CommunautÈ.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -619,11 +619,11 @@ export default function SocialPanel() {
             const Icon = tab.icon
             return (
               <>
-                <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-white/[0.05] flex items-center justify-center mx-auto mb-4">
                   <Icon size={28} className="text-gray-400" />
                 </div>
-                <p className="font-semibold text-gray-700 dark:text-gray-300">{tab.label}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                <p className="font-semibold text-gray-300">{tab.label}</p>
+                <p className="text-sm text-gray-400 mt-1">
                   Disponible prochainement dans SmartLife Together.
                 </p>
                 <div className="mt-4 inline-flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 font-medium">
@@ -637,18 +637,18 @@ export default function SocialPanel() {
 
       {/* Publish to community modal */}
       {showPostModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-lg bg-white/5 rounded-2xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Publier dans la Communaut√©</h2>
-              <button onClick={() => setShowPostModal(false)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+              <h2 className="text-lg font-black text-white">Publier dans la CommunautÈ</h2>
+              <button onClick={() => setShowPostModal(false)} className="p-1 rounded-xl hover:bg-white/[0.05]">
                 <X size={18} className="text-gray-400" />
               </button>
             </div>
 
             {/* Resource type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type de ressource</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Type de ressource</label>
               <div className="grid grid-cols-3 gap-2">
                 {RESOURCE_TYPES.map(rt => (
                   <button
@@ -657,11 +657,11 @@ export default function SocialPanel() {
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${
                       postForm.resourceType === rt.value
                         ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-sky-300 dark:hover:border-sky-700'
+                        : 'border-white/10 hover:border-sky-300 dark:hover:border-sky-700'
                     }`}
                   >
                     <span className="text-xl">{rt.icon}</span>
-                    <span className={`text-xs font-medium leading-tight ${postForm.resourceType === rt.value ? 'text-sky-700 dark:text-sky-400' : 'text-gray-600 dark:text-gray-400'}`}>
+                    <span className={`text-xs font-medium leading-tight ${postForm.resourceType === rt.value ? 'text-sky-700 dark:text-sky-400' : 'text-gray-400'}`}>
                       {rt.label}
                     </span>
                   </button>
@@ -671,12 +671,12 @@ export default function SocialPanel() {
 
             {/* Resource selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ressource</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Ressource</label>
               <select
                 value={postForm.resourceId}
                 onChange={e => setPostForm(f => ({ ...f, resourceId: e.target.value }))}
                 disabled={postResourcesLoading || postResources.length === 0}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
               >
                 {postResourcesLoading ? (
                   <option>Chargement...</option>
@@ -693,36 +693,36 @@ export default function SocialPanel() {
 
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-300 mb-1">
                 Titre <span className="text-gray-400 font-normal">(optionnel)</span>
               </label>
               <input
                 type="text"
                 value={postForm.title}
                 onChange={e => setPostForm(f => ({ ...f, title: e.target.value }))}
-                placeholder="Ex: Mon programme √©t√© 2026"
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                placeholder="Ex: Mon programme ÈtÈ 2026"
+                className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
               />
             </div>
 
             {/* Caption */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                L√©gende <span className="text-gray-400 font-normal">(optionnel)</span>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                LÈgende <span className="text-gray-400 font-normal">(optionnel)</span>
               </label>
               <textarea
                 value={postForm.caption}
                 onChange={e => setPostForm(f => ({ ...f, caption: e.target.value }))}
                 placeholder="Quelques mots sur ce que tu partages..."
                 rows={3}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"
+                className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"
               />
             </div>
 
             <div className="flex gap-3 pt-1">
               <button
                 onClick={() => setShowPostModal(false)}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 text-sm font-medium hover:bg-white/[0.05] transition-colors"
               >
                 Annuler
               </button>
@@ -741,18 +741,18 @@ export default function SocialPanel() {
 
       {/* Create modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="relative w-full max-w-lg bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-lg bg-white/5 rounded-2xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Nouveau lien de partage</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+              <h2 className="text-lg font-black text-white">Nouveau lien de partage</h2>
+              <button onClick={() => setShowModal(false)} className="p-1 rounded-xl hover:bg-white/[0.05]">
                 <X size={18} className="text-gray-400" />
               </button>
             </div>
 
             {/* Resource type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Type de ressource
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -768,12 +768,12 @@ export default function SocialPanel() {
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${
                       form.resourceType === rt.value
                         ? 'border-sky-500 bg-sky-50 dark:bg-sky-900/20'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-sky-300 dark:hover:border-sky-700'
+                        : 'border-white/10 hover:border-sky-300 dark:hover:border-sky-700'
                     }`}
                   >
                     <span className="text-xl">{rt.icon}</span>
                     <span className={`text-xs font-medium leading-tight ${
-                      form.resourceType === rt.value ? 'text-sky-700 dark:text-sky-400' : 'text-gray-600 dark:text-gray-400'
+                      form.resourceType === rt.value ? 'text-sky-700 dark:text-sky-400' : 'text-gray-400'
                     }`}>
                       {rt.label}
                     </span>
@@ -784,14 +784,14 @@ export default function SocialPanel() {
 
             {/* Resource selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-300 mb-1">
                 Ressource
               </label>
               <select
                 value={form.resourceId}
                 onChange={e => setForm(f => ({ ...f, resourceId: e.target.value }))}
                 disabled={resourcesLoading || resources.length === 0}
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
               >
                 {resourcesLoading ? (
                   <option value="">Chargement...</option>
@@ -812,36 +812,36 @@ export default function SocialPanel() {
 
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-gray-300 mb-1">
                 Titre <span className="text-gray-400 font-normal">(optionnel)</span>
               </label>
               <input
                 type="text"
                 value={form.title}
                 onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                placeholder="Ex: Mon programme √©t√© 2026"
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                placeholder="Ex: Mon programme ÈtÈ 2026"
+                className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
               />
             </div>
 
             {/* Recipient email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Envoyer √† <span className="text-gray-400 font-normal">(email SmartLife, optionnel)</span>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Envoyer ‡ <span className="text-gray-400 font-normal">(email SmartLife, optionnel)</span>
               </label>
               <input
                 type="email"
                 value={form.recipientEmail}
                 onChange={e => setForm(f => ({ ...f, recipientEmail: e.target.value }))}
                 placeholder="ami@example.com"
-                className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
               />
-              <p className="text-xs text-gray-400 mt-1">Appara√Ætra dans "Partag√© avec moi" de ce compte.</p>
+              <p className="text-xs text-gray-400 mt-1">ApparaÓtra dans "PartagÈ avec moi" de ce compte.</p>
             </div>
 
             {/* Expiry */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
                 Expiration du lien
               </label>
               <div className="flex gap-2">
@@ -852,7 +852,7 @@ export default function SocialPanel() {
                     className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-colors ${
                       form.expiresIn === opt.value
                         ? 'bg-sky-600 text-white border-sky-600'
-                        : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-sky-400'
+                        : 'border-white/10 text-gray-400 hover:border-sky-400'
                     }`}
                   >
                     {opt.label}
@@ -863,27 +863,27 @@ export default function SocialPanel() {
 
             {/* Permissions */}
             <div className="space-y-3">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Permissions</label>
+              <label className="block text-sm font-medium text-gray-300">Permissions</label>
               {([
-                { key: 'allowReactions' as const, label: 'R√©actions', desc: 'Inspir√©, Je teste, Bravo...' },
+                { key: 'allowReactions' as const, label: 'RÈactions', desc: 'InspirÈ, Je teste, Bravo...' },
                 { key: 'allowComments' as const, label: 'Commentaires', desc: 'Questions et retours' },
                 ...(form.resourceType === 'FOOD_LOG'
-                  ? [{ key: 'maskCalories' as const, label: 'Masquer calories & macros', desc: 'Partage sans donn√©es sensibles' }]
+                  ? [{ key: 'maskCalories' as const, label: 'Masquer calories & macros', desc: 'Partage sans donnÈes sensibles' }]
                   : []),
               ] as { key: keyof CreateForm; label: string; desc: string }[]).map(({ key, label, desc }) => (
                 <label key={key} className="flex items-center justify-between gap-3 cursor-pointer select-none">
                   <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</p>
+                    <p className="text-sm font-medium text-gray-300">{label}</p>
                     <p className="text-xs text-gray-400">{desc}</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setForm(f => ({ ...f, [key]: !f[key] }))}
                     className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${
-                      form[key] ? 'bg-sky-600' : 'bg-gray-200 dark:bg-gray-600'
+                      form[key] ? 'bg-sky-600' : 'bg-white/10'
                     }`}
                   >
-                    <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
+                    <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white  transition-transform ${
                       form[key] ? 'translate-x-4' : 'translate-x-0'
                     }`} />
                   </button>
@@ -894,7 +894,7 @@ export default function SocialPanel() {
             <div className="flex gap-3 pt-1">
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 text-sm font-medium hover:bg-white/[0.05] transition-colors"
               >
                 Annuler
               </button>
@@ -903,7 +903,7 @@ export default function SocialPanel() {
                 disabled={createMutation.isPending}
                 className="flex-1 py-2.5 rounded-xl bg-sky-600 text-white text-sm font-medium hover:bg-sky-700 disabled:opacity-50 transition-colors"
               >
-                {createMutation.isPending ? 'Cr√©ation...' : 'Cr√©er le lien'}
+                {createMutation.isPending ? 'CrÈation...' : 'CrÈer le lien'}
               </button>
             </div>
           </div>
@@ -926,7 +926,7 @@ function LinkCard({ link, copiedId, onCopy, onRevoke, onDelete }: LinkCardProps)
   const isInactive = link.revoked || link.isExpired
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 transition-opacity ${
+    <div className={`glass-card p-4 border-white/10 transition-opacity ${
       isInactive ? 'opacity-55' : ''
     }`}>
       <div className="flex items-start gap-3">
@@ -935,17 +935,17 @@ function LinkCard({ link, copiedId, onCopy, onRevoke, onDelete }: LinkCardProps)
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+            <span className="font-semibold text-sm text-white truncate">
               {link.title ?? rt.label}
             </span>
             {link.revoked && (
               <span className="text-[10px] font-medium bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-full px-2 py-0.5 shrink-0">
-                R√©voqu√©
+                RÈvoquÈ
               </span>
             )}
             {!link.revoked && link.isExpired && (
-              <span className="text-[10px] font-medium bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 rounded-full px-2 py-0.5 shrink-0">
-                Expir√©
+              <span className="text-[10px] font-medium bg-white/[0.05] text-gray-500 border border-white/10 rounded-full px-2 py-0.5 shrink-0">
+                ExpirÈ
               </span>
             )}
           </div>
@@ -957,7 +957,7 @@ function LinkCard({ link, copiedId, onCopy, onRevoke, onDelete }: LinkCardProps)
             {(link.clonesCount ?? 0) > 0 && (
               <span className="flex items-center gap-1 text-green-500">
                 <Copy size={11} />
-                {link.clonesCount} clon√©{link.clonesCount !== 1 ? 's' : ''}
+                {link.clonesCount} clonÈ{link.clonesCount !== 1 ? 's' : ''}
               </span>
             )}
             <span className="flex items-center gap-1">
@@ -973,7 +973,7 @@ function LinkCard({ link, copiedId, onCopy, onRevoke, onDelete }: LinkCardProps)
           {!isInactive && (
             <button
               onClick={() => onCopy(link)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-sky-500 transition-colors"
+              className="p-2 rounded-xl hover:bg-white/[0.05] text-gray-400 hover:text-sky-500 transition-colors"
               title="Copier le lien"
             >
               {copiedId === link.id
@@ -985,15 +985,15 @@ function LinkCard({ link, copiedId, onCopy, onRevoke, onDelete }: LinkCardProps)
           {!link.revoked && !link.isExpired && (
             <button
               onClick={() => onRevoke(link.id)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-orange-500 transition-colors"
-              title="R√©voquer le lien"
+              className="p-2 rounded-xl hover:bg-white/[0.05] text-gray-400 hover:text-orange-500 transition-colors"
+              title="RÈvoquer le lien"
             >
               <EyeOff size={15} />
             </button>
           )}
           <button
             onClick={() => onDelete(link.id)}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-red-500 transition-colors"
+            className="p-2 rounded-xl hover:bg-white/[0.05] text-gray-400 hover:text-red-500 transition-colors"
             title="Supprimer"
           >
             <Trash2 size={15} />

@@ -21,7 +21,7 @@ interface Note {
 }
 
 const NOTE_COLORS: { value: string; label: string; bg: string; dark: string }[] = [
-  { value: 'default', label: 'DÃ©faut', bg: '', dark: '' },
+  { value: 'default', label: 'Défaut', bg: '', dark: '' },
   { value: 'yellow', label: 'Jaune', bg: 'bg-yellow-100 border-yellow-300', dark: 'dark:bg-yellow-800/40 dark:border-yellow-600' },
   { value: 'pink', label: 'Rose', bg: 'bg-pink-100 border-pink-300', dark: 'dark:bg-pink-800/40 dark:border-pink-600' },
   { value: 'green', label: 'Vert', bg: 'bg-green-100 border-green-300', dark: 'dark:bg-green-800/40 dark:border-green-600' },
@@ -30,7 +30,7 @@ const NOTE_COLORS: { value: string; label: string; bg: string; dark: string }[] 
 ]
 
 const COLOR_DOT: Record<string, string> = {
-  default: 'bg-gray-300 dark:bg-gray-500',
+  default: 'bg-white/10',
   yellow: 'bg-yellow-400',
   pink: 'bg-pink-400',
   green: 'bg-green-400',
@@ -69,13 +69,13 @@ function ColorPickerPopover({
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen((v) => !v) }}
-        className="p-1.5 rounded-lg text-gray-400 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+        className="p-1.5 rounded-xl text-gray-400 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
         title="Couleur"
       >
         <Palette size={14} />
       </button>
       {open && (
-        <div className="absolute right-0 top-8 z-20 bg-white dark:bg-gray-700 rounded-xl shadow-lg border border-gray-100 dark:border-gray-600 p-2 flex gap-1.5">
+        <div className="absolute right-0 top-8 z-20 bg-white/5 rounded-xl shadow-lg border border-white/10 dark:border-gray-600 p-2 flex gap-1.5">
           {NOTE_COLORS.map((nc) => (
             <button
               key={nc.value}
@@ -115,39 +115,39 @@ function NoteModal({
 
   const saveEdit = () => {
     api.put(`/notes/${note.id}`, { title: editTitle || null, content: editContent })
-      .then(() => { onUpdate(); setEditMode(false); toast.success('Note mise Ã  jour') })
+      .then(() => { onUpdate(); setEditMode(false); toast.success('Note mise à jour') })
       .catch(() => toast.error('Erreur'))
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={`relative rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-xl max-h-[calc(100dvh-1rem)] sm:max-h-[85vh] flex flex-col overflow-hidden ${noteCardClass(note.color, note.isPinned) || 'bg-white dark:bg-gray-800'}`}>
-        <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-black/5 dark:border-white/10">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className={`relative rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-xl max-h-[calc(100dvh-1rem)] sm:max-h-[85vh] flex flex-col overflow-hidden ${noteCardClass(note.color, note.isPinned) || 'bg-white/5'}`}>
+        <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-black/5 border-white/10">
           <ColorPickerPopover currentColor={note.color ?? 'default'} onSelect={c => onColorChange(note.id, c)} />
           <button type="button" onClick={() => onPin(note.id)}
-            className={`p-1.5 rounded-lg transition-colors ${note.isPinned ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-400'}`}>
+            className={`p-1.5 rounded-xl transition-colors ${note.isPinned ? 'text-yellow-500' : 'text-gray-400 hover:text-yellow-400'}`}>
             <Pin size={16} />
           </button>
           <div className="flex-1" />
           {!editMode ? (
             <button type="button" onClick={() => setEditMode(true)}
-              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg bg-black/5 dark:bg-white/10 hover:bg-black/10 transition-colors">
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-xl bg-black/5 dark:bg-white/10 hover:bg-black/10 transition-colors">
               <Edit2 size={13} /> Modifier
             </button>
           ) : (
             <div className="flex gap-2">
               <button type="button" onClick={() => { setEditMode(false); setEditTitle(note.title ?? ''); setEditContent(note.content) }}
-                className="text-xs px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700">Annuler</button>
+                className="text-xs px-3 py-1.5 rounded-xl bg-white/[0.05]">Annuler</button>
               <button type="button" onClick={saveEdit}
-                className="text-xs px-3 py-1.5 rounded-lg bg-gray-800 text-white dark:bg-white dark:text-gray-900 font-semibold">Sauvegarder</button>
+                className="text-xs px-3 py-1.5 rounded-xl bg-white/5 text-white dark:bg-white dark:text-gray-900 font-semibold">Sauvegarder</button>
             </div>
           )}
           <button type="button" onClick={() => { onDelete(note.id); onClose() }}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-red-400 transition-colors">
+            className="p-1.5 rounded-xl text-gray-400 hover:text-red-400 transition-colors">
             <Trash2 size={16} />
           </button>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 transition-colors">
+          <button type="button" onClick={onClose} className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -164,12 +164,12 @@ function NoteModal({
             </>
           ) : (
             <>
-              {note.title && <h2 className="text-xl font-bold mb-3 text-gray-900 dark:text-gray-100">{note.title}</h2>}
-              <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{note.content}</p>
+              {note.title && <h2 className="text-xl font-bold mb-3 text-white">{note.title}</h2>}
+              <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">{note.content}</p>
               {note.tags && note.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-4">
                   {note.tags.map(tag => (
-                    <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/10 text-gray-600 dark:text-gray-400">
+                    <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/10 text-gray-400">
                       # {tag}
                     </span>
                   ))}
@@ -179,8 +179,8 @@ function NoteModal({
           )}
         </div>
 
-        <div className="px-5 py-3 border-t border-black/5 dark:border-white/10 text-xs text-gray-400">
-          CrÃ©Ã©e le {format(new Date(note.createdAt), 'dd MMMM yyyy Ã  HH:mm', { locale: fr })}
+        <div className="px-5 py-3 border-t border-black/5 border-white/10 text-xs text-gray-400">
+          Créée le {format(new Date(note.createdAt), 'dd MMMM yyyy à HH:mm', { locale: fr })}
         </div>
       </div>
     </div>
@@ -227,9 +227,9 @@ export default function NotesPanel() {
       setFormTags([])
       setNewTag('')
       setFormExpanded(false)
-      toast.success('Note crÃ©Ã©e')
+      toast.success('Note créée')
     },
-    onError: () => toast.error('Erreur lors de la crÃ©ation'),
+    onError: () => toast.error('Erreur lors de la création'),
   })
 
   const pinMutation = useMutation({
@@ -245,7 +245,7 @@ export default function NotesPanel() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/notes/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['notes'] }); toast.success('Note supprimÃ©e') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['notes'] }); toast.success('Note supprimée') },
   })
 
   const stats = useMemo(() => ({
@@ -295,7 +295,7 @@ export default function NotesPanel() {
             <Pin size={14} className="absolute top-3 right-3 text-yellow-500" />
           )}
           <div className="flex items-start justify-between gap-2 mb-2 pr-5">
-            {n.title && <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">{n.title}</h3>}
+            {n.title && <h3 className="font-semibold text-white text-sm">{n.title}</h3>}
             <div className="flex gap-1 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity ml-auto">
               <ColorPickerPopover
                 currentColor={n.color ?? 'default'}
@@ -303,41 +303,41 @@ export default function NotesPanel() {
               />
               <button type="button"
                 onClick={(e) => { e.stopPropagation(); pinMutation.mutate(n.id) }}
-                className={`p-1.5 rounded-lg transition-colors ${n.isPinned ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-500 hover:text-yellow-400'}`}
+                className={`p-1.5 rounded-xl transition-colors ${n.isPinned ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-500 hover:text-yellow-400'}`}
               >
                 <Pin size={14} />
               </button>
               <button type="button"
                 onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(n.id) }}
-                className="p-1.5 rounded-lg text-gray-300 dark:text-gray-500 hover:text-red-400 transition-colors"
+                className="p-1.5 rounded-xl text-gray-300 dark:text-gray-500 hover:text-red-400 transition-colors"
               >
                 <Trash2 size={14} />
               </button>
             </div>
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap line-clamp-4">{n.content}</p>
+          <p className="text-sm text-gray-400 leading-relaxed whitespace-pre-wrap line-clamp-4">{n.content}</p>
           {n.tags && n.tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-3">
               {n.tags.map((tag) => (
-                <span key={tag} className="text-[11px] bg-white/60 dark:bg-gray-700 text-gray-500 dark:text-gray-300 px-2 py-0.5 rounded-full border border-gray-200 dark:border-gray-600 flex items-center gap-1">
+                <span key={tag} className="text-[11px] bg-white/[0.05] text-gray-400 px-2 py-0.5 rounded-full border border-white/10 flex items-center gap-1">
                   <Tag size={9} /> # {tag}
                 </span>
               ))}
             </div>
           )}
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">
-            {format(new Date(n.createdAt), 'dd MMM yyyy', { locale: fr })} Â· {wordCount(n.content)} mots
+          <p className="text-xs text-gray-500 mt-3">
+            {format(new Date(n.createdAt), 'dd MMM yyyy', { locale: fr })} · {wordCount(n.content)} mots
           </p>
         </div>
       ))}
     </div>
   )
 
-  if (isLoading) return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement...</div>
+  if (isLoading) return <div className="text-center py-12 text-gray-500">Chargement...</div>
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+      <h2 className="font-black text-white text-2xl mb-4 flex items-center gap-2">
         <FileText className="text-primary-600" />
         Notes
       </h2>
@@ -345,14 +345,14 @@ export default function NotesPanel() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
         {[
           { label: 'Total', value: stats.total, icon: <FileText size={15} /> },
-          { label: 'Ã‰pinglÃ©es', value: stats.pinned, icon: <Pin size={15} /> },
-          { label: 'ColorÃ©es', value: stats.colored, icon: <Palette size={15} /> },
+          { label: 'Épinglées', value: stats.pinned, icon: <Pin size={15} /> },
+          { label: 'Colorées', value: stats.colored, icon: <Palette size={15} /> },
           { label: 'Tags', value: stats.tagged, icon: <BookMarked size={15} /> },
         ].map(stat => (
-          <div key={stat.label} className="rounded-xl bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center">
+          <div key={stat.label} className="rounded-xl bg-white/[0.03] px-3 py-3 text-center">
             <div className="flex justify-center text-primary-600 dark:text-primary-400 mb-1">{stat.icon}</div>
-            <p className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-none">{stat.value}</p>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{stat.label}</p>
+            <p className="text-lg font-black text-white leading-none">{stat.value}</p>
+            <p className="text-[10px] text-gray-500 mt-1">{stat.label}</p>
           </div>
         ))}
       </div>
@@ -366,20 +366,20 @@ export default function NotesPanel() {
         className="card mb-5">
         {!formExpanded ? (
           <input
-            className="w-full bg-transparent outline-none text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400"
+            className="w-full bg-transparent outline-none text-sm text-gray-300 placeholder-gray-400"
             placeholder="Prendre une note..."
             onFocus={() => setFormExpanded(true)}
           />
         ) : (
           <div className="space-y-3">
             <input
-              className="w-full bg-transparent outline-none text-base font-semibold text-gray-900 dark:text-gray-100 placeholder-gray-400"
+              className="w-full bg-transparent outline-none text-base font-semibold text-white placeholder-gray-400"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Titre"
             />
             <textarea
-              className="w-full bg-transparent outline-none min-h-[100px] resize-none text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400"
+              className="w-full bg-transparent outline-none min-h-[100px] resize-none text-sm text-gray-300 placeholder-gray-400"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Contenu de la note..."
@@ -404,7 +404,7 @@ export default function NotesPanel() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-3">
                 <button type="button" onClick={() => setIsPinned(v => !v)}
-                  className={`p-1.5 rounded-lg transition-colors ${isPinned ? 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : 'text-gray-400 hover:text-yellow-400'}`}>
+                  className={`p-1.5 rounded-xl transition-colors ${isPinned ? 'text-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : 'text-gray-400 hover:text-yellow-400'}`}>
                   <Pin size={16} />
                 </button>
                 <div className="flex items-center gap-1.5">
@@ -448,12 +448,12 @@ export default function NotesPanel() {
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs text-gray-400 font-medium">Couleur :</span>
           <button type="button" onClick={() => setFilterColor(null)}
-            className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${!filterColor ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>
+            className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${!filterColor ? 'bg-white/10 text-white' : 'bg-white/[0.05] text-gray-500'}`}>
             Toutes
           </button>
           {NOTE_COLORS.map(nc => (
             <button key={nc.value} type="button" onClick={() => setFilterColor(filterColor === nc.value ? null : nc.value)}
-              className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 ${COLOR_DOT[nc.value]} ${filterColor === nc.value ? 'border-gray-800 dark:border-white scale-125' : 'border-transparent'}`}
+              className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-110 ${COLOR_DOT[nc.value]} ${filterColor === nc.value ? 'border-white/10 dark:border-white scale-125' : 'border-transparent'}`}
               title={nc.label} />
           ))}
         </div>
@@ -463,17 +463,17 @@ export default function NotesPanel() {
         <EmptyPanel
           illustration={<IllustrationNotes />}
           gradient="from-violet-600 to-fuchsia-400"
-          headline="Tes idÃ©es mÃ©ritent d'Ãªtre capturÃ©es"
-          description="Notes colorÃ©es, Ã©pinglÃ©es, Ã©tiquetÃ©es. Retrouve n'importe quelle idÃ©e en quelques secondes."
+          headline="Tes idées méritent d'être capturées"
+          description="Notes colorées, épinglées, étiquetées. Retrouve n'importe quelle idée en quelques secondes."
           preview={
             <div className="card border border-yellow-300 bg-yellow-50 dark:bg-yellow-800/40 dark:border-yellow-600">
               <div className="flex items-center gap-2 mb-2">
                 <Pin size={13} className="text-yellow-600 dark:text-yellow-400" />
-                <span className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-widest">Ã‰pinglÃ©e</span>
-                <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">#PFE</span>
+                <span className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-widest">Épinglée</span>
+                <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">#PFE</span>
               </div>
-              <p className="font-semibold text-gray-900 dark:text-gray-100 mb-1">Architecture SmartLife</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">Spring Boot + React + Keycloak + Neon PostgreSQL. DÃ©ploiement HF Spaces avec supervisord...</p>
+              <p className="font-semibold text-white mb-1">Architecture SmartLife</p>
+              <p className="text-sm text-gray-400 line-clamp-2">Spring Boot + React + Keycloak + Neon PostgreSQL. Déploiement HF Spaces avec supervisord...</p>
             </div>
           }
           primaryLabel="+ Prendre une note"
@@ -483,10 +483,10 @@ export default function NotesPanel() {
         <>
           {pinnedNotes.length > 0 && (
             <>
-              <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3">Ã‰pinglÃ©es</p>
+              <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-3">Épinglées</p>
               {renderNotes(pinnedNotes)}
               {unpinnedNotes.length > 0 && (
-                <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3 mt-6">Autres</p>
+                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-6">Autres</p>
               )}
             </>
           )}

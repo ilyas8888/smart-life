@@ -83,8 +83,8 @@ function StatTile({ label, value, icon: Icon }: { label: string; value: number; 
     <div className="card p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-medium text-gray-400 dark:text-gray-500">{label}</p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-0.5">{value}</p>
+          <p className="text-xs font-medium text-gray-500">{label}</p>
+          <p className="font-black text-white text-2xl mt-0.5">{value}</p>
         </div>
         <div className="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-300 flex items-center justify-center">
           <Icon size={18} />
@@ -114,7 +114,7 @@ function ContactFormFields({
         className="input"
         value={form.phone}
         onChange={(e) => onChange({ ...form, phone: e.target.value })}
-        placeholder="TÃ©lÃ©phone"
+        placeholder="Téléphone"
       />
       <input
         className="input"
@@ -157,49 +157,49 @@ function ContactCard({
           {initials(contact.name)}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-gray-900 dark:text-gray-100 truncate">{contact.name}</p>
+          <p className="font-semibold text-white truncate">{contact.name}</p>
           {contact.phone && (
             <a href={`tel:${contact.phone}`} onClick={(e) => e.stopPropagation()}
-              className="mt-2 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5 hover:text-primary-600 dark:hover:text-primary-300">
+              className="mt-2 text-sm text-gray-400 flex items-center gap-1.5 hover:text-primary-600 dark:hover:text-primary-300">
               <Phone size={13} /> <span className="truncate">{contact.phone}</span>
             </a>
           )}
           {contact.email && (
             <a href={`mailto:${contact.email}`} onClick={(e) => e.stopPropagation()}
-              className="mt-1 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5 hover:text-primary-600 dark:hover:text-primary-300">
+              className="mt-1 text-sm text-gray-400 flex items-center gap-1.5 hover:text-primary-600 dark:hover:text-primary-300">
               <Mail size={13} /> <span className="truncate">{contact.email}</span>
             </a>
           )}
           {contact.address && (
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
+            <p className="mt-1 text-sm text-gray-400 flex items-center gap-1.5">
               <MapPin size={13} className="shrink-0" /> <span className="truncate">{contact.address}</span>
             </p>
           )}
           {contact.notes && (
-            <p className="mt-2 text-xs italic text-gray-400 dark:text-gray-500 line-clamp-1">{contact.notes}</p>
+            <p className="mt-2 text-xs italic text-gray-500 line-clamp-1">{contact.notes}</p>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+      <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/10 border-white/10">
         <button type="button" onClick={(e) => { e.stopPropagation(); onEdit() }}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+          className="p-1.5 rounded-xl text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
           <Edit2 size={15} />
         </button>
         {contact.phone && (
           <button type="button" onClick={(e) => { e.stopPropagation(); window.open(`tel:${contact.phone}`) }}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
+            className="p-1.5 rounded-xl text-gray-400 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
             <Phone size={15} />
           </button>
         )}
         {contact.email && (
           <button type="button" onClick={(e) => { e.stopPropagation(); window.open(`mailto:${contact.email}`) }}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
+            className="p-1.5 rounded-xl text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
             <Mail size={15} />
           </button>
         )}
         <button type="button" onClick={(e) => { e.stopPropagation(); onDelete() }}
-          className="p-1.5 rounded-lg text-gray-300 dark:text-gray-600 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ml-auto">
+          className="p-1.5 rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors ml-auto">
           <Trash2 size={15} />
         </button>
       </div>
@@ -225,55 +225,55 @@ function ContactModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white/5 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto">
         {mode === 'view' ? (
           <>
-            <div className="p-4 sm:p-5 border-b border-gray-100 dark:border-gray-700 flex items-start gap-3 sm:gap-4">
+            <div className="p-4 sm:p-5 border-b border-white/10 border-white/10 flex items-start gap-3 sm:gap-4">
               <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center font-bold text-lg sm:text-xl shrink-0 ${avatarColor(contact.name)}`}>
                 {initials(contact.name)}
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">{contact.name}</h3>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Fiche contact</p>
+                <h3 className="text-lg sm:text-xl font-black text-white truncate">{contact.name}</h3>
+                <p className="text-xs text-gray-500 mt-1">Fiche contact</p>
               </div>
               <button type="button" onClick={() => setMode('edit')}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                className="p-1.5 rounded-xl text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
                 <Edit2 size={16} />
               </button>
               <button type="button" onClick={onClose}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                 <X size={18} />
               </button>
             </div>
 
             <div className="p-5 space-y-3">
               {contact.phone && (
-                <a href={`tel:${contact.phone}`} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-green-50 dark:hover:bg-green-900/20">
+                <a href={`tel:${contact.phone}`} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20">
                   <Phone size={17} className="text-green-500" /> {contact.phone}
                 </a>
               )}
               {contact.email && (
-                <a href={`mailto:${contact.email}`} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-primary-50 dark:hover:bg-primary-900/20">
+                <a href={`mailto:${contact.email}`} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/20">
                   <Mail size={17} className="text-primary-500" /> {contact.email}
                 </a>
               )}
               {contact.address && (
-                <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] text-gray-300">
                   <MapPin size={17} className="text-rose-500 mt-0.5 shrink-0" /> <span>{contact.address}</span>
                 </div>
               )}
               {contact.notes && (
-                <div className="flex items-start gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.03] text-gray-300">
                   <FileText size={17} className="text-amber-500 mt-0.5 shrink-0" /> <p className="whitespace-pre-wrap text-sm">{contact.notes}</p>
                 </div>
               )}
               {!contact.phone && !contact.email && !contact.address && !contact.notes && (
-                <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">Aucune information supplÃ©mentaire.</p>
+                <p className="text-sm text-gray-500 text-center py-8">Aucune information supplémentaire.</p>
               )}
             </div>
 
-            <div className="p-5 border-t border-gray-100 dark:border-gray-700">
+            <div className="p-5 border-t border-white/10 border-white/10">
               <button type="button" onClick={() => { onDelete(contact.id); onClose() }}
                 className="w-full py-2.5 rounded-xl bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-300 font-semibold hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
                 Supprimer
@@ -282,9 +282,9 @@ function ContactModal({
           </>
         ) : (
           <form onSubmit={(e) => { e.preventDefault(); if (form.name.trim()) onUpdate(contact.id, form) }}>
-            <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">Modifier le contact</h3>
-              <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+            <div className="p-5 border-b border-white/10 border-white/10 flex items-center justify-between">
+              <h3 className="text-lg font-black text-white">Modifier le contact</h3>
+              <button type="button" onClick={onClose} className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
                 <X size={18} />
               </button>
             </div>
@@ -313,16 +313,16 @@ function AddContactModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <form
         onSubmit={(e) => { e.preventDefault(); if (form.name.trim()) onCreate(form) }}
-        className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] overflow-y-auto"
+        className="relative bg-white/5 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] overflow-y-auto"
       >
-        <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+        <div className="p-5 border-b border-white/10 border-white/10 flex items-center justify-between">
+          <h3 className="text-lg font-black text-white flex items-center gap-2">
             <Users size={19} className="text-primary-600" /> Nouveau contact
           </h3>
-          <button type="button" onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+          <button type="button" onClick={onClose} className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
             <X size={18} />
           </button>
         </div>
@@ -354,7 +354,7 @@ export default function ContactsPanel() {
     mutationFn: (id: number) => api.delete(`/contacts/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['contacts'] })
-      toast.success('Contact supprimÃ©')
+      toast.success('Contact supprimé')
     },
     onError: () => toast.error('Erreur lors de la suppression'),
   })
@@ -364,9 +364,9 @@ export default function ContactsPanel() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['contacts'] })
       setShowAddModal(false)
-      toast.success('Contact ajoutÃ©')
+      toast.success('Contact ajouté')
     },
-    onError: () => toast.error('Erreur lors de la crÃ©ation'),
+    onError: () => toast.error('Erreur lors de la création'),
   })
 
   const updateMutation = useMutation({
@@ -374,9 +374,9 @@ export default function ContactsPanel() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['contacts'] })
       setSelectedContact(null)
-      toast.success('Contact mis Ã  jour')
+      toast.success('Contact mis à jour')
     },
-    onError: () => toast.error('Erreur lors de la mise Ã  jour'),
+    onError: () => toast.error('Erreur lors de la mise à jour'),
   })
 
   const filteredContacts = useMemo(() => {
@@ -415,7 +415,7 @@ export default function ContactsPanel() {
   }
 
   if (isLoading) {
-    return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement...</div>
+    return <div className="text-center py-12 text-gray-500">Chargement...</div>
   }
 
   return (
@@ -423,11 +423,11 @@ export default function ContactsPanel() {
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <h2 className="font-black text-white text-2xl flex items-center gap-2">
               <Users className="text-primary-600" />
               Contacts
             </h2>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Carnet d'adresses personnel</p>
+            <p className="text-sm text-gray-500 mt-1">Carnet d'adresses personnel</p>
           </div>
           <button type="button" onClick={() => setShowAddModal(true)} className="btn-primary flex items-center justify-center gap-2">
             <Plus size={16} /> Ajouter un contact
@@ -436,16 +436,16 @@ export default function ContactsPanel() {
 
         <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-3">
           <StatTile label="Total contacts" value={stats.total} icon={Users} />
-          <StatTile label="Avec tÃ©lÃ©phone" value={stats.phone} icon={Phone} />
+          <StatTile label="Avec téléphone" value={stats.phone} icon={Phone} />
           <StatTile label="Avec email" value={stats.email} icon={Mail} />
           <StatTile label="Avec notes" value={stats.notes} icon={FileText} />
         </div>
 
         <div className="relative">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
             className="input pl-9 pr-9 w-full"
-            placeholder="Rechercher par nom, tÃ©lÃ©phone ou email..."
+            placeholder="Rechercher par nom, téléphone ou email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -463,12 +463,12 @@ export default function ContactsPanel() {
           illustration={<IllustrationContacts />}
           gradient="from-teal-600 to-cyan-400"
           headline="Ton cercle de confiance"
-          description="Centralise tes contacts importants avec tÃ©lÃ©phone, email et notes personnalisÃ©es."
+          description="Centralise tes contacts importants avec téléphone, email et notes personnalisées."
           preview={
             <div className="card flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-rose-500 flex items-center justify-center text-white font-bold text-lg shrink-0">SA</div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900 dark:text-gray-100">Dr. Samira Alaoui</p>
+                <p className="font-semibold text-white">Dr. Samira Alaoui</p>
                 <div className="flex items-center gap-3 mt-1 flex-wrap">
                   <span className="flex items-center gap-1 text-xs text-gray-500"><Phone size={11} />+213 555 123 456</span>
                   <span className="flex items-center gap-1 text-xs text-gray-500"><Mail size={11} />samira@clinique.dz</span>
@@ -481,8 +481,8 @@ export default function ContactsPanel() {
         />
       ) : filteredContacts.length === 0 ? (
         <div className="text-center py-16">
-          <Search size={34} className="mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-          <p className="font-semibold text-gray-700 dark:text-gray-300">Aucun contact trouvÃ©</p>
+          <Search size={34} className="mx-auto mb-3 text-gray-500" />
+          <p className="font-semibold text-gray-300">Aucun contact trouvé</p>
         </div>
       ) : (
         <div>

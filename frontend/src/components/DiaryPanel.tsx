@@ -21,11 +21,11 @@ interface DiaryEntry {
 }
 
 const MOODS = [
-  { value: 'great', label: 'üòÑ Super', color: 'bg-green-500', border: 'border-l-4 border-green-400', dot: 'bg-green-400' },
-  { value: 'good', label: 'üôÇ Bien', color: 'bg-blue-500', border: 'border-l-4 border-blue-400', dot: 'bg-blue-400' },
-  { value: 'neutral', label: 'üòê Neutre', color: 'bg-gray-400', border: 'border-l-4 border-gray-300', dot: 'bg-gray-400' },
-  { value: 'bad', label: 'üòï Pas terrible', color: 'bg-orange-500', border: 'border-l-4 border-orange-400', dot: 'bg-orange-400' },
-  { value: 'awful', label: 'üòû Difficile', color: 'bg-red-500', border: 'border-l-4 border-red-400', dot: 'bg-red-400' },
+  { value: 'great', label: '?? Super', color: 'bg-green-500', border: 'border-l-4 border-green-400', dot: 'bg-green-400' },
+  { value: 'good', label: '?? Bien', color: 'bg-blue-500', border: 'border-l-4 border-blue-400', dot: 'bg-blue-400' },
+  { value: 'neutral', label: '?? Neutre', color: 'bg-gray-400', border: 'border-l-4 border-gray-300', dot: 'bg-gray-400' },
+  { value: 'bad', label: '?? Pas terrible', color: 'bg-orange-500', border: 'border-l-4 border-orange-400', dot: 'bg-orange-400' },
+  { value: 'awful', label: '?? Difficile', color: 'bg-red-500', border: 'border-l-4 border-red-400', dot: 'bg-red-400' },
 ]
 
 function getMoodMeta(value: string | null) {
@@ -66,14 +66,14 @@ function MoodCalendar({ entries }: { entries: DiaryEntry[] }) {
   return (
     <div className="card mb-6">
       <div className="flex items-center justify-between mb-3">
-        <p className="font-semibold text-gray-700 dark:text-gray-300 capitalize">
+        <p className="font-semibold text-gray-300 capitalize">
           {format(actualDate, 'MMMM yyyy', { locale: fr })}
         </p>
         <div className="flex gap-1">
-          <button type="button" onClick={() => setOffset((o) => o - 1)} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400">
+          <button type="button" onClick={() => setOffset((o) => o - 1)} className="p-1 rounded hover:bg-white/[0.05] text-gray-400">
             <ChevronLeft size={16} />
           </button>
-          <button type="button" onClick={() => setOffset((o) => o + 1)} disabled={offset >= 0} className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 disabled:opacity-30">
+          <button type="button" onClick={() => setOffset((o) => o + 1)} disabled={offset >= 0} className="p-1 rounded hover:bg-white/[0.05] text-gray-400 disabled:opacity-30">
             <ChevronRight size={16} />
           </button>
         </div>
@@ -81,7 +81,7 @@ function MoodCalendar({ entries }: { entries: DiaryEntry[] }) {
 
       <div className="grid grid-cols-7 gap-1 text-center mb-1">
         {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
-          <div key={i} className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase">{d}</div>
+          <div key={i} className="text-[10px] font-semibold text-gray-500 uppercase">{d}</div>
         ))}
       </div>
 
@@ -93,7 +93,7 @@ function MoodCalendar({ entries }: { entries: DiaryEntry[] }) {
             <div
               key={i}
               className={`aspect-square rounded-full flex items-center justify-center text-[11px] font-medium transition-all ${
-                meta ? `${meta.color} text-white` : 'text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700'
+                meta ? `${meta.color} text-white` : 'text-gray-500 hover:bg-white/[0.05]'
               }`}
             >
               {cell.day}
@@ -102,9 +102,9 @@ function MoodCalendar({ entries }: { entries: DiaryEntry[] }) {
         })}
       </div>
 
-      <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+      <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-white/10 border-white/10">
         {MOODS.map((m) => (
-          <div key={m.value} className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+          <div key={m.value} className="flex items-center gap-1.5 text-xs text-gray-400">
             <div className={`w-2.5 h-2.5 rounded-full ${m.dot}`} />
             {m.label}
           </div>
@@ -138,7 +138,7 @@ function MoodTrend({ entries }: { entries: DiaryEntry[] }) {
     <div className="card mb-4">
       <div className="flex items-center gap-2 mb-2">
         <TrendingUp size={15} className="text-primary-600" />
-        <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Tendance humeur</p>
+        <p className="text-sm font-semibold text-gray-300">Tendance humeur</p>
       </div>
       <svg viewBox="0 0 300 76" className="w-full h-[76px] overflow-visible">
         <polyline
@@ -171,13 +171,13 @@ function EntryContent({ entry }: { entry: DiaryEntry }) {
 
   return (
     <div>
-      <p className={`text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap text-sm ${!expanded && shouldTruncate ? 'line-clamp-4' : ''}`}>
+      <p className={`text-gray-300 leading-relaxed whitespace-pre-wrap text-sm ${!expanded && shouldTruncate ? 'line-clamp-4' : ''}`}>
         {content}
       </p>
       {shouldTruncate && (
         <button type="button" onClick={() => setExpanded(v => !v)}
           className="text-xs font-medium text-primary-600 dark:text-primary-400 mt-2 hover:underline">
-          {expanded ? 'R√©duire' : 'Lire la suite'}
+          {expanded ? 'RÈduire' : 'Lire la suite'}
         </button>
       )}
     </div>
@@ -206,14 +206,14 @@ export default function DiaryPanel() {
       qc.invalidateQueries({ queryKey: ['diary'] })
       setContent('')
       setMood('')
-      toast.success('Entr√©e ajout√©e')
+      toast.success('EntrÈe ajoutÈe')
     },
     onError: () => toast.error("Erreur lors de l'ajout"),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/diary/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['diary'] }); toast.success('Entr√©e supprim√©e') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['diary'] }); toast.success('EntrÈe supprimÈe') },
   })
 
   const totalWords = entries.reduce((s, e) => s + wordCount(e.content), 0)
@@ -279,15 +279,15 @@ export default function DiaryPanel() {
   }
   const saveEdit = (id: number) => {
     api.put(`/diary/${id}`, { content: editContent, mood: editMood || null })
-      .then(() => { qc.invalidateQueries({ queryKey: ['diary'] }); cancelEdit(); toast.success('Modifi√©') })
+      .then(() => { qc.invalidateQueries({ queryKey: ['diary'] }); cancelEdit(); toast.success('ModifiÈ') })
       .catch(() => toast.error('Erreur'))
   }
 
-  if (isLoading) return <div className="text-center py-12 text-gray-400 dark:text-gray-500">Chargement...</div>
+  if (isLoading) return <div className="text-center py-12 text-gray-500">Chargement...</div>
 
   return (
     <div className="w-full">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+      <h2 className="font-black text-white text-2xl mb-4 flex items-center gap-2">
         <BookOpen className="text-primary-600" />
         Journal Personnel
       </h2>
@@ -295,14 +295,14 @@ export default function DiaryPanel() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
         {[
           { label: 'Streak', value: `${streak}j`, icon: <Flame size={15} /> },
-          { label: 'Entr√©es', value: String(entries.length), icon: <BookMarked size={15} /> },
-          { label: 'Mots', value: totalWords.toLocaleString('fr'), icon: <span>‚úçÔ∏è</span> },
-          { label: 'Humeur', value: avgMood ? avgMood.label.split(' ')[0] : '‚Äî', icon: <TrendingUp size={15} /> },
+          { label: 'EntrÈes', value: String(entries.length), icon: <BookMarked size={15} /> },
+          { label: 'Mots', value: totalWords.toLocaleString('fr'), icon: <span>??</span> },
+          { label: 'Humeur', value: avgMood ? avgMood.label.split(' ')[0] : 'ó', icon: <TrendingUp size={15} /> },
         ].map(stat => (
-          <div key={stat.label} className="rounded-xl bg-gray-50 dark:bg-gray-800 px-3 py-3 text-center">
+          <div key={stat.label} className="rounded-xl bg-white/[0.03] px-3 py-3 text-center">
             <div className="flex justify-center text-primary-600 dark:text-primary-400 mb-1">{stat.icon}</div>
-            <p className="text-lg font-bold text-gray-900 dark:text-gray-100 leading-none">{stat.value}</p>
-            <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{stat.label}</p>
+            <p className="text-lg font-black text-white leading-none">{stat.value}</p>
+            <p className="text-[10px] text-gray-500 mt-1">{stat.label}</p>
           </div>
         ))}
       </div>
@@ -310,13 +310,13 @@ export default function DiaryPanel() {
       <form onSubmit={handleSubmit} className={`card mb-4 overflow-hidden ${selectedMood ? selectedMood.border : ''}`}>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wide">Aujourd'hui</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-gray-100 capitalize">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">Aujourd'hui</p>
+            <p className="text-xl font-black text-white capitalize">
               {format(new Date(), 'EEEE dd MMMM', { locale: fr })}
             </p>
           </div>
-          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${selectedMood ? `${selectedMood.color} text-white` : 'bg-gray-100 dark:bg-gray-700'}`}>
-            {selectedMood ? selectedMood.label.split(' ')[0] : '‚úçÔ∏è'}
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${selectedMood ? `${selectedMood.color} text-white` : 'bg-white/[0.05]'}`}>
+            {selectedMood ? selectedMood.label.split(' ')[0] : '??'}
           </div>
         </div>
 
@@ -329,7 +329,7 @@ export default function DiaryPanel() {
               className={`w-11 h-11 rounded-full text-xl flex items-center justify-center transition-all ${
                 mood === m.value
                   ? `${m.color} text-white scale-110 shadow`
-                  : 'bg-gray-100 dark:bg-gray-700 opacity-70 hover:opacity-100'
+                  : 'bg-white/[0.05] opacity-70 hover:opacity-100'
               }`}
               title={m.label}
             >
@@ -340,13 +340,13 @@ export default function DiaryPanel() {
 
         <textarea
           ref={textareaRef}
-          className="w-full resize-none border-0 outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 bg-transparent text-[15px] leading-relaxed min-h-[160px]"
-          placeholder="Comment s'est pass√©e ta journ√©e ? Tes pens√©es, tes √©motions..."
+          className="w-full resize-none border-0 outline-none text-white placeholder-gray-400 dark:placeholder-gray-500 bg-transparent text-[15px] leading-relaxed min-h-[160px]"
+          placeholder="Comment s'est passÈe ta journÈe ? Tes pensÈes, tes Èmotions..."
           value={content}
           onChange={(e) => setContent(e.target.value)}
           disabled={createMutation.isPending}
         />
-        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+        <div className="mt-3 pt-3 border-t border-white/10 border-white/10">
           <span className="text-xs text-gray-400">{wordTotal} mot{wordTotal > 1 ? 's' : ''}</span>
           <button
             type="submit"
@@ -373,12 +373,12 @@ export default function DiaryPanel() {
         </div>
         <div className="flex gap-1 overflow-x-auto pb-1 sm:pb-0">
           <button type="button" onClick={() => setFilterMood(null)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${filterMood === null ? 'bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900' : 'bg-gray-100 dark:bg-gray-700 text-gray-500'}`}>
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${filterMood === null ? 'bg-white/10 text-white' : 'bg-white/[0.05] text-gray-500'}`}>
             Tout
           </button>
           {MOODS.map(m => (
             <button key={m.value} type="button" onClick={() => setFilterMood(filterMood === m.value ? null : m.value)}
-              className={`px-2.5 py-1.5 rounded-full text-sm transition-all ${filterMood === m.value ? `${m.color} text-white scale-110` : 'bg-gray-100 dark:bg-gray-700'}`}>
+              className={`px-2.5 py-1.5 rounded-full text-sm transition-all ${filterMood === m.value ? `${m.color} text-white scale-110` : 'bg-white/[0.05]'}`}>
               {m.label.split(' ')[0]}
             </button>
           ))}
@@ -392,20 +392,20 @@ export default function DiaryPanel() {
           illustration={<IllustrationDiary />}
           gradient="from-rose-500 to-fuchsia-500"
           headline="Ton journal t'attend"
-          description="5 minutes par jour pour mieux te conna√Ætre. Humeur, pens√©es, accomplissements ‚Äî tout compte."
+          description="5 minutes par jour pour mieux te connaÓtre. Humeur, pensÈes, accomplissements ó tout compte."
           preview={
             <div className="card border-l-4 border-l-blue-400">
               <div className="flex items-start gap-3 mb-3">
-                <div className="text-2xl">üôÇ</div>
+                <div className="text-2xl">??</div>
                 <div className="flex-1">
-                  <p className="font-semibold text-gray-900 dark:text-gray-100">Lundi 25 mai 2026</p>
-                  <p className="text-xs text-gray-400">Bonne humeur ¬∑ 124 mots</p>
+                  <p className="font-semibold text-white">Lundi 25 mai 2026</p>
+                  <p className="text-xs text-gray-400">Bonne humeur ∑ 124 mots</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2 italic">"Bonne journ√©e aujourd'hui. J'ai termin√© le rapport de stage et pr√©par√© la soutenance. Je me sens pr√™t..."</p>
+              <p className="text-sm text-gray-400 line-clamp-2 italic">"Bonne journÈe aujourd'hui. J'ai terminÈ le rapport de stage et prÈparÈ la soutenance. Je me sens prÍt..."</p>
             </div>
           }
-          primaryLabel="‚úçÔ∏è √âcrire ma premi√®re entr√©e"
+          primaryLabel="?? …crire ma premiËre entrÈe"
           onPrimary={() => { textareaRef.current?.scrollIntoView({ behavior: 'smooth' }); textareaRef.current?.focus() }}
         />
       ) : (
@@ -418,9 +418,9 @@ export default function DiaryPanel() {
             return (
               <div key={month} className="mb-6">
                 <div className="flex items-center gap-3 mb-3">
-                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 capitalize">{monthLabel}</h3>
-                  <div className="flex-1 h-px bg-gray-100 dark:bg-gray-700" />
-                  <span className="text-xs text-gray-400">{monthEntries.length} entr√©e{monthEntries.length > 1 ? 's' : ''}</span>
+                  <h3 className="text-sm font-bold text-gray-300 capitalize">{monthLabel}</h3>
+                  <div className="flex-1 h-px bg-white/[0.05]" />
+                  <span className="text-xs text-gray-400">{monthEntries.length} entrÈe{monthEntries.length > 1 ? 's' : ''}</span>
                 </div>
                 <div className="space-y-4">
                   {monthEntries.map((e) => {
@@ -429,25 +429,25 @@ export default function DiaryPanel() {
                       <div key={e.id} className={`card overflow-hidden group ${moodMeta ? moodMeta.border : ''}`}>
                         <div className="flex items-start gap-3 mb-3">
                           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 ${
-                            moodMeta ? `${moodMeta.color} bg-opacity-10` : 'bg-gray-100 dark:bg-gray-700'
+                            moodMeta ? `${moodMeta.color} bg-opacity-10` : 'bg-white/[0.05]'
                           }`}>
                             {moodMeta ? moodMeta.label.split(' ')[0] : ''}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-gray-900 dark:text-gray-100">
+                            <p className="font-semibold text-white">
                               {format(parseISO(e.entryDate), 'EEEE dd MMMM', { locale: fr })}
                             </p>
                             <p className="text-xs text-gray-400">
-                              {moodMeta ? moodMeta.label : 'Sans humeur'} ¬∑ {wordCount(e.content)} mots
+                              {moodMeta ? moodMeta.label : 'Sans humeur'} ∑ {wordCount(e.content)} mots
                             </p>
                           </div>
                           <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                             <button type="button" onClick={() => startEdit(e)}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                              className="p-1.5 rounded-xl text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                               <Edit2 size={14} />
                             </button>
                             <button type="button" onClick={() => deleteMutation.mutate(e.id)}
-                              className="p-1.5 rounded-lg text-gray-300 dark:text-gray-600 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
+                              className="p-1.5 rounded-xl text-gray-500 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
                               <Trash2 size={14} />
                             </button>
                           </div>
@@ -458,7 +458,7 @@ export default function DiaryPanel() {
                             <div className="flex gap-1.5 mb-2">
                               {MOODS.map(moodOption => (
                                 <button key={moodOption.value} type="button" onClick={() => setEditMood(moodOption.value)}
-                                  className={`text-lg p-1 rounded-lg transition-all ${editMood === moodOption.value ? 'scale-125' : 'opacity-50'}`}>
+                                  className={`text-lg p-1 rounded-xl transition-all ${editMood === moodOption.value ? 'scale-125' : 'opacity-50'}`}>
                                   {moodOption.label.split(' ')[0]}
                                 </button>
                               ))}
@@ -475,7 +475,7 @@ export default function DiaryPanel() {
                         )}
 
                         {e.tags && e.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                          <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t border-white/10 border-white/10">
                             {e.tags.map(tag => (
                               <span key={tag} className="text-xs px-2 py-0.5 rounded-full bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 flex items-center gap-1">
                                 <Tag size={9} /> {tag}

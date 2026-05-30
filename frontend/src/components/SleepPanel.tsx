@@ -293,8 +293,8 @@ export default function SleepPanel() {
             <Moon size={23} className="text-indigo-500" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">Sleep Coach</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Duree, regularite, energie et facteurs de sommeil</p>
+            <h1 className="text-xl font-black text-white">Sleep Coach</h1>
+            <p className="text-sm text-gray-400">Duree, regularite, energie et facteurs de sommeil</p>
           </div>
         </div>
         <button
@@ -324,21 +324,21 @@ export default function SleepPanel() {
           <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
             <WeeklyChart logs={last7} />
             <div className="space-y-4">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
+              <div className="glass-card p-4 border-white/10">
                 <div className="flex items-center gap-2 mb-3">
                   <Zap size={16} className="text-indigo-500" />
-                  <h2 className="text-sm font-bold text-gray-900 dark:text-white">Plan pour ce soir</h2>
+                  <h2 className="text-sm font-black text-white">Plan pour ce soir</h2>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{plan}</p>
+                <p className="text-sm text-gray-400 leading-relaxed">{plan}</p>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
+              <div className="glass-card p-4 border-white/10">
                 <div className="flex items-center gap-2 mb-3">
                   <TrendingUp size={16} className="text-indigo-500" />
-                  <h2 className="text-sm font-bold text-gray-900 dark:text-white">Smart insights</h2>
+                  <h2 className="text-sm font-black text-white">Smart insights</h2>
                 </div>
                 <div className="space-y-2">
                   {insights.map((insight, idx) => (
-                    <p key={idx} className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed flex gap-2">
+                    <p key={idx} className="text-xs text-gray-400 leading-relaxed flex gap-2">
                       <span className="mt-1 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
                       {insight}
                     </p>
@@ -348,10 +348,10 @@ export default function SleepPanel() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+          <div className="glass-card border-white/10 overflow-hidden">
+            <div className="px-4 py-3 border-b border-white/10 border-white/10 flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-bold text-gray-900 dark:text-white">Historique des nuits</h2>
+                <h2 className="text-sm font-black text-white">Historique des nuits</h2>
                 <p className="text-xs text-gray-400">Scannez duree, qualite, energie et facteurs</p>
               </div>
               <span className="text-xs font-medium text-gray-400">{logs.length} nuit{logs.length > 1 ? 's' : ''}</span>
@@ -387,8 +387,8 @@ function EmptySleepState({ onCreate }: { onCreate: () => void }) {
         <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center mx-auto mb-4">
           <Moon size={32} className="text-indigo-500" />
         </div>
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white">Commencez par votre derniere nuit</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 mb-5">
+        <h2 className="text-lg font-black text-white">Commencez par votre derniere nuit</h2>
+        <p className="text-sm text-gray-400 mt-2 mb-5">
           SmartLife suivra votre duree, votre regularite et les facteurs qui influencent votre recuperation.
         </p>
         <button onClick={onCreate} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700">
@@ -414,24 +414,24 @@ function MetricCard({ icon: Icon, label, value, hint, tone }: {
     amber: 'bg-amber-500/10 text-amber-500',
   }
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
+    <div className="glass-card p-4 border-white/10">
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${tones[tone]}`}>
         <Icon size={18} />
       </div>
-      <p className="text-2xl font-bold text-gray-900 dark:text-white leading-none">{value}</p>
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mt-2">{label}</p>
-      <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{hint}</p>
+      <p className="font-black text-white text-2xl leading-none">{value}</p>
+      <p className="text-xs font-medium text-gray-400 mt-2">{label}</p>
+      <p className="text-[11px] text-gray-500 mt-0.5">{hint}</p>
     </div>
   )
 }
 
 function WeeklyChart({ logs }: { logs: SleepLog[] }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
+    <div className="glass-card p-4 border-white/10">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <TrendingUp size={16} className="text-indigo-500" />
-          <h2 className="text-sm font-bold text-gray-900 dark:text-white">7 dernieres nuits</h2>
+          <h2 className="text-sm font-black text-white">7 dernieres nuits</h2>
         </div>
         <span className="text-xs text-gray-400">Ligne cible: 8h</span>
       </div>
@@ -473,11 +473,11 @@ function SleepRow({ log, onEdit, onDelete }: {
     <div className="p-4 flex flex-col gap-3 sm:flex-row sm:items-center">
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold text-gray-900 dark:text-white text-sm">{formatDate(log.sleepDate)}</span>
+          <span className="font-semibold text-white text-sm">{formatDate(log.sleepDate)}</span>
           <span className="text-xs text-gray-400">{formatTime(log.bedtime)} - {formatTime(log.wakeTime)}</span>
           <span className={`text-xs font-semibold ${q.color}`}>{q.label}</span>
         </div>
-        <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-gray-400">
           <span className="font-bold text-indigo-600 dark:text-indigo-400 text-base">{formatDuration(log.durationMinutes)}</span>
           <span className="flex items-center gap-1"><Sunrise size={12} /> Energie {log.energy ?? '-'}/5</span>
           <span>Reveils: {log.wakeUps ?? 0}</span>
@@ -485,7 +485,7 @@ function SleepRow({ log, onEdit, onDelete }: {
         {(factors.length > 0 || log.notes) && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {factors.slice(0, 4).map(f => (
-              <span key={f} className="text-[10px] px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300">
+              <span key={f} className="text-[10px] px-2 py-1 rounded-full bg-white/[0.05] text-gray-400">
                 {factorLabel(f)}
               </span>
             ))}
@@ -494,10 +494,10 @@ function SleepRow({ log, onEdit, onDelete }: {
         )}
       </div>
       <div className="flex items-center gap-1 self-end sm:self-auto">
-        <button onClick={() => onEdit(log)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-blue-500 transition-colors" title="Modifier">
+        <button onClick={() => onEdit(log)} className="p-2 rounded-xl hover:bg-white/[0.05] text-gray-400 hover:text-blue-500 transition-colors" title="Modifier">
           <Edit2 size={14} />
         </button>
-        <button onClick={() => onDelete(log.id)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-red-500 transition-colors" title="Supprimer">
+        <button onClick={() => onDelete(log.id)} className="p-2 rounded-xl hover:bg-white/[0.05] text-gray-400 hover:text-red-500 transition-colors" title="Supprimer">
           <Trash2 size={14} />
         </button>
       </div>
@@ -516,14 +516,14 @@ function SleepModal({ form, editing, saving, onClose, onChange, onToggleFactor, 
 }) {
   const duration = calculatedDuration(form)
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white dark:bg-gray-800 px-5 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="relative w-full max-w-2xl bg-white/5 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white/5 px-5 py-4 border-b border-white/10 border-white/10 flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">{editing ? 'Modifier la nuit' : 'Journal rapide de nuit'}</h2>
+            <h2 className="text-lg font-black text-white">{editing ? 'Modifier la nuit' : 'Journal rapide de nuit'}</h2>
             <p className="text-xs text-gray-400">Capturez ce qui explique vraiment votre recuperation.</p>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+          <button onClick={onClose} className="p-1 rounded-xl hover:bg-white/[0.05]">
             <X size={18} className="text-gray-400" />
           </button>
         </div>
@@ -565,7 +565,7 @@ function SleepModal({ form, editing, saving, onClose, onChange, onToggleFactor, 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Reveils nocturnes</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Reveils nocturnes</label>
             <div className="grid grid-cols-5 gap-2">
               {[0, 1, 2, 3, 4].map(n => (
                 <button
@@ -573,7 +573,7 @@ function SleepModal({ form, editing, saving, onClose, onChange, onToggleFactor, 
                   type="button"
                   onClick={() => onChange(f => ({ ...f, wakeUps: n }))}
                   className={`rounded-xl py-2 text-sm font-semibold border transition-colors ${
-                    form.wakeUps === n ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300'
+                    form.wakeUps === n ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-white/10 text-gray-400'
                   }`}
                 >
                   {n === 4 ? '4+' : n}
@@ -583,7 +583,7 @@ function SleepModal({ form, editing, saving, onClose, onChange, onToggleFactor, 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Facteurs possibles</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Facteurs possibles</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {FACTORS.map(factor => {
                 const Icon = factor.icon
@@ -596,7 +596,7 @@ function SleepModal({ form, editing, saving, onClose, onChange, onToggleFactor, 
                     className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition-colors ${
                       active
                         ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300'
-                        : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:border-indigo-300'
+                        : 'border-white/10 text-gray-400 hover:border-indigo-300'
                     }`}
                   >
                     <Icon size={14} />
@@ -608,18 +608,18 @@ function SleepModal({ form, editing, saving, onClose, onChange, onToggleFactor, 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Note optionnelle</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Note optionnelle</label>
             <textarea
               value={form.notes}
               onChange={e => onChange(f => ({ ...f, notes: e.target.value }))}
               placeholder="Ex: reveil a 4h, stress, chambre chaude..."
               rows={3}
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400"
             />
           </div>
 
           <div className="flex flex-col-reverse sm:flex-row gap-3 pt-1">
-            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 text-sm font-medium hover:bg-white/[0.05] transition-colors">
               Annuler
             </button>
             <button onClick={onSave} disabled={saving || !duration} className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors">
@@ -641,12 +641,12 @@ function DateTimeField({ label, date, time, onDate, onTime }: {
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-gray-300 mb-1">{label}</label>
       <div className="flex gap-2">
         <input type="date" value={date} onChange={e => onDate(e.target.value)}
-          className="flex-1 min-w-0 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          className="flex-1 min-w-0 rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
         <input type="time" value={time} onChange={e => onTime(e.target.value)}
-          className="w-28 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+          className="w-28 rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
       </div>
     </div>
   )
@@ -660,12 +660,12 @@ function ScorePicker({ label, value, labels, onChange }: {
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{label}</label>
+      <label className="block text-sm font-medium text-gray-300 mb-2">{label}</label>
       <div className="grid grid-cols-5 gap-2">
         {[1, 2, 3, 4, 5].map(q => (
           <button key={q} type="button" onClick={() => onChange(q)}
             className={`py-2 rounded-xl border text-sm font-semibold transition-colors ${
-              value === q ? 'bg-indigo-600 text-white border-indigo-600' : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:border-indigo-400'
+              value === q ? 'bg-indigo-600 text-white border-indigo-600' : 'border-white/10 text-gray-400 hover:border-indigo-400'
             }`}>
             {q}
           </button>
@@ -682,12 +682,12 @@ function EnergyPicker({ value, onChange }: {
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Energie au reveil</label>
+      <label className="block text-sm font-medium text-gray-300 mb-2">Energie au reveil</label>
       <div className="grid grid-cols-5 gap-2">
         {[1, 2, 3, 4, 5].map(q => (
           <button key={q} type="button" onClick={() => onChange(q)}
             className={`py-2 rounded-xl border text-sm font-semibold transition-colors ${
-              value === q ? 'bg-emerald-600 text-white border-emerald-600' : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-300 hover:border-emerald-400'
+              value === q ? 'bg-emerald-600 text-white border-emerald-600' : 'border-white/10 text-gray-400 hover:border-emerald-400'
             }`}>
             {q}
           </button>

@@ -7,19 +7,19 @@ import toast from 'react-hot-toast'
 import api from '../api/axios'
 
 const RESOURCE_LABELS: Record<string, { label: string; icon: string; color: string }> = {
-  FOOD_LOG:      { label: 'Food Diary',      icon: '🍎', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
-  WORKOUT_PLAN:  { label: 'Programme Sport', icon: '💪', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  SLEEP_LOG:     { label: 'Sommeil',         icon: '😴', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
-  STUDY_SESSION: { label: 'Étude',           icon: '📚', color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400' },
-  NOTE:          { label: 'Note',            icon: '📝', color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' },
-  JOURNAL:       { label: 'Journal',         icon: '📖', color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' },
+  FOOD_LOG:      { label: 'Food Diary',      icon: '??', color: 'bg-green-500/10 text-green-400 border border-green-500/20' },
+  WORKOUT_PLAN:  { label: 'Programme Sport', icon: '??', color: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' },
+  SLEEP_LOG:     { label: 'Sommeil',         icon: '??', color: 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' },
+  STUDY_SESSION: { label: '�tude',           icon: '??', color: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' },
+  NOTE:          { label: 'Note',            icon: '??', color: 'bg-violet-500/10 text-violet-400 border border-violet-500/20' },
+  JOURNAL:       { label: 'Journal',         icon: '??', color: 'bg-rose-500/10 text-rose-400 border border-rose-500/20' },
 }
 
 const REACTIONS = [
-  { type: 'INSPIRED', emoji: '💪', label: 'Inspiré' },
-  { type: 'TRYING',   emoji: '🍎', label: 'Je teste' },
-  { type: 'BRAVO',    emoji: '👏', label: 'Bravo' },
-  { type: 'HOW',      emoji: '❓', label: 'Comment ?' },
+  { type: 'INSPIRED', emoji: '??', label: 'Inspir�' },
+  { type: 'TRYING',   emoji: '??', label: 'Je teste' },
+  { type: 'BRAVO',    emoji: '??', label: 'Bravo' },
+  { type: 'HOW',      emoji: '?', label: 'Comment ?' },
 ]
 
 interface Post {
@@ -60,7 +60,7 @@ export default function SocialPostCard({ post, onDeleted }: Props) {
   const [commentText, setCommentText] = useState('')
   const [replyTo, setReplyTo] = useState<{ id: number; name: string } | null>(null)
 
-  const rt = RESOURCE_LABELS[post.resourceType] ?? { label: post.resourceType, icon: '📄', color: 'bg-gray-100 text-gray-600' }
+  const rt = RESOURCE_LABELS[post.resourceType] ?? { label: post.resourceType, icon: '??', color: 'bg-white/[0.05] text-gray-400 border border-white/10' }
 
   const reactMutation = useMutation({
     mutationFn: (type: string) => api.post(`/social/posts/${post.id}/react`, { type }).then(r => r.data),
@@ -72,7 +72,7 @@ export default function SocialPostCard({ post, onDeleted }: Props) {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['social-feed'] })
       qc.invalidateQueries({ queryKey: ['social-saved'] })
-      toast.success(data.saved ? 'Ajouté aux inspirations' : 'Retiré des inspirations')
+      toast.success(data.saved ? 'Ajout� aux inspirations' : 'Retir� des inspirations')
     },
   })
 
@@ -81,7 +81,7 @@ export default function SocialPostCard({ post, onDeleted }: Props) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['social-feed'] })
       onDeleted?.(post.id)
-      toast.success('Post supprimé')
+      toast.success('Post supprim�')
     },
   })
 
@@ -109,14 +109,14 @@ export default function SocialPostCard({ post, onDeleted }: Props) {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+    <div className="glass-card border-white/10 overflow-hidden">
       {/* Header */}
       <div className="p-4 flex items-center gap-3">
         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-sky-500 to-indigo-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
           {post.author.initials}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-gray-900 dark:text-white">{post.author.name}</p>
+          <p className="text-sm font-semibold text-white">{post.author.name}</p>
           <p className="text-xs text-gray-400">{post.timeAgo}</p>
         </div>
         <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${rt.color}`}>
@@ -124,7 +124,7 @@ export default function SocialPostCard({ post, onDeleted }: Props) {
         </span>
         <button
           onClick={() => deleteMutation.mutate()}
-          className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+          className="p-1.5 rounded-xl text-gray-300 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
           title="Supprimer"
         >
           <Trash2 size={13} />
@@ -134,10 +134,10 @@ export default function SocialPostCard({ post, onDeleted }: Props) {
       {/* Content */}
       <div className="px-4 pb-3">
         {post.title && (
-          <h3 className="font-bold text-gray-900 dark:text-white mb-1">{post.title}</h3>
+          <h3 className="font-black text-white mb-1">{post.title}</h3>
         )}
         {post.caption && (
-          <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">{post.caption}</p>
+          <p className="text-sm text-gray-400 mb-3">{post.caption}</p>
         )}
         <ResourcePreview type={post.resourceType} preview={post.preview} />
       </div>
@@ -155,7 +155,7 @@ export default function SocialPostCard({ post, onDeleted }: Props) {
               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all ${
                 isActive
                   ? 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-400 ring-1 ring-sky-400'
-                  : 'bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-sky-50 dark:hover:bg-sky-900/20'
+                  : 'bg-white/[0.03] text-gray-400 hover:bg-sky-50 dark:hover:bg-sky-900/20'
               }`}
             >
               <span>{r.emoji}</span>
@@ -167,10 +167,10 @@ export default function SocialPostCard({ post, onDeleted }: Props) {
       </div>
 
       {/* Actions bar */}
-      <div className="px-4 pb-4 flex items-center gap-3 border-t border-gray-50 dark:border-gray-700 pt-3">
+      <div className="px-4 pb-4 flex items-center gap-3 border-t border-gray-50 border-white/10 pt-3">
         <button
           onClick={() => setShowComments(v => !v)}
-          className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
+          className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
         >
           <MessageSquare size={15} />
           {post.commentsCount} commentaire{post.commentsCount !== 1 ? 's' : ''}
@@ -187,7 +187,7 @@ export default function SocialPostCard({ post, onDeleted }: Props) {
           }`}
         >
           {post.isSaved
-            ? <><BookmarkCheck size={15} /> Sauvegardé</>
+            ? <><BookmarkCheck size={15} /> Sauvegard�</>
             : <><Bookmark size={15} /> Sauvegarder</>
           }
         </button>
@@ -195,7 +195,7 @@ export default function SocialPostCard({ post, onDeleted }: Props) {
 
       {/* Comments section */}
       {showComments && (
-        <div className="border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 p-4 space-y-3">
+        <div className="border-t border-white/10 bg-white/[0.03] p-4 space-y-3">
           {comments.length === 0 && !commentMutation.isPending && (
             <p className="text-xs text-gray-400 text-center">Aucun commentaire. Soyez le premier !</p>
           )}
@@ -206,7 +206,7 @@ export default function SocialPostCard({ post, onDeleted }: Props) {
           {/* Input */}
           {replyTo && (
             <div className="flex items-center gap-2 text-xs text-sky-600 dark:text-sky-400">
-              <span>↩ Réponse à {replyTo.name}</span>
+              <span>? R�ponse � {replyTo.name}</span>
               <button onClick={() => setReplyTo(null)} className="underline">Annuler</button>
             </div>
           )}
@@ -216,8 +216,8 @@ export default function SocialPostCard({ post, onDeleted }: Props) {
               value={commentText}
               onChange={e => setCommentText(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && submitComment()}
-              placeholder={replyTo ? `Répondre à ${replyTo.name}...` : 'Ajouter un commentaire...'}
-              className="flex-1 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm px-3 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-400"
+              placeholder={replyTo ? `R�pondre � ${replyTo.name}...` : 'Ajouter un commentaire...'}
+              className="flex-1 rounded-xl border border-white/10 bg-white/5 text-sm px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-400"
             />
             <button
               onClick={submitComment}
@@ -240,17 +240,17 @@ function CommentItem({ comment, onReply }: { comment: Comment; onReply: (r: { id
         <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
           {comment.author.initials}
         </div>
-        <div className="flex-1 bg-white dark:bg-gray-700 rounded-xl px-3 py-2">
+        <div className="flex-1 bg-white/5 rounded-xl px-3 py-2">
           <div className="flex items-center gap-2 mb-0.5">
             <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{comment.author.name}</span>
             <span className="text-[10px] text-gray-400">{comment.timeAgo}</span>
           </div>
-          <p className="text-sm text-gray-700 dark:text-gray-300">{comment.content}</p>
+          <p className="text-sm text-gray-300">{comment.content}</p>
           <button
             onClick={() => onReply({ id: comment.id, name: comment.author.name })}
             className="text-[11px] text-sky-500 hover:underline mt-1"
           >
-            Répondre
+            R�pondre
           </button>
         </div>
       </div>
@@ -261,12 +261,12 @@ function CommentItem({ comment, onReply }: { comment: Comment; onReply: (r: { id
               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
                 {r.author.initials}
               </div>
-              <div className="flex-1 bg-white dark:bg-gray-700 rounded-xl px-3 py-2">
+              <div className="flex-1 bg-white/5 rounded-xl px-3 py-2">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">{r.author.name}</span>
                   <span className="text-[10px] text-gray-400">{r.timeAgo}</span>
                 </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300">{r.content}</p>
+                <p className="text-sm text-gray-300">{r.content}</p>
               </div>
             </div>
           ))}
@@ -283,7 +283,7 @@ function ResourcePreview({ preview }: { type: string; preview: Record<string, un
     if (v === null || v === undefined) return null
     const humanKey = k.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').toLowerCase()
     return (
-      <span key={k} className="text-xs bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg px-2 py-1">
+      <span key={k} className="text-xs bg-white/[0.05] text-gray-400 rounded-xl px-2 py-1">
         <span className="text-gray-400">{humanKey}: </span>
         {String(v)}
       </span>
