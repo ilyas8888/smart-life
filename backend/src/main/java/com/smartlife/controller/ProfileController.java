@@ -34,16 +34,16 @@ public class ProfileController {
             @RequestBody Map<String, Object> body,
             @AuthenticationPrincipal User user) {
 
-        // Username
+        // Handle (username)
         if (body.containsKey("username")) {
-            String username = sanitizeUsername(body.get("username"));
-            if (username != null && !username.equals(user.getUsername())) {
-                if (userRepository.existsByUsername(username)) {
+            String handle = sanitizeUsername(body.get("username"));
+            if (handle != null && !handle.equals(user.getHandle())) {
+                if (userRepository.existsByHandle(handle)) {
                     return ResponseEntity.badRequest().body(Map.of("error", "USERNAME_TAKEN"));
                 }
-                user.setUsername(username.isBlank() ? null : username);
-            } else if (username == null) {
-                user.setUsername(null);
+                user.setHandle(handle.isBlank() ? null : handle);
+            } else if (handle == null) {
+                user.setHandle(null);
             }
         }
 
@@ -75,7 +75,7 @@ public class ProfileController {
     @GetMapping("/{username}")
     public ResponseEntity<?> getPublicProfile(@PathVariable String username,
                                                @AuthenticationPrincipal User currentUser) {
-        return userRepository.findByUsername(username)
+        return userRepository.findByHandle(username)
                 .map(target -> {
                     List<SocialPost> posts = postRepository.findByAuthorIdOrderByCreatedAtDesc(target.getId());
                     Map<String, Object> profile = buildProfile(target, null, false);
@@ -105,7 +105,7 @@ public class ProfileController {
 
         Map<String, Object> p = new LinkedHashMap<>();
         p.put("id",          user.getId());
-        p.put("username",    user.getUsername());
+        p.put("username",    user.getHandle());
         p.put("displayName", displayName);
         p.put("initials",    initials);
         p.put("firstName",   user.getFirstName());

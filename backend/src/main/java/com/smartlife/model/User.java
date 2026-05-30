@@ -44,8 +44,9 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private boolean localLoginAllowed = false;
 
-    @Column(unique = true, length = 50)
-    private String username;
+    // Named "handle" to avoid clash with UserDetails.getUsername() which returns email
+    @Column(name = "username", unique = true, length = 50)
+    private String handle;
 
     @Column(columnDefinition = "TEXT")
     private String bio;

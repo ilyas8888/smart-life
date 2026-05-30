@@ -244,7 +244,7 @@ public class SocialController {
         return Map.of(
                 "name",        name,
                 "initials",    initials,
-                "username",    user.getUsername() != null ? user.getUsername() : "",
+                "username",    user.getHandle() != null ? user.getHandle() : "",
                 "avatarColor", user.getAvatarColor() != null ? user.getAvatarColor() : "#6366F1"
         );
     }
