@@ -27,7 +27,7 @@ interface SharedLink {
 
 interface Post {
   id: number
-  author: { userId: number; name: string; initials: string; username: string; avatarColor: string }
+  author: { userId: number; name: string; initials: string; username: string; avatarColor: string; hasAvatar: boolean }
   resourceType: string
   resourceId: number
   title: string | null

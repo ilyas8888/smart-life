@@ -6,6 +6,8 @@ import {
 import toast from 'react-hot-toast'
 import api from '../api/axios'
 
+const API_BASE = import.meta.env.VITE_API_URL ?? ''
+
 const RESOURCE_LABELS: Record<string, { label: string; icon: string; color: string }> = {
   FOOD_LOG:      { label: 'Food Diary',      icon: '??', color: 'bg-green-500/10 text-green-400 border border-green-500/20' },
   WORKOUT_PLAN:  { label: 'Programme Sport', icon: '??', color: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' },
@@ -24,7 +26,7 @@ const REACTIONS = [
 
 interface Post {
   id: number
-  author: { userId: number; name: string; initials: string; username: string; avatarColor: string }
+  author: { userId: number; name: string; initials: string; username: string; avatarColor: string; hasAvatar: boolean }
   resourceType: string
   resourceId: number
   title: string | null
@@ -116,11 +118,13 @@ export default function SocialPostCard({ post, onDeleted, onAuthorClick }: Props
         <button
           type="button"
           onClick={() => onAuthorClick?.(post.author.userId)}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 hover:scale-110 transition-transform"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 hover:scale-110 transition-transform overflow-hidden"
           style={{ background: post.author.avatarColor ?? '#6366F1' }}
           title={`Voir le profil de ${post.author.name}`}
         >
-          {post.author.initials}
+          {post.author.hasAvatar
+            ? <img src={`${API_BASE}/api/profile/avatar/${post.author.userId}`} alt={post.author.initials} className="w-full h-full object-cover" />
+            : post.author.initials}
         </button>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-white">{post.author.name}</p>

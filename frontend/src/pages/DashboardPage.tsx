@@ -167,6 +167,12 @@ export default function DashboardPage() {
 
   const displayName = firstName ? `${firstName} ${lastName ?? ''}`.trim() : (email ?? 'Utilisateur')
 
+  const { data: myProfile } = useQuery<{ id: number; hasAvatar: boolean }>({
+    queryKey: ['profile-me'],
+    queryFn: () => api.get('/profile/me').then(r => r.data),
+    staleTime: 120_000,
+  })
+
   const MODULE_ACCENT: Record<string, string> = {
     home: 'text-blue-400',
     agenda: 'text-indigo-400',
@@ -323,8 +329,10 @@ export default function DashboardPage() {
             title="Mon Profil"
             className={`w-full flex items-center gap-3 mb-3 rounded-xl px-2 py-1.5 hover:bg-white/[0.05] transition-colors ${sidebarCollapsed ? 'md:justify-center' : ''}`}
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-base font-bold shrink-0 shadow-[0_0_12px_rgba(99,102,241,0.4)]">
-              {(firstName ?? email ?? '?')[0].toUpperCase()}
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-base font-bold shrink-0 shadow-[0_0_12px_rgba(99,102,241,0.4)] overflow-hidden">
+              {myProfile?.hasAvatar && myProfile.id
+                ? <img src={`${import.meta.env.VITE_API_URL ?? ''}/api/profile/avatar/${myProfile.id}`} alt="avatar" className="w-full h-full object-cover" />
+                : (firstName ?? email ?? '?')[0].toUpperCase()}
             </div>
             <div className={`flex-1 min-w-0 text-left ${sidebarCollapsed ? 'md:hidden' : ''}`}>
               <p className="text-sm font-semibold truncate">{displayName}</p>
