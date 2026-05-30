@@ -71,6 +71,9 @@ public class SocialController {
         if (resourceType == null || !VALID_TYPES.contains(resourceType) || resourceId == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "INVALID_POST"));
         }
+        if (!resourceBelongsToUser(resourceType, resourceId, user.getId())) {
+            return ResponseEntity.status(403).body(Map.of("error", "RESOURCE_NOT_YOURS"));
+        }
 
         SocialPost post = SocialPost.builder()
                 .author(user)
@@ -297,6 +300,24 @@ public class SocialController {
             }
         } catch (Exception ignored) {}
         return p;
+    }
+
+    private boolean resourceBelongsToUser(String resourceType, Long resourceId, Long userId) {
+        return switch (resourceType) {
+            case "NOTE" -> noteRepo.findById(resourceId)
+                    .map(n -> n.getUser().getId().equals(userId)).orElse(false);
+            case "JOURNAL" -> diaryRepo.findById(resourceId)
+                    .map(d -> d.getUser().getId().equals(userId)).orElse(false);
+            case "FOOD_LOG" -> foodLogRepo.findById(resourceId)
+                    .map(f -> f.getUser().getId().equals(userId)).orElse(false);
+            case "WORKOUT_PLAN" -> workoutPlanRepo.findById(resourceId)
+                    .map(w -> w.getUser().getId().equals(userId)).orElse(false);
+            case "SLEEP_LOG" -> sleepLogRepo.findById(resourceId)
+                    .map(s -> s.getUser().getId().equals(userId)).orElse(false);
+            case "STUDY_SESSION" -> studySessionRepo.findById(resourceId)
+                    .map(ss -> ss.getUser().getId().equals(userId)).orElse(false);
+            default -> false;
+        };
     }
 
     private Map<String, Object> toCommentMap(SocialComment c) {
