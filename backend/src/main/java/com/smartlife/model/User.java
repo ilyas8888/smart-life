@@ -48,6 +48,9 @@ public class User implements UserDetails {
     @Column(name = "username", unique = true, length = 50)
     private String handle;
 
+    @Column(name = "avatar_data", columnDefinition = "TEXT")
+    private String avatarData;
+
     @Column(columnDefinition = "TEXT")
     private String bio;
 

@@ -6,11 +6,15 @@ import com.smartlife.repository.SocialPostRepository;
 import com.smartlife.repository.UserRepository;
 import com.smartlife.service.BadgeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.Base64;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/profile")
@@ -101,6 +105,55 @@ public class ProfileController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // ── Avatar upload ─────────────────────────────────────────────────────────
+
+    @PutMapping("/me/avatar")
+    public ResponseEntity<?> uploadAvatar(
+            @RequestBody Map<String, Object> body,
+            @AuthenticationPrincipal User user) {
+
+        String avatarData = trimOrNull(body.get("avatarData"));
+        if (avatarData == null || !avatarData.startsWith("data:image/")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "INVALID_IMAGE"));
+        }
+        // Limit: ~500KB base64 ≈ ~375KB binary (plenty for a 200×200 JPEG)
+        if (avatarData.length() > 600_000) {
+            return ResponseEntity.badRequest().body(Map.of("error", "IMAGE_TOO_LARGE"));
+        }
+        user.setAvatarData(avatarData);
+        userRepository.save(user);
+        return ResponseEntity.ok(Map.of("status", "updated"));
+    }
+
+    @DeleteMapping("/me/avatar")
+    public ResponseEntity<Void> deleteAvatar(@AuthenticationPrincipal User user) {
+        user.setAvatarData(null);
+        userRepository.save(user);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── Public avatar (no auth required — see SecurityConfig) ────────────────
+
+    @GetMapping("/avatar/{userId}")
+    public ResponseEntity<byte[]> getAvatar(@PathVariable Long userId) {
+        return userRepository.findById(userId)
+                .filter(u -> u.getAvatarData() != null && !u.getAvatarData().isBlank())
+                .map(u -> {
+                    String data   = u.getAvatarData();
+                    String base64 = data.contains(",") ? data.substring(data.indexOf(',') + 1) : data;
+                    try {
+                        byte[] bytes = Base64.getDecoder().decode(base64);
+                        return ResponseEntity.ok()
+                                .contentType(MediaType.IMAGE_JPEG)
+                                .cacheControl(CacheControl.maxAge(7, TimeUnit.DAYS).cachePublic())
+                                .body(bytes);
+                    } catch (IllegalArgumentException e) {
+                        return ResponseEntity.badRequest().<byte[]>build();
+                    }
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     // ── My posts (for profile panel) ─────────────────────────────────────────
 
     @GetMapping("/me/posts")
@@ -128,6 +181,7 @@ public class ProfileController {
         p.put("lastName",    user.getLastName());
         p.put("bio",         user.getBio());
         p.put("avatarColor", user.getAvatarColor() != null ? user.getAvatarColor() : "#6366F1");
+        p.put("hasAvatar",   user.getAvatarData() != null && !user.getAvatarData().isBlank());
         p.put("createdAt",   user.getCreatedAt());
         if (includeSensitive) p.put("email", user.getEmail());
         if (badges != null)   p.put("badges", badges);
