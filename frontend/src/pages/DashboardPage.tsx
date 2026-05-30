@@ -256,12 +256,15 @@ export default function DashboardPage() {
         />
       )}
 
-      <aside className={`
-        fixed md:relative inset-y-0 left-0 z-30 w-72 ${sidebarCollapsed ? 'md:w-[72px]' : 'md:w-72'} bg-[#0D1117] text-white flex flex-col border-r border-white/[0.06]
-        transform transition-[transform,width] duration-300
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-      `}>
-        <div className={`${sidebarCollapsed ? 'md:px-3' : 'md:px-5'} p-5 border-b border-white/[0.06]`}>
+      <aside
+        className={`
+          fixed md:relative inset-y-0 left-0 z-30 w-72 ${sidebarCollapsed ? 'md:w-[72px]' : 'md:w-72'} text-white flex flex-col border-r border-white/[0.10]
+          transform transition-[transform,width] duration-300
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+        style={{ background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(24px)' }}
+      >
+        <div className={`${sidebarCollapsed ? 'md:px-3' : 'md:px-5'} p-5 border-b border-white/[0.10]`} style={{ background: 'rgba(255,255,255,0.03)' }}>
           <div className={`flex items-center gap-3 ${sidebarCollapsed ? 'md:justify-center' : ''}`}>
             <div className="p-2 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl shadow-[0_0_20px_rgba(99,102,241,0.5)]">
               <Brain size={22} />

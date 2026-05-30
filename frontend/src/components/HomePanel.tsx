@@ -53,24 +53,28 @@ interface StatCardProps {
   value: string | number
   sub?: string
   color: string
+  glow: string
   onClick: () => void
 }
 
-function StatCard({ icon: Icon, label, value, sub, color, onClick }: StatCardProps) {
+function StatCard({ icon: Icon, label, value, sub, color, glow, onClick }: StatCardProps) {
   return (
     <button
       onClick={onClick}
-      className="glass-card-hover text-left p-4 sm:p-5 w-full group"
+      className="glass-card-hover text-left p-4 sm:p-5 w-full group relative overflow-hidden"
+      style={{ boxShadow: `0 0 30px ${glow}, 0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08)` }}
     >
-      <div className="flex items-start justify-between mb-4">
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        style={{ background: `radial-gradient(circle at 30% 50%, ${glow} 0%, transparent 70%)` }} />
+      <div className="relative flex items-start justify-between mb-4">
         <div className={`p-2.5 rounded-2xl bg-gradient-to-br ${color} shadow-lg`}>
           <Icon size={20} className="text-white" />
         </div>
         <ChevronRight size={16} className="text-gray-600 group-hover:text-white transition-colors mt-1" />
       </div>
-      <p className="text-3xl sm:text-4xl font-black text-white mb-1 leading-none tracking-tight">{value}</p>
-      <p className="text-xs font-semibold tracking-widest text-gray-500 uppercase mt-2">{label}</p>
-      {sub && <p className="text-xs text-gray-600 mt-1">{sub}</p>}
+      <p className="relative text-3xl sm:text-4xl font-black text-white mb-1 leading-none tracking-tight">{value}</p>
+      <p className="relative text-xs font-semibold tracking-widest text-gray-500 uppercase mt-2">{label}</p>
+      {sub && <p className="relative text-xs text-gray-600 mt-1">{sub}</p>}
     </button>
   )
 }
@@ -222,8 +226,14 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
     <div className="w-full space-y-5">
 
       {/* ── Hero ─────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden glass-card p-6 sm:p-8">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 via-violet-600/10 to-transparent pointer-events-none" />
+      <div className="relative overflow-hidden rounded-2xl p-6 sm:p-8"
+        style={{
+          background: 'linear-gradient(135deg, rgba(99,102,241,0.25) 0%, rgba(139,92,246,0.15) 40%, rgba(14,165,233,0.1) 100%)',
+          border: '1px solid rgba(99,102,241,0.3)',
+          boxShadow: '0 0 60px rgba(99,102,241,0.15), 0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-transparent to-violet-600/10 pointer-events-none" />
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <p className="text-sm text-indigo-400 font-medium mb-2">
@@ -256,6 +266,7 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
           value={tasksTodo}
           sub={tasksDone > 0 ? `${tasksDone} terminée${tasksDone > 1 ? 's' : ''}` : undefined}
           color="from-indigo-500 to-violet-500"
+          glow="rgba(99,102,241,0.18)"
           onClick={() => onNavigate('tasks')}
         />
         <StatCard
@@ -264,22 +275,25 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
           value={pendingReminders}
           sub={reminders.length > 0 ? `${reminders.length} au total` : undefined}
           color="from-amber-500 to-orange-500"
+          glow="rgba(245,158,11,0.18)"
           onClick={() => onNavigate('reminders')}
         />
         <StatCard
           icon={UtensilsCrossed}
           label="Calories"
-          value={todayCalories > 0 ? `${todayCalories}` : '—'}
-          sub={todayCalories > 0 ? 'kcal aujourd\'hui' : undefined}
+          value={todayCalories > 0 ? `${todayCalories}` : '0'}
+          sub={todayCalories > 0 ? 'kcal aujourd\'hui' : 'kcal'}
           color="from-emerald-500 to-teal-500"
+          glow="rgba(16,185,129,0.18)"
           onClick={() => onNavigate('food')}
         />
         <StatCard
           icon={Dumbbell}
           label="Sport semaine"
-          value={weekWorkouts.length === 0 ? '—' : weekWorkouts.length}
-          sub={weekWorkouts.length > 0 ? `${weekDuration} min · ${weekCaloriesBurned} kcal` : undefined}
-          color="from-amber-400 to-orange-400"
+          value={weekWorkouts.length}
+          sub={weekWorkouts.length > 0 ? `${weekDuration} min · ${weekCaloriesBurned} kcal` : 'séances'}
+          color="from-orange-400 to-red-400"
+          glow="rgba(249,115,22,0.18)"
           onClick={() => onNavigate('workout')}
         />
         <StatCard
@@ -287,14 +301,16 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
           label="Notes"
           value={notes.length}
           color="from-violet-500 to-purple-500"
+          glow="rgba(139,92,246,0.18)"
           onClick={() => onNavigate('notes')}
         />
         <StatCard
           icon={BookOpen}
           label="Journal"
           value={diary.length}
-          sub={diary.length > 0 ? 'entrées' : undefined}
+          sub={diary.length > 0 ? 'entrées' : 'entrées'}
           color="from-rose-500 to-pink-500"
+          glow="rgba(244,63,94,0.18)"
           onClick={() => onNavigate('diary')}
         />
       </div>
