@@ -29,13 +29,14 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class SharedLinkController {
 
-    private static final Set<String> RESOURCE_TYPES = Set.of("FOOD_LOG", "WORKOUT_PLAN", "SLEEP_LOG", "NOTE", "JOURNAL");
+    private static final Set<String> RESOURCE_TYPES = Set.of("FOOD_LOG", "WORKOUT_PLAN", "SLEEP_LOG", "STUDY_SESSION", "NOTE", "JOURNAL");
     private static final Bandwidth PUBLIC_SHARE_LIMIT = Bandwidth.classic(60, Refill.intervally(60, Duration.ofMinutes(1)));
 
     private final SharedLinkRepository sharedLinkRepository;
     private final FoodLogRepository foodLogRepository;
     private final WorkoutPlanRepository workoutPlanRepository;
     private final SleepLogRepository sleepLogRepository;
+    private final StudySessionRepository studySessionRepository;
     private final NoteRepository noteRepository;
     private final DiaryEntryRepository diaryEntryRepository;
     private final ObjectMapper objectMapper;
@@ -182,6 +183,8 @@ public class SharedLinkController {
                     .map(plan -> plan.getUser().getId().equals(userId)).orElse(false);
             case "SLEEP_LOG" -> sleepLogRepository.findById(resourceId)
                     .map(log -> log.getUser().getId().equals(userId)).orElse(false);
+            case "STUDY_SESSION" -> studySessionRepository.findById(resourceId)
+                    .map(session -> session.getUser().getId().equals(userId)).orElse(false);
             case "NOTE" -> noteRepository.findById(resourceId)
                     .map(note -> note.getUser().getId().equals(userId)).orElse(false);
             case "JOURNAL" -> diaryEntryRepository.findById(resourceId)
@@ -198,6 +201,8 @@ public class SharedLinkController {
                     .map(this::toWorkoutPlanResource).orElse(null);
             case "SLEEP_LOG" -> sleepLogRepository.findById(link.getResourceId())
                     .map(this::toSleepLogResource).orElse(null);
+            case "STUDY_SESSION" -> studySessionRepository.findById(link.getResourceId())
+                    .map(this::toStudySessionResource).orElse(null);
             case "NOTE" -> noteRepository.findById(link.getResourceId())
                     .map(this::toNoteResource).orElse(null);
             case "JOURNAL" -> diaryEntryRepository.findById(link.getResourceId())
@@ -256,6 +261,23 @@ public class SharedLinkController {
         r.put("quality", log.getQuality());
         r.put("notes", log.getNotes());
         r.put("createdAt", log.getCreatedAt());
+        return r;
+    }
+
+    private Map<String, Object> toStudySessionResource(StudySession session) {
+        Map<String, Object> r = new LinkedHashMap<>();
+        r.put("id", session.getId());
+        r.put("title", session.getTitle());
+        r.put("topic", session.getTopic() != null ? session.getTopic().getName() : null);
+        r.put("startedAt", session.getStartedAt());
+        r.put("endedAt", session.getEndedAt());
+        r.put("durationMinutes", session.getDurationMinutes());
+        r.put("focusScore", session.getFocusScore());
+        r.put("difficultyScore", session.getDifficultyScore());
+        r.put("notes", session.getNotes());
+        r.put("learned", session.getLearned());
+        r.put("nextStep", session.getNextStep());
+        r.put("createdAt", session.getCreatedAt());
         return r;
     }
 

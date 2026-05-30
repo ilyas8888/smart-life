@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Globe, Plus, Copy, EyeOff, Trash2, Check, X,
@@ -45,6 +45,15 @@ const TABS = [
   { id: 'challenges', label: 'Défis',             icon: Trophy,    active: false },
 ]
 
+const RESOURCE_ENDPOINTS: Record<string, string> = {
+  NOTE: '/notes',
+  JOURNAL: '/diary',
+  FOOD_LOG: '/food-logs',
+  WORKOUT_PLAN: '/workout-plans',
+  SLEEP_LOG: '/sleep-logs',
+  STUDY_SESSION: '/study/sessions',
+}
+
 interface CreateForm {
   resourceType: string
   resourceId: string
@@ -53,6 +62,11 @@ interface CreateForm {
   allowComments: boolean
   allowReactions: boolean
   maskCalories: boolean
+}
+
+interface ShareResourceOption {
+  id: number
+  label: string
 }
 
 function defaultForm(): CreateForm {
@@ -79,6 +93,48 @@ function linkUrl(token: string) {
   return `${window.location.origin}${import.meta.env.BASE_URL}share/${token}`
 }
 
+function compactDate(value: unknown) {
+  return typeof value === 'string' && value
+    ? new Date(value).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+    : null
+}
+
+function toResourceOption(type: string, item: Record<string, unknown>): ShareResourceOption | null {
+  const id = typeof item.id === 'number' ? item.id : Number(item.id)
+  if (!Number.isFinite(id)) return null
+
+  const date = compactDate(item.logDate ?? item.date ?? item.sleepDate ?? item.entryDate ?? item.startedAt ?? item.createdAt)
+  const title = typeof item.title === 'string' && item.title.trim() ? item.title.trim() : null
+  const name = typeof item.name === 'string' && item.name.trim() ? item.name.trim() : null
+  const foodItem = typeof item.foodItem === 'string' && item.foodItem.trim() ? item.foodItem.trim() : null
+
+  let label: string
+  switch (type) {
+    case 'NOTE':
+      label = title ?? `Note #${id}`
+      break
+    case 'JOURNAL':
+      label = title ?? (date ? `Journal du ${date}` : `Journal #${id}`)
+      break
+    case 'FOOD_LOG':
+      label = [date, foodItem].filter(Boolean).join(' - ') || `Food log #${id}`
+      break
+    case 'WORKOUT_PLAN':
+      label = name ?? title ?? `Programme #${id}`
+      break
+    case 'SLEEP_LOG':
+      label = date ? `Sommeil du ${date}` : `Sommeil #${id}`
+      break
+    case 'STUDY_SESSION':
+      label = title ?? (date ? `Session du ${date}` : `Session #${id}`)
+      break
+    default:
+      label = title ?? name ?? `Ressource #${id}`
+  }
+
+  return { id, label: `#${id} - ${label}` }
+}
+
 export default function SocialPanel() {
   const qc = useQueryClient()
   const [activeTab, setActiveTab]   = useState('shares')
@@ -90,6 +146,21 @@ export default function SocialPanel() {
     queryKey: ['shared-links'],
     queryFn: () => api.get('/shares').then(r => r.data),
   })
+
+  const { data: resources = [], isLoading: resourcesLoading } = useQuery<ShareResourceOption[]>({
+    queryKey: ['share-resources', form.resourceType],
+    queryFn: () => api.get(RESOURCE_ENDPOINTS[form.resourceType]).then(r => {
+      const items = Array.isArray(r.data) ? r.data : []
+      return items
+        .map((item: Record<string, unknown>) => toResourceOption(form.resourceType, item))
+        .filter((item: ShareResourceOption | null): item is ShareResourceOption => item !== null)
+    }),
+    enabled: showModal && Boolean(RESOURCE_ENDPOINTS[form.resourceType]),
+  })
+
+  useEffect(() => {
+    setForm(f => ({ ...f, resourceId: '' }))
+  }, [form.resourceType])
 
   const createMutation = useMutation({
     mutationFn: (payload: object) => api.post('/shares', payload).then(r => r.data),
@@ -129,7 +200,7 @@ export default function SocialPanel() {
 
   function handleCreate() {
     if (!form.resourceId.trim()) {
-      toast.error('ID de la ressource requis')
+      toast.error('Ressource requise')
       return
     }
     createMutation.mutate({
@@ -311,6 +382,7 @@ export default function SocialPanel() {
                     onClick={() => setForm(f => ({
                       ...f,
                       resourceType: rt.value,
+                      resourceId: '',
                       maskCalories: rt.value !== 'FOOD_LOG' ? false : f.maskCalories,
                     }))}
                     className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border text-center transition-colors ${
@@ -330,19 +402,32 @@ export default function SocialPanel() {
               </div>
             </div>
 
-            {/* Resource ID */}
+            {/* Resource selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                ID de la ressource
+                Ressource
               </label>
-              <input
-                type="number"
+              <select
                 value={form.resourceId}
                 onChange={e => setForm(f => ({ ...f, resourceId: e.target.value }))}
-                placeholder="Ex: 42"
+                disabled={resourcesLoading || resources.length === 0}
                 className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
-              />
-              <p className="text-xs text-gray-400 mt-1">Visible dans l'URL ou l'interface de la ressource.</p>
+              >
+                {resourcesLoading ? (
+                  <option value="">Chargement...</option>
+                ) : resources.length === 0 ? (
+                  <option value="" disabled>Aucune ressource disponible</option>
+                ) : (
+                  <>
+                    <option value="">Choisir une ressource</option>
+                    {resources.map(resource => (
+                      <option key={resource.id} value={resource.id}>
+                        {resource.label}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
             </div>
 
             {/* Title */}
