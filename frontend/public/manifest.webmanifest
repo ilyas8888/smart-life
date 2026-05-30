@@ -1,0 +1,20 @@
+{
+  "name": "SmartLife",
+  "short_name": "SmartLife",
+  "description": "Gestion personnelle intelligente pour tâches, alimentation, sport, journal et agenda.",
+  "start_url": "/smart-life/",
+  "scope": "/smart-life/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "categories": ["productivity", "health", "lifestyle"],
+  "icons": [
+    {
+      "src": "/smart-life/smartlife-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

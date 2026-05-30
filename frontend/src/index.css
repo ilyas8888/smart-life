@@ -35,3 +35,17 @@
   }
 }
 
+@media (max-width: 640px) {
+  div[class*="fixed"][class*="inset-0"][class*="z-50"] > div[class*="relative"][class*="w-full"][class*="shadow-2xl"],
+  div[class*="fixed"][class*="inset-0"][class*="z-[60]"] > div[class*="relative"][class*="w-full"][class*="shadow-2xl"] {
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+
+  div[class*="fixed"][class*="inset-0"][class*="z-50"][class*="items-center"],
+  div[class*="fixed"][class*="inset-0"][class*="z-[60]"][class*="items-center"] {
+    align-items: stretch;
+    padding: 0;
+  }
+}

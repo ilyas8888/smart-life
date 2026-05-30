@@ -4,18 +4,22 @@ import { useQuery } from '@tanstack/react-query'
 import api from '../api/axios'
 
 interface Suggestion {
+  id?: number
   name: string
   calories: number
   proteinG: number
   carbsG: number
   fatG: number
   fiberG?: number
-  source: 'cache' | 'usda'
+  portions?: Record<string, unknown>
+  source: 'cache' | 'usda' | 'user'
   verified?: boolean
+  custom?: boolean
   hitCount?: number
 }
 
 interface SuggestionsResponse {
+  custom?: Suggestion[]
   frequent: Suggestion[]
   catalog: Suggestion[]
   related?: Suggestion[]
@@ -73,6 +77,7 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
   })
 
   const allItems = [
+    ...(data?.custom ?? []),
     ...(data?.frequent ?? []),
     ...(data?.catalog ?? []),
     ...(data?.related ?? []),
@@ -219,16 +224,33 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
             </div>
           )}
 
+          {inputSettled && !isFetching && data?.custom && data.custom.length > 0 && (
+            <>
+              <div className="px-3 py-1.5 text-xs font-semibold text-violet-600 dark:text-violet-300 bg-violet-50 dark:bg-violet-900/20 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <span>Mes aliments</span>
+                <span className="rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-200 px-2 py-0.5 text-[10px]">Perso</span>
+              </div>
+              {data.custom.map((item, index) => (
+                <SuggestionRow key={`custom-${item.id ?? item.name}-${index}`} item={item} query={debouncedQuery}
+                  active={activeIndex === index} onHover={() => setActiveIndex(index)}
+                  onClick={() => selectItem(item)} />
+              ))}
+            </>
+          )}
+
           {inputSettled && !isFetching && data?.frequent && data.frequent.length > 0 && (
             <>
               <div className="px-3 py-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border-b border-gray-100 dark:border-gray-700">
                 Vos habitudes
               </div>
-              {data.frequent.map((item, index) => (
-                <SuggestionRow key={`frequent-${item.name}-${index}`} item={item} query={debouncedQuery}
-                  active={activeIndex === index} onHover={() => setActiveIndex(index)}
-                  onClick={() => selectItem(item)} />
-              ))}
+              {data.frequent.map((item, index) => {
+                const itemIndex = (data.custom?.length ?? 0) + index
+                return (
+                  <SuggestionRow key={`frequent-${item.name}-${index}`} item={item} query={debouncedQuery}
+                    active={activeIndex === itemIndex} onHover={() => setActiveIndex(itemIndex)}
+                    onClick={() => selectItem(item)} />
+                )
+              })}
             </>
           )}
 
@@ -238,7 +260,7 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
                 Base USDA
               </div>
               {data.catalog.map((item, index) => {
-                const itemIndex = (data.frequent?.length ?? 0) + index
+                const itemIndex = (data.custom?.length ?? 0) + (data.frequent?.length ?? 0) + index
                 return (
                   <SuggestionRow key={`catalog-${item.name}-${index}`} item={item} query={debouncedQuery}
                     active={activeIndex === itemIndex} onHover={() => setActiveIndex(itemIndex)}
@@ -254,7 +276,7 @@ export const FoodAutocomplete = forwardRef<HTMLInputElement, Props>(function Foo
                 Similaires
               </div>
               {data.related.map((item, index) => {
-                const itemIndex = (data.frequent?.length ?? 0) + (data.catalog?.length ?? 0) + index
+                const itemIndex = (data.custom?.length ?? 0) + (data.frequent?.length ?? 0) + (data.catalog?.length ?? 0) + index
                 return (
                   <SuggestionRow key={`related-${item.name}-${index}`} item={item} query={debouncedQuery}
                     active={activeIndex === itemIndex} onHover={() => setActiveIndex(itemIndex)}
@@ -303,7 +325,11 @@ function SuggestionRow({ item, query, active, onHover, onClick }: {
           {highlight(item.name, query)}
         </span>
         <div className="flex items-center gap-1 shrink-0">
-          {item.verified && (
+          {item.custom ? (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
+              ✎ Perso
+            </span>
+          ) : item.verified && (
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
               ✓
             </span>
