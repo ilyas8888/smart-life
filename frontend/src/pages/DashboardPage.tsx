@@ -21,10 +21,11 @@ const WorkoutPanel   = lazy(() => import('../components/WorkoutPanel'))
 const SleepPanel     = lazy(() => import('../components/SleepPanel'))
 const StudyPanel     = lazy(() => import('../components/StudyPanel'))
 const SocialPanel    = lazy(() => import('../components/SocialPanel'))
+const ProfilePanel   = lazy(() => import('../components/ProfilePanel'))
 
-type Panel = 'home' | 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout' | 'sleep' | 'study' | 'social' | 'admin'
+type Panel = 'home' | 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout' | 'sleep' | 'study' | 'social' | 'profile' | 'admin'
 
-const VALID_PANELS: Panel[] = ['home', 'agenda', 'prompt', 'tasks', 'reminders', 'notes', 'contacts', 'food', 'diary', 'workout', 'sleep', 'study', 'social', 'admin']
+const VALID_PANELS: Panel[] = ['home', 'agenda', 'prompt', 'tasks', 'reminders', 'notes', 'contacts', 'food', 'diary', 'workout', 'sleep', 'study', 'social', 'profile', 'admin']
 
 type AiAccessStatus = {
   status: 'FREE' | 'APPROVED' | 'PREMIUM' | 'ADMIN' | 'BLOCKED'
@@ -179,8 +180,9 @@ export default function DashboardPage() {
     workout: 'text-amber-400',
     sleep: 'text-indigo-400',
     study: 'text-cyan-400',
-    social: 'text-sky-400',
-    admin: 'text-emerald-400',
+    social:  'text-sky-400',
+    profile: 'text-violet-400',
+    admin:   'text-emerald-400',
   }
 
   const MODULE_GRADIENT: Record<Panel, string> = {
@@ -197,6 +199,7 @@ export default function DashboardPage() {
     sleep:     'from-indigo-500 via-sky-500 to-cyan-400',
     study:     'from-cyan-500 via-blue-500 to-violet-500',
     social:    'from-sky-500 via-blue-500 to-indigo-500',
+    profile:   'from-violet-500 via-purple-500 to-fuchsia-500',
     admin:     'from-emerald-500 via-teal-500 to-cyan-500',
   }
 
@@ -213,7 +216,8 @@ export default function DashboardPage() {
     { id: 'workout' as Panel, label: 'Sport', icon: Dumbbell },
     { id: 'sleep' as Panel, label: 'Sommeil', icon: Moon },
     { id: 'study' as Panel, label: 'Apprentissage', icon: BookOpen },
-    { id: 'social' as Panel, label: 'Together', icon: Globe },
+    { id: 'social'   as Panel, label: 'Together', icon: Globe },
+    { id: 'profile'  as Panel, label: 'Mon Profil', icon: Users },
     ...(aiStatus?.status === 'ADMIN' ? [{
       id: 'admin' as Panel,
       label: pendingAiRequestCount > 0 ? `Admin IA (${pendingAiRequestCount})` : 'Admin IA',
@@ -529,6 +533,7 @@ export default function DashboardPage() {
           {activePanel === 'sleep' && <SleepPanel />}
           {activePanel === 'study' && <StudyPanel />}
           {activePanel === 'social' && <SocialPanel />}
+          {activePanel === 'profile' && <ProfilePanel />}
           </Suspense>
           {activePanel === 'admin' && aiStatus?.status === 'ADMIN' && (
             <div className="w-full flex flex-col items-center justify-center py-20 animate-panel">
