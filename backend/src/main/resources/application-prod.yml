@@ -1,6 +1,9 @@
 spring:
   flyway:
     validate-on-migrate: false
+  data:
+    redis:
+      url: ${REDIS_URL:}
 
 app:
   mail:

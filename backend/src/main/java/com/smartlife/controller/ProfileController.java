@@ -6,6 +6,8 @@ import com.smartlife.repository.SocialPostRepository;
 import com.smartlife.repository.UserRepository;
 import com.smartlife.service.BadgeService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,12 +30,14 @@ public class ProfileController {
     // ── Own profile (private) ────────────────────────────────────────────────
 
     @GetMapping("/me")
+    @Cacheable(value = "profile", key = "'me:' + #user.id")
     public Map<String, Object> getMyProfile(@AuthenticationPrincipal User user) {
         List<Map<String, Object>> badges = badgeService.computeAndAward(user);
         return buildProfile(user, badges, true);
     }
 
     @PutMapping("/me")
+    @CacheEvict(value = "profile", key = "'me:' + #user.id")
     public ResponseEntity<?> updateMyProfile(
             @RequestBody Map<String, Object> body,
             @AuthenticationPrincipal User user) {
@@ -108,6 +112,7 @@ public class ProfileController {
     // ── Avatar upload ─────────────────────────────────────────────────────────
 
     @PutMapping("/me/avatar")
+    @CacheEvict(value = "profile", key = "'me:' + #user.id")
     public ResponseEntity<?> uploadAvatar(
             @RequestBody Map<String, Object> body,
             @AuthenticationPrincipal User user) {

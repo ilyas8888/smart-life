@@ -3,6 +3,8 @@ package com.smartlife.service;
 import com.smartlife.model.*;
 import com.smartlife.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -21,6 +23,14 @@ public class DayScoreService {
     private final StudySessionRepository studySessionRepository;
     private final DiaryEntryRepository diaryEntryRepository;
 
+    @Caching(cacheable = {
+        @Cacheable(value = "day-score-today",
+                   condition = "#date.equals(T(java.time.LocalDate).now())",
+                   key = "#userId + ':' + #date"),
+        @Cacheable(value = "day-score-history",
+                   condition = "!#date.equals(T(java.time.LocalDate).now())",
+                   key = "#userId + ':' + #date")
+    })
     public Map<String, Object> computeForDate(Long userId, LocalDate date) {
 
         // ── SLEEP (22%) ──────────────────────────────────────────────────
