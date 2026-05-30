@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,8 @@ public class SleepLogController {
         LocalDateTime bedtime = parseDateTime(body.get("bedtime"));
         LocalDateTime wakeTime = parseDateTime(body.get("wakeTime"));
         Short quality = parseQuality(body.get("quality"));
+        Short energy = parseQuality(body.get("energy"));
+        Integer wakeUps = parseNonNegativeInt(body.get("wakeUps"));
 
         if (bedtime == null || wakeTime == null || quality == null) {
             return ResponseEntity.badRequest().body(Map.of("error", "INVALID_SLEEP_LOG"));
@@ -59,6 +62,9 @@ public class SleepLogController {
                 .bedtime(bedtime)
                 .wakeTime(wakeTime)
                 .quality(quality)
+                .energy(energy)
+                .wakeUps(wakeUps != null ? wakeUps : 0)
+                .factors(parseFactors(body.get("factors")))
                 .notes(body.get("notes") instanceof String s ? s.trim() : null)
                 .build();
 
@@ -76,6 +82,8 @@ public class SleepLogController {
                     LocalDateTime bedtime = parseDateTime(body.get("bedtime"));
                     LocalDateTime wakeTime = parseDateTime(body.get("wakeTime"));
                     Short quality = parseQuality(body.get("quality"));
+                    Short energy = parseQuality(body.get("energy"));
+                    Integer wakeUps = parseNonNegativeInt(body.get("wakeUps"));
 
                     if (bedtime == null || wakeTime == null || quality == null) {
                         return ResponseEntity.badRequest().body(Map.of("error", "INVALID_SLEEP_LOG"));
@@ -88,6 +96,9 @@ public class SleepLogController {
                     log.setWakeTime(wakeTime);
                     log.setSleepDate(wakeTime.toLocalDate());
                     log.setQuality(quality);
+                    log.setEnergy(energy);
+                    log.setWakeUps(wakeUps != null ? wakeUps : 0);
+                    log.setFactors(parseFactors(body.get("factors")));
                     log.setNotes(body.get("notes") instanceof String s ? s.trim() : null);
                     log.setUpdatedAt(LocalDateTime.now());
                     return ResponseEntity.ok(toResponse(sleepLogRepository.save(log)));
@@ -118,6 +129,9 @@ public class SleepLogController {
         r.put("wakeTime", log.getWakeTime().toString());
         r.put("durationMinutes", durationMinutes);
         r.put("quality", log.getQuality());
+        r.put("energy", log.getEnergy());
+        r.put("wakeUps", log.getWakeUps());
+        r.put("factors", log.getFactors());
         r.put("notes", log.getNotes());
         r.put("createdAt", log.getCreatedAt().toString());
         return r;
@@ -144,5 +158,26 @@ public class SleepLogController {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private Integer parseNonNegativeInt(Object value) {
+        if (value == null) return null;
+        try {
+            int n = Integer.parseInt(String.valueOf(value));
+            return n >= 0 ? n : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private String[] parseFactors(Object value) {
+        if (!(value instanceof List<?> raw)) return new String[0];
+        List<String> factors = new ArrayList<>();
+        for (Object item : raw) {
+            if (item instanceof String s && !s.isBlank()) {
+                factors.add(s.trim());
+            }
+        }
+        return factors.toArray(String[]::new);
     }
 }

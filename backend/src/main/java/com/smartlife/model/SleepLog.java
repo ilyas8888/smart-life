@@ -33,6 +33,15 @@ public class SleepLog {
     @Column(nullable = false)
     private Short quality;
 
+    private Short energy;
+
+    @Column(name = "wake_ups", nullable = false)
+    @Builder.Default
+    private Integer wakeUps = 0;
+
+    @Column(columnDefinition = "TEXT[]")
+    private String[] factors;
+
     @Column(columnDefinition = "TEXT")
     private String notes;
 
