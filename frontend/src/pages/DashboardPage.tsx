@@ -317,15 +317,20 @@ export default function DashboardPage() {
         </nav>
 
         <div className={`p-4 border-t border-white/[0.06] ${sidebarCollapsed ? 'md:px-2' : ''}`}>
-          <div className={`flex items-center gap-3 mb-3 ${sidebarCollapsed ? 'md:justify-center' : ''}`}>
+          <button
+            type="button"
+            onClick={() => handleNavClick('profile')}
+            title="Mon Profil"
+            className={`w-full flex items-center gap-3 mb-3 rounded-xl px-2 py-1.5 hover:bg-white/[0.05] transition-colors ${sidebarCollapsed ? 'md:justify-center' : ''}`}
+          >
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-base font-bold shrink-0 shadow-[0_0_12px_rgba(99,102,241,0.4)]">
               {(firstName ?? email ?? '?')[0].toUpperCase()}
             </div>
-            <div className={`flex-1 min-w-0 ${sidebarCollapsed ? 'md:hidden' : ''}`}>
+            <div className={`flex-1 min-w-0 text-left ${sidebarCollapsed ? 'md:hidden' : ''}`}>
               <p className="text-sm font-semibold truncate">{displayName}</p>
               <p className="text-xs text-gray-400 truncate">{email}</p>
             </div>
-          </div>
+          </button>
           <button
             onClick={handleLogout}
             title={sidebarCollapsed ? 'Déconnexion' : undefined}
