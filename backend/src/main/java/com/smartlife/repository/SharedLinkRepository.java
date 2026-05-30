@@ -10,4 +10,5 @@ import java.util.UUID;
 public interface SharedLinkRepository extends JpaRepository<SharedLink, Long> {
     List<SharedLink> findByOwnerIdOrderByCreatedAtDesc(Long ownerId);
     Optional<SharedLink> findByToken(UUID token);
+    List<SharedLink> findByRecipientEmailAndRevokedFalseOrderByCreatedAtDesc(String recipientEmail);
 }

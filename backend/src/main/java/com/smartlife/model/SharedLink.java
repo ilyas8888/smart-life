@@ -57,6 +57,13 @@ public class SharedLink {
     @Column(name = "view_count", nullable = false)
     private Integer viewCount = 0;
 
+    @Builder.Default
+    @Column(name = "clones_count", nullable = false)
+    private Integer clonesCount = 0;
+
+    @Column(name = "recipient_email")
+    private String recipientEmail;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

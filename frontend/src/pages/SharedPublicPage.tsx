@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { Globe, Eye, Clock, ExternalLink, AlertCircle } from 'lucide-react'
+import { Globe, Eye, Clock, ExternalLink, AlertCircle, Copy, CheckCheck } from 'lucide-react'
+import { useAuthStore } from '../store/authStore'
+import api from '../api/axios'
+import toast from 'react-hot-toast'
 
 const publicApi = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL ?? ''}/api`,
@@ -16,13 +19,22 @@ const RESOURCE_LABELS: Record<string, { label: string; icon: string }> = {
   JOURNAL:       { label: 'Journal',         icon: '📖' },
 }
 
+const CLONEABLE_TYPES = new Set(['NOTE', 'JOURNAL', 'FOOD_LOG', 'WORKOUT_PLAN'])
+
+const PANEL_BY_TYPE: Record<string, string> = {
+  NOTE: 'notes',
+  JOURNAL: 'diary',
+  FOOD_LOG: 'food',
+  WORKOUT_PLAN: 'workout',
+}
+
 type ShareData = {
   linkId: number
   title: string | null
   resourceType: string
   resourceId: number
   viewCount: number
-  owner: { username?: string; email?: string }
+  owner: { username?: string }
   permissions: { allowComments: boolean; allowReactions: boolean }
   maskCalories: boolean
   resource: Record<string, unknown>
@@ -32,17 +44,22 @@ type ShareData = {
 type ErrorState = 'NOT_FOUND' | 'REVOKED' | 'EXPIRED' | 'ERROR'
 
 const ERROR_CONFIG: Record<ErrorState, { icon: string; title: string; message: string }> = {
-  NOT_FOUND: { icon: '🔍', title: 'Lien introuvable',  message: 'Ce lien de partage n\'existe pas.' },
-  REVOKED:   { icon: '🚫', title: 'Lien révoqué',      message: 'L\'auteur a révoqué l\'accès à ce contenu.' },
-  EXPIRED:   { icon: '⌛', title: 'Lien expiré',       message: 'Ce lien de partage a atteint sa date d\'expiration.' },
-  ERROR:      { icon: '⚠️', title: 'Erreur',            message: 'Une erreur est survenue. Réessayez plus tard.' },
+  NOT_FOUND: { icon: '🔍', title: 'Lien introuvable',  message: "Ce lien de partage n'existe pas." },
+  REVOKED:   { icon: '🚫', title: 'Lien révoqué',      message: "L'auteur a révoqué l'accès à ce contenu." },
+  EXPIRED:   { icon: '⌛', title: 'Lien expiré',       message: "Ce lien de partage a atteint sa date d'expiration." },
+  ERROR:     { icon: '⚠️', title: 'Erreur',             message: 'Une erreur est survenue. Réessayez plus tard.' },
 }
 
 export default function SharedPublicPage() {
   const { token } = useParams<{ token: string }>()
-  const [data, setData]     = useState<ShareData | null>(null)
-  const [error, setError]   = useState<ErrorState | null>(null)
+  const navigate  = useNavigate()
+  const isLoggedIn = !!useAuthStore(s => s.token)
+
+  const [data, setData]       = useState<ShareData | null>(null)
+  const [error, setError]     = useState<ErrorState | null>(null)
   const [loading, setLoading] = useState(true)
+  const [cloning, setCloning] = useState(false)
+  const [cloned, setCloned]   = useState(false)
 
   useEffect(() => {
     if (!token) { setError('NOT_FOUND'); setLoading(false); return }
@@ -51,13 +68,31 @@ export default function SharedPublicPage() {
       .catch(err => {
         const status = err?.response?.status
         const code   = err?.response?.data?.error
-        if (status === 404)                              setError('NOT_FOUND')
+        if (status === 404)                                  setError('NOT_FOUND')
         else if (status === 410 && code === 'LINK_REVOKED') setError('REVOKED')
         else if (status === 410 && code === 'LINK_EXPIRED') setError('EXPIRED')
-        else                                             setError('ERROR')
+        else                                                 setError('ERROR')
       })
       .finally(() => setLoading(false))
   }, [token])
+
+  async function handleClone() {
+    if (!token || !data) return
+    setCloning(true)
+    try {
+      await api.post(`/shares/${token}/clone`)
+      setCloned(true)
+      const panel = PANEL_BY_TYPE[data.resourceType] ?? 'home'
+      toast.success('Ressource clonée dans ton compte !', { duration: 4000 })
+      setTimeout(() => navigate(`/#${panel}`), 1500)
+    } catch (err: any) {
+      const code = err?.response?.data?.error
+      if (code === 'NOT_CLONEABLE') toast.error("Ce type de ressource n'est pas clonable")
+      else toast.error('Erreur lors du clonage')
+    } finally {
+      setCloning(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -92,6 +127,7 @@ export default function SharedPublicPage() {
   if (!data) return null
 
   const rt = RESOURCE_LABELS[data.resourceType] ?? { label: data.resourceType, icon: '📄' }
+  const isCloneable = CLONEABLE_TYPES.has(data.resourceType)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 to-indigo-50">
@@ -103,13 +139,19 @@ export default function SharedPublicPage() {
           </div>
           SmartLife
         </div>
-        <Link
-          to="/register"
-          className="flex items-center gap-1.5 px-4 py-2 bg-sky-600 text-white rounded-xl text-sm font-semibold hover:bg-sky-700 transition-colors shadow-sm"
-        >
-          Créer mon compte
-          <ExternalLink size={13} />
-        </Link>
+        {isLoggedIn ? (
+          <Link to="/" className="text-sm text-sky-600 font-medium hover:underline">
+            Mon tableau de bord →
+          </Link>
+        ) : (
+          <Link
+            to="/register"
+            className="flex items-center gap-1.5 px-4 py-2 bg-sky-600 text-white rounded-xl text-sm font-semibold hover:bg-sky-700 transition-colors shadow-sm"
+          >
+            Créer mon compte
+            <ExternalLink size={13} />
+          </Link>
+        )}
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
@@ -118,9 +160,14 @@ export default function SharedPublicPage() {
           <div className="flex items-start gap-4">
             <span className="text-4xl">{rt.icon}</span>
             <div className="flex-1 min-w-0">
-              <span className="inline-block text-xs font-semibold text-sky-700 bg-sky-50 rounded-full px-2.5 py-0.5 mb-2">
-                {rt.label}
-              </span>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span className="text-xs font-semibold text-sky-700 bg-sky-50 rounded-full px-2.5 py-0.5">
+                  {rt.label}
+                </span>
+                {data.owner?.username && (
+                  <span className="text-xs text-gray-400">par {data.owner.username}</span>
+                )}
+              </div>
               <h1 className="text-xl font-bold text-gray-900 leading-tight">
                 {data.title ?? rt.label}
               </h1>
@@ -138,6 +185,39 @@ export default function SharedPublicPage() {
               </div>
             </div>
           </div>
+
+          {/* Clone button */}
+          {isCloneable && (
+            <div className="mt-5 pt-4 border-t border-gray-50">
+              {isLoggedIn ? (
+                <button
+                  onClick={handleClone}
+                  disabled={cloning || cloned}
+                  className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-colors ${
+                    cloned
+                      ? 'bg-green-50 text-green-700 border border-green-200'
+                      : 'bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-60'
+                  }`}
+                >
+                  {cloned ? (
+                    <><CheckCheck size={16} /> Cloné dans mon compte !</>
+                  ) : cloning ? (
+                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Clonage...</>
+                  ) : (
+                    <><Copy size={16} /> Cloner dans mon compte</>
+                  )}
+                </button>
+              ) : (
+                <Link
+                  to="/register"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-sky-50 text-sky-700 border border-sky-200 font-semibold text-sm hover:bg-sky-100 transition-colors"
+                >
+                  <Copy size={16} />
+                  Connecte-toi pour cloner cette ressource
+                </Link>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Resource content */}
@@ -152,20 +232,22 @@ export default function SharedPublicPage() {
           />
         </div>
 
-        {/* CTA */}
-        <div className="bg-gradient-to-r from-sky-600 to-indigo-600 rounded-2xl p-7 text-white text-center space-y-3 shadow-lg">
-          <h2 className="text-lg font-bold">Gérez votre vie avec SmartLife</h2>
-          <p className="text-sky-100 text-sm leading-relaxed">
-            Alimentation, sport, sommeil, étude, tâches — tout en un, intelligent et privé.
-          </p>
-          <Link
-            to="/register"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-white text-sky-700 rounded-xl font-semibold text-sm hover:bg-sky-50 transition-colors shadow-sm mt-1"
-          >
-            Créer mon compte gratuit
-            <ExternalLink size={14} />
-          </Link>
-        </div>
+        {/* CTA (non-logged only) */}
+        {!isLoggedIn && (
+          <div className="bg-gradient-to-r from-sky-600 to-indigo-600 rounded-2xl p-7 text-white text-center space-y-3 shadow-lg">
+            <h2 className="text-lg font-bold">Gérez votre vie avec SmartLife</h2>
+            <p className="text-sky-100 text-sm leading-relaxed">
+              Alimentation, sport, sommeil, étude, tâches — tout en un, intelligent et privé.
+            </p>
+            <Link
+              to="/register"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-sky-700 rounded-xl font-semibold text-sm hover:bg-sky-50 transition-colors shadow-sm mt-1"
+            >
+              Créer mon compte gratuit
+              <ExternalLink size={14} />
+            </Link>
+          </div>
+        )}
 
         <p className="text-center text-xs text-gray-400 pb-4">
           Partagé via SmartLife — contenu en lecture seule
@@ -175,8 +257,9 @@ export default function SharedPublicPage() {
   )
 }
 
-const SKIP_KEYS = new Set(['id', 'userId', 'user', 'createdAt', 'updatedAt'])
-const CALORIE_KEYS = new Set(['calories', 'protein', 'carbs', 'fat', 'proteins', 'carbohydrates', 'kcal'])
+const SKIP_KEYS   = new Set(['id', 'userId', 'user', 'createdAt', 'updatedAt'])
+const CALORIE_KEYS = new Set(['calories', 'protein', 'carbs', 'fat', 'proteins', 'carbohydrates', 'kcal',
+  'proteing', 'carbsg', 'fatg', 'fiberg'])
 
 function humanizeKey(key: string): string {
   return key
@@ -195,25 +278,19 @@ function ResourceView({
   maskCalories: boolean
 }) {
   const entries = Object.entries(resource).filter(([k]) => !SKIP_KEYS.has(k))
-
-  if (entries.length === 0) {
-    return <p className="text-sm text-gray-400">Aucune donnée disponible.</p>
-  }
+  if (entries.length === 0) return <p className="text-sm text-gray-400">Aucune donnée disponible.</p>
 
   return (
-    <div className="divide-y divide-gray-50 dark:divide-gray-700">
+    <div className="divide-y divide-gray-50">
       {entries.map(([key, value]) => {
         if (value === null || value === undefined) return null
-
         const isSensitive = maskCalories && CALORIE_KEYS.has(key.toLowerCase())
-
         return (
           <div key={key} className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
             <span className="text-sm text-gray-500 shrink-0">{humanizeKey(key)}</span>
             {isSensitive ? (
               <span className="text-sm text-gray-300 flex items-center gap-1 italic">
-                <AlertCircle size={12} />
-                Masqué
+                <AlertCircle size={12} /> Masqué
               </span>
             ) : (
               <span className="text-sm font-medium text-gray-800 text-right max-w-xs truncate">

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Globe, Plus, Copy, EyeOff, Trash2, Check, X,
-  Link2, Eye, Clock, Users2, Bookmark, Trophy, ChevronRight,
+  Link2, Eye, Clock, Users2, Bookmark, Trophy, ChevronRight, ExternalLink,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
@@ -17,8 +17,24 @@ interface SharedLink {
   expiresAt: string | null
   revoked: boolean
   viewCount: number
+  clonesCount: number
+  recipientEmail: string | null
   createdAt: string
   isExpired: boolean
+}
+
+interface ReceivedLink {
+  id: number
+  resourceType: string
+  resourceId: number
+  title: string | null
+  token: string
+  viewCount: number
+  clonesCount: number
+  owner: { username: string }
+  isCloneable: boolean
+  expiresAt: string | null
+  createdAt: string
 }
 
 const RESOURCE_TYPES = [
@@ -39,7 +55,7 @@ const EXPIRY_OPTIONS = [
 
 const TABS = [
   { id: 'shares',     label: 'Mes Partages',     icon: Link2,     active: true  },
-  { id: 'received',   label: 'Partagé avec moi', icon: Users2,    active: false },
+  { id: 'received',   label: 'Partagé avec moi', icon: Users2,    active: true  },
   { id: 'community',  label: 'Communauté',        icon: Globe,     active: false },
   { id: 'saved',      label: 'Inspirations',      icon: Bookmark,  active: false },
   { id: 'challenges', label: 'Défis',             icon: Trophy,    active: false },
@@ -62,6 +78,7 @@ interface CreateForm {
   allowComments: boolean
   allowReactions: boolean
   maskCalories: boolean
+  recipientEmail: string
 }
 
 interface ShareResourceOption {
@@ -78,6 +95,7 @@ function defaultForm(): CreateForm {
     allowComments: false,
     allowReactions: true,
     maskCalories: false,
+    recipientEmail: '',
   }
 }
 
@@ -147,6 +165,25 @@ export default function SocialPanel() {
     queryFn: () => api.get('/shares').then(r => r.data),
   })
 
+  const { data: received = [], isLoading: receivedLoading } = useQuery<ReceivedLink[]>({
+    queryKey: ['shared-links-received'],
+    queryFn: () => api.get('/shares/received').then(r => r.data),
+    enabled: activeTab === 'received',
+  })
+
+  const cloneMutation = useMutation({
+    mutationFn: (token: string) => api.post(`/shares/${token}/clone`).then(r => r.data),
+    onSuccess: () => {
+      toast.success('Ressource clonée dans ton compte !')
+      qc.invalidateQueries({ queryKey: ['shared-links-received'] })
+    },
+    onError: (err: any) => {
+      const code = err?.response?.data?.error
+      if (code === 'NOT_CLONEABLE') toast.error("Ce type n'est pas clonable")
+      else toast.error('Erreur lors du clonage')
+    },
+  })
+
   const { data: resources = [], isLoading: resourcesLoading } = useQuery<ShareResourceOption[]>({
     queryKey: ['share-resources', form.resourceType],
     queryFn: () => api.get(RESOURCE_ENDPOINTS[form.resourceType]).then(r => {
@@ -211,6 +248,7 @@ export default function SocialPanel() {
       allowComments: form.allowComments,
       allowReactions: form.allowReactions,
       maskCalories: form.maskCalories,
+      recipientEmail: form.recipientEmail.trim() || undefined,
     })
   }
 
@@ -335,8 +373,78 @@ export default function SocialPanel() {
         </div>
       )}
 
+      {/* Partagé avec moi */}
+      {activeTab === 'received' && (
+        <div className="space-y-4">
+          {receivedLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="w-8 h-8 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : received.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center mx-auto mb-4">
+                <Users2 size={28} className="text-sky-400" />
+              </div>
+              <p className="font-semibold text-gray-700 dark:text-gray-300">Aucun contenu reçu</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-xs mx-auto">
+                Les ressources partagées avec ton email SmartLife apparaîtront ici.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide">
+                Reçus ({received.length})
+              </p>
+              {received.map(link => {
+                const rt = rtConfig(link.resourceType)
+                return (
+                  <div key={link.id} className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${rt.bg}`}>
+                        {rt.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                          {link.title ?? rt.label}
+                        </p>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-400 flex-wrap">
+                          <span>De : {link.owner?.username ?? '?'}</span>
+                          <span className="flex items-center gap-1"><Eye size={11} />{link.viewCount}</span>
+                          <span className={rt.text}>{rt.label}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <a
+                          href={`${import.meta.env.BASE_URL}share/${link.token}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-sky-500 transition-colors"
+                          title="Voir"
+                        >
+                          <ExternalLink size={15} />
+                        </a>
+                        {link.isCloneable && (
+                          <button
+                            onClick={() => cloneMutation.mutate(link.token)}
+                            disabled={cloneMutation.isPending}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-green-500 transition-colors disabled:opacity-50"
+                            title="Cloner dans mon compte"
+                          >
+                            <Copy size={15} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Coming soon tabs */}
-      {activeTab !== 'shares' && (
+      {activeTab !== 'shares' && activeTab !== 'received' && (
         <div className="text-center py-20">
           {(() => {
             const tab = TABS.find(t => t.id === activeTab)!
@@ -351,7 +459,7 @@ export default function SocialPanel() {
                   Disponible prochainement dans SmartLife Together.
                 </p>
                 <div className="mt-4 inline-flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 font-medium">
-                  Roadmap S2 → S4 <ChevronRight size={12} />
+                  Roadmap S3 → S4 <ChevronRight size={12} />
                 </div>
               </>
             )
@@ -442,6 +550,21 @@ export default function SocialPanel() {
                 placeholder="Ex: Mon programme été 2026"
                 className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
               />
+            </div>
+
+            {/* Recipient email */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Envoyer à <span className="text-gray-400 font-normal">(email SmartLife, optionnel)</span>
+              </label>
+              <input
+                type="email"
+                value={form.recipientEmail}
+                onChange={e => setForm(f => ({ ...f, recipientEmail: e.target.value }))}
+                placeholder="ami@example.com"
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+              />
+              <p className="text-xs text-gray-400 mt-1">Apparaîtra dans "Partagé avec moi" de ce compte.</p>
             </div>
 
             {/* Expiry */}
@@ -559,6 +682,12 @@ function LinkCard({ link, copiedId, onCopy, onRevoke, onDelete }: LinkCardProps)
               <Eye size={11} />
               {link.viewCount} vue{link.viewCount !== 1 ? 's' : ''}
             </span>
+            {(link.clonesCount ?? 0) > 0 && (
+              <span className="flex items-center gap-1 text-green-500">
+                <Copy size={11} />
+                {link.clonesCount} cloné{link.clonesCount !== 1 ? 's' : ''}
+              </span>
+            )}
             <span className="flex items-center gap-1">
               <Clock size={11} />
               {link.expiresAt ? formatDate(link.expiresAt) : 'Jamais'}

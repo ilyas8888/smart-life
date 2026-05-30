@@ -15,8 +15,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +33,8 @@ public class SharedLinkController {
 
     private static final Set<String> RESOURCE_TYPES = Set.of("FOOD_LOG", "WORKOUT_PLAN", "SLEEP_LOG", "STUDY_SESSION", "NOTE", "JOURNAL");
     private static final Bandwidth PUBLIC_SHARE_LIMIT = Bandwidth.classic(60, Refill.intervally(60, Duration.ofMinutes(1)));
+
+    private static final Set<String> CLONEABLE_TYPES = Set.of("NOTE", "JOURNAL", "FOOD_LOG", "WORKOUT_PLAN");
 
     private final SharedLinkRepository sharedLinkRepository;
     private final FoodLogRepository foodLogRepository;
@@ -59,6 +63,8 @@ public class SharedLinkController {
         permissions.put("allowComments", asBoolean(body.get("allowComments")));
         permissions.put("allowReactions", asBoolean(body.get("allowReactions")));
 
+        String recipientEmail = asString(body.get("recipientEmail"));
+
         SharedLink link = SharedLink.builder()
                 .owner(user)
                 .resourceType(resourceType)
@@ -70,6 +76,8 @@ public class SharedLinkController {
                 .expiresAt(resolveExpiresAt(asString(body.get("expiresIn"))))
                 .revoked(false)
                 .viewCount(0)
+                .clonesCount(0)
+                .recipientEmail(recipientEmail)
                 .build();
 
         SharedLink saved = sharedLinkRepository.save(link);
@@ -116,6 +124,50 @@ public class SharedLinkController {
         }
         link.setRevoked(true);
         return ResponseEntity.ok(toListResponse(sharedLinkRepository.save(link)));
+    }
+
+    @GetMapping("/api/shares/received")
+    public List<Map<String, Object>> getReceivedShares() {
+        User user = currentUser();
+        return sharedLinkRepository
+                .findByRecipientEmailAndRevokedFalseOrderByCreatedAtDesc(user.getEmail())
+                .stream()
+                .filter(link -> !isExpired(link))
+                .map(this::toReceivedResponse)
+                .toList();
+    }
+
+    @PostMapping("/api/shares/{token}/clone")
+    public ResponseEntity<?> cloneShare(@PathVariable UUID token) {
+        User user = currentUser();
+        Optional<SharedLink> found = sharedLinkRepository.findByToken(token);
+        if (found.isEmpty()) return ResponseEntity.notFound().build();
+
+        SharedLink link = found.get();
+        if (Boolean.TRUE.equals(link.getRevoked())) {
+            return ResponseEntity.status(HttpStatus.GONE).body(Map.of("error", "LINK_REVOKED"));
+        }
+        if (isExpired(link)) {
+            return ResponseEntity.status(HttpStatus.GONE).body(Map.of("error", "LINK_EXPIRED"));
+        }
+        if (!CLONEABLE_TYPES.contains(link.getResourceType())) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                    .body(Map.of("error", "NOT_CLONEABLE"));
+        }
+
+        Long clonedId = cloneResource(link.getResourceType(), link.getResourceId(), user);
+        if (clonedId == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "RESOURCE_NOT_FOUND"));
+        }
+
+        link.setClonesCount((link.getClonesCount() != null ? link.getClonesCount() : 0) + 1);
+        sharedLinkRepository.save(link);
+
+        return ResponseEntity.ok(Map.of(
+                "clonedResourceId", clonedId,
+                "resourceType", link.getResourceType(),
+                "message", "Ressource clonée dans votre compte"
+        ));
     }
 
     @GetMapping("/api/public/shares/{token}")
@@ -170,9 +222,97 @@ public class SharedLinkController {
         r.put("expiresAt", link.getExpiresAt());
         r.put("revoked", Boolean.TRUE.equals(link.getRevoked()));
         r.put("viewCount", link.getViewCount() != null ? link.getViewCount() : 0);
+        r.put("clonesCount", link.getClonesCount() != null ? link.getClonesCount() : 0);
+        r.put("recipientEmail", link.getRecipientEmail());
         r.put("createdAt", link.getCreatedAt());
         r.put("isExpired", isExpired(link));
         return r;
+    }
+
+    private Map<String, Object> toReceivedResponse(SharedLink link) {
+        Map<String, Object> r = new LinkedHashMap<>();
+        r.put("id", link.getId());
+        r.put("resourceType", link.getResourceType());
+        r.put("resourceId", link.getResourceId());
+        r.put("title", link.getTitle());
+        r.put("token", link.getToken().toString());
+        r.put("url", shareUrl(link));
+        r.put("expiresAt", link.getExpiresAt());
+        r.put("viewCount", link.getViewCount() != null ? link.getViewCount() : 0);
+        r.put("clonesCount", link.getClonesCount() != null ? link.getClonesCount() : 0);
+        r.put("owner", Map.of("username", ownerName(link.getOwner())));
+        r.put("isCloneable", CLONEABLE_TYPES.contains(link.getResourceType()));
+        r.put("createdAt", link.getCreatedAt());
+        return r;
+    }
+
+    private Long cloneResource(String resourceType, Long resourceId, User user) {
+        return switch (resourceType) {
+            case "NOTE" -> noteRepository.findById(resourceId).map(src -> {
+                Note clone = Note.builder()
+                        .user(user)
+                        .title(src.getTitle() != null ? src.getTitle() + " (cloné)" : "Note clonée")
+                        .content(src.getContent())
+                        .tags(src.getTags())
+                        .isPinned(false)
+                        .color(src.getColor())
+                        .build();
+                return noteRepository.save(clone).getId();
+            }).orElse(null);
+
+            case "JOURNAL" -> diaryEntryRepository.findById(resourceId).map(src -> {
+                DiaryEntry clone = DiaryEntry.builder()
+                        .user(user)
+                        .entryDate(LocalDate.now())
+                        .content(src.getContent())
+                        .mood(src.getMood())
+                        .tags(src.getTags())
+                        .build();
+                return diaryEntryRepository.save(clone).getId();
+            }).orElse(null);
+
+            case "FOOD_LOG" -> foodLogRepository.findById(resourceId).map(src -> {
+                FoodLog clone = FoodLog.builder()
+                        .user(user)
+                        .logDate(LocalDate.now())
+                        .mealType(src.getMealType())
+                        .foodItem(src.getFoodItem())
+                        .calories(src.getCalories())
+                        .proteinG(src.getProteinG())
+                        .carbsG(src.getCarbsG())
+                        .fatG(src.getFatG())
+                        .fiberG(src.getFiberG())
+                        .quantity(src.getQuantity())
+                        .nutritionDetails(src.getNutritionDetails())
+                        .notes(src.getNotes())
+                        .build();
+                return foodLogRepository.save(clone).getId();
+            }).orElse(null);
+
+            case "WORKOUT_PLAN" -> workoutPlanRepository.findById(resourceId).map(src -> {
+                WorkoutPlan clone = WorkoutPlan.builder()
+                        .user(user)
+                        .name(src.getName() + " (cloné)")
+                        .goal(src.getGoal())
+                        .weeks(src.getWeeks())
+                        .daysPerWeek(src.getDaysPerWeek())
+                        .status("ACTIVE")
+                        .startDate(LocalDate.now())
+                        .build();
+                WorkoutPlan saved = workoutPlanRepository.save(clone);
+                src.getDays().forEach(srcDay -> {
+                    PlanDay cloneDay = new PlanDay();
+                    cloneDay.setPlan(saved);
+                    cloneDay.setDayNumber(srcDay.getDayNumber());
+                    cloneDay.setLabel(srcDay.getLabel());
+                    cloneDay.setExercises(new ArrayList<>(srcDay.getExercises()));
+                    saved.getDays().add(cloneDay);
+                });
+                return workoutPlanRepository.save(saved).getId();
+            }).orElse(null);
+
+            default -> null;
+        };
     }
 
     private boolean resourceBelongsToUser(String resourceType, Long resourceId, Long userId) {
@@ -259,6 +399,9 @@ public class SharedLinkController {
         r.put("wakeTime", log.getWakeTime());
         r.put("durationMinutes", durationMinutes);
         r.put("quality", log.getQuality());
+        r.put("energy", log.getEnergy());
+        r.put("wakeUps", log.getWakeUps());
+        r.put("factors", log.getFactors());
         r.put("notes", log.getNotes());
         r.put("createdAt", log.getCreatedAt());
         return r;
