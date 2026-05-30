@@ -60,17 +60,17 @@ function StatCard({ icon: Icon, label, value, sub, color, onClick }: StatCardPro
   return (
     <button
       onClick={onClick}
-      className="card text-left hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group w-full"
+      className="glass-card-hover text-left p-4 sm:p-5 w-full group"
     >
-      <div className="flex items-start justify-between mb-3 sm:mb-4">
-        <div className={`p-2.5 sm:p-3.5 rounded-2xl ${color} shadow-sm`}>
-          <Icon size={22} className="text-white sm:w-[26px] sm:h-[26px]" />
+      <div className="flex items-start justify-between mb-4">
+        <div className={`p-2.5 rounded-2xl bg-gradient-to-br ${color} shadow-lg`}>
+          <Icon size={20} className="text-white" />
         </div>
-        <ChevronRight size={18} className="text-gray-300 dark:text-gray-600 group-hover:text-primary-500 dark:group-hover:text-primary-400 transition-colors mt-1" />
+        <ChevronRight size={16} className="text-gray-600 group-hover:text-white transition-colors mt-1" />
       </div>
-      <p className="text-2xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-1 break-words">{value}</p>
-      <p className="text-xs sm:text-sm font-semibold tracking-wide text-gray-500 dark:text-gray-400 uppercase">{label}</p>
-      {sub && <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">{sub}</p>}
+      <p className="text-3xl sm:text-4xl font-black text-white mb-1 leading-none tracking-tight">{value}</p>
+      <p className="text-xs font-semibold tracking-widest text-gray-500 uppercase mt-2">{label}</p>
+      {sub && <p className="text-xs text-gray-600 mt-1">{sub}</p>}
     </button>
   )
 }
@@ -166,11 +166,6 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
     (r) => !r.isDone && r.remindAt && r.remindAt >= today
   ).length
   const priorityRank: Record<string, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 }
-  const priorityStyle: Record<string, { dot: string; badge: string; label: string }> = {
-    HIGH: { dot: 'bg-red-500', badge: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300', label: 'Haute' },
-    MEDIUM: { dot: 'bg-orange-500', badge: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300', label: 'Moyenne' },
-    LOW: { dot: 'bg-gray-400', badge: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300', label: 'Basse' },
-  }
   const activeTasks = tasks
     .filter((task) => task.status !== 'DONE')
     .sort((a, b) => (priorityRank[a.priority] ?? 3) - (priorityRank[b.priority] ?? 3))
@@ -184,7 +179,6 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
   const weekDuration = weekWorkouts.reduce((sum, w) => sum + (w.durationMinutes ?? 0), 0)
 
   const todayCalories = nutritionSummary?.totalCalories ?? 0
-  const netCalories = todayCalories - (workouts.filter((w) => w.sessionDate === today).reduce((s, w) => s + (w.caloriesBurned ?? 0), 0))
 
   const workoutDates = workouts.map((w) => w.sessionDate)
   const diaryDates = diary.map((d) => d.entryDate)
@@ -218,39 +212,50 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
     || (aiStatus?.status === 'FREE' && aiTrialRemaining <= 0)
   const promptCardActionLabel = isAiRestricted ? 'Demander l\'acces' : 'Utiliser le Prompt IA'
 
+  const priorityGlassStyle: Record<string, { dot: string; badge: string; label: string }> = {
+    HIGH:   { dot: 'bg-red-500',    badge: 'bg-red-500/10 text-red-400 border border-red-500/20',    label: 'Haute' },
+    MEDIUM: { dot: 'bg-amber-500',  badge: 'bg-amber-500/10 text-amber-400 border border-amber-500/20', label: 'Moyenne' },
+    LOW:    { dot: 'bg-gray-600',   badge: 'bg-white/5 text-gray-500 border border-white/10',        label: 'Basse' },
+  }
+
   return (
-    <div className="w-full">
-      {/* Hero */}
-      <div className="card mb-6 bg-gradient-to-br from-primary-600 to-blue-700 text-white border-0">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="w-full space-y-5">
+
+      {/* ── Hero ─────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden glass-card p-6 sm:p-8">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 via-violet-600/10 to-transparent pointer-events-none" />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <p className="text-primary-200 text-base mb-1 font-medium">
+            <p className="text-sm text-indigo-400 font-medium mb-2">
               {capitalize(format(new Date(), "EEEE dd MMMM yyyy", { locale: fr }))}
             </p>
-            <h1 className="text-2xl sm:text-3xl font-bold mb-1">
+            <h1 className="text-3xl sm:text-4xl font-black text-white mb-2 leading-tight">
               {emoji} {greeting}, {firstName} !
             </h1>
-            <p className="text-primary-100 text-sm sm:text-base italic opacity-90">"{quote}"</p>
+            <p className="text-gray-500 text-sm italic">"{quote}"</p>
           </div>
           {streak > 0 && (
-            <div className="self-start flex flex-row sm:flex-col items-center gap-2 sm:gap-0 bg-white/15 rounded-2xl px-4 sm:px-5 py-3 min-w-[72px]">
-              <span className="text-3xl">🔥</span>
-              <span className="text-3xl font-bold leading-none">{streak}</span>
-              <span className="text-xs text-primary-100 uppercase tracking-widest mt-1">
-                {streak === 1 ? 'jour' : 'jours'}
-              </span>
+            <div className="self-start flex flex-row sm:flex-col items-center gap-3 sm:gap-1 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 min-w-[80px]">
+              <span className="text-4xl">🔥</span>
+              <div className="sm:text-center">
+                <p className="text-3xl font-black text-white leading-none">{streak}</p>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-1">
+                  {streak === 1 ? 'jour' : 'jours'}
+                </p>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+      {/* ── Stats grid ───────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
         <StatCard
           icon={CheckSquare}
           label="Tâches à faire"
           value={tasksTodo}
           sub={tasksDone > 0 ? `${tasksDone} terminée${tasksDone > 1 ? 's' : ''}` : undefined}
-          color="bg-blue-500"
+          color="from-indigo-500 to-violet-500"
           onClick={() => onNavigate('tasks')}
         />
         <StatCard
@@ -258,67 +263,71 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
           label="Rappels actifs"
           value={pendingReminders}
           sub={reminders.length > 0 ? `${reminders.length} au total` : undefined}
-          color="bg-orange-500"
+          color="from-amber-500 to-orange-500"
           onClick={() => onNavigate('reminders')}
         />
         <StatCard
           icon={UtensilsCrossed}
-          label="Calories aujourd'hui"
-          value={todayCalories > 0 ? `${todayCalories} kcal` : '—'}
-          sub={netCalories !== todayCalories && todayCalories > 0 ? `Net: ${netCalories} kcal` : nutritionSummary?.mealCount ? `${nutritionSummary.mealCount} repas` : undefined}
-          color="bg-green-500"
+          label="Calories"
+          value={todayCalories > 0 ? `${todayCalories}` : '—'}
+          sub={todayCalories > 0 ? 'kcal aujourd\'hui' : undefined}
+          color="from-emerald-500 to-teal-500"
           onClick={() => onNavigate('food')}
         />
         <StatCard
           icon={Dumbbell}
-          label="Sport cette semaine"
-          value={weekWorkouts.length === 0 ? '—' : `${weekWorkouts.length} séance${weekWorkouts.length > 1 ? 's' : ''}`}
-          sub={weekCaloriesBurned > 0 ? `${weekCaloriesBurned} kcal · ${weekDuration}min` : undefined}
-          color="bg-amber-500"
+          label="Sport semaine"
+          value={weekWorkouts.length === 0 ? '—' : weekWorkouts.length}
+          sub={weekWorkouts.length > 0 ? `${weekDuration} min · ${weekCaloriesBurned} kcal` : undefined}
+          color="from-amber-400 to-orange-400"
           onClick={() => onNavigate('workout')}
         />
         <StatCard
           icon={FileText}
           label="Notes"
           value={notes.length}
-          color="bg-violet-500"
+          color="from-violet-500 to-purple-500"
           onClick={() => onNavigate('notes')}
         />
         <StatCard
           icon={BookOpen}
-          label="Entrées journal"
+          label="Journal"
           value={diary.length}
-          color="bg-rose-500"
+          sub={diary.length > 0 ? 'entrées' : undefined}
+          color="from-rose-500 to-pink-500"
           onClick={() => onNavigate('diary')}
         />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 mb-6">
-        <div className="card">
+      {/* ── Widgets row ──────────────────────────────────────────── */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="glass-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <CheckSquare size={20} className="text-blue-500" />
-              <h2 className="font-bold text-gray-900 dark:text-gray-100">À faire aujourd'hui</h2>
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 bg-indigo-500/20 rounded-lg">
+                <CheckSquare size={16} className="text-indigo-400" />
+              </div>
+              <h2 className="font-bold text-white text-sm">À faire aujourd'hui</h2>
             </div>
             <button
               type="button"
               onClick={() => onNavigate('tasks')}
-              className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
+              className="text-xs text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
             >
-              Voir toutes
+              Voir toutes →
             </button>
           </div>
           {activeTasks.length === 0 ? (
-            <p className="text-base font-medium text-green-600 dark:text-green-400">Tout est à jour ✓</p>
+            <p className="text-sm font-semibold text-emerald-400">✓ Tout est à jour</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {activeTasks.map((task, index) => {
-                const style = priorityStyle[task.priority] ?? priorityStyle.LOW
+                const style = priorityGlassStyle[task.priority] ?? priorityGlassStyle.LOW
                 return (
                   <div key={`${task.title}-${index}`} className="flex items-center gap-3">
-                    <span className={`w-3 h-3 rounded-full shrink-0 ${style.dot}`} />
-                    <span className="text-base text-gray-700 dark:text-gray-200 truncate flex-1">{task.title}</span>
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full shrink-0 ${style.badge}`}>
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`} />
+                    <span className="text-sm text-gray-300 truncate flex-1">{task.title}</span>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${style.badge}`}>
                       {style.label}
                     </span>
                   </div>
@@ -328,51 +337,59 @@ export default function HomePanel({ onNavigate, displayName }: HomePanelProps) {
           )}
         </div>
 
-        {nextReminder && (
-          <div className="card">
-            <div className="flex items-center gap-2 mb-4">
-              <Bell size={20} className="text-orange-500" />
-              <h2 className="font-bold text-gray-900 dark:text-gray-100">Prochain rappel</h2>
+        {nextReminder ? (
+          <div className="glass-card p-5">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="p-1.5 bg-amber-500/20 rounded-lg">
+                <Bell size={16} className="text-amber-400" />
+              </div>
+              <h2 className="font-bold text-white text-sm">Prochain rappel</h2>
             </div>
-            <p className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">{nextReminder.title}</p>
-            <p className="text-base text-gray-500 dark:text-gray-400">
+            <p className="text-base font-bold text-white mb-1">{nextReminder.title}</p>
+            <p className="text-sm text-gray-500">
               {capitalize(format(parseISO(nextReminder.remindAt), "EEEE d MMMM 'à' HH'h'mm", { locale: fr }))}
             </p>
+          </div>
+        ) : (
+          <div className="glass-card p-5 flex items-center justify-center">
+            <p className="text-sm text-gray-600">Aucun rappel à venir</p>
           </div>
         )}
       </div>
 
-      <div className={`card bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 border-primary-100 dark:border-primary-800 ${isAiRestricted ? 'opacity-80' : ''}`}>
-        <div className="flex items-start justify-between gap-3 mb-3">
+      {/* ── Prompt IA card ────────────────────────────────────────── */}
+      <div className={`relative overflow-hidden glass-card p-5 sm:p-6 ${isAiRestricted ? 'opacity-70' : ''}`}>
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-600/10 to-indigo-600/10 pointer-events-none" />
+        <div className="relative flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary-600 rounded-lg">
-              {isAiPromptAvailable ? <Flame size={20} className="text-white" /> : <Lock size={20} className="text-white" />}
+            <div className="p-2 bg-gradient-to-br from-violet-500 to-indigo-500 rounded-xl shadow-[0_0_16px_rgba(139,92,246,0.4)]">
+              {isAiPromptAvailable ? <Flame size={18} className="text-white" /> : <Lock size={18} className="text-white" />}
             </div>
-            <p className="font-bold text-lg text-primary-900 dark:text-primary-200">Prompt IA</p>
+            <p className="font-black text-lg text-white">Prompt IA</p>
           </div>
           {aiPlanLabel && (
-            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold border ${
               isAiPromptAvailable
-                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                : 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                : 'bg-white/5 text-gray-500 border-white/10'
             }`}>
               {aiPlanLabel}
             </span>
           )}
         </div>
-        <p className="text-base text-primary-700 dark:text-primary-300 mb-4">
-          Décrivez votre journée en langage naturel — l'IA extrait tâches, repas, sport, journal et plus.
+        <p className="relative text-sm text-gray-400 mb-4">
+          Décrivez votre journée — l'IA extrait tâches, repas, sport, journal et plus.
         </p>
         {isAiRequestPending ? (
-          <div className="inline-flex items-center rounded-lg bg-amber-100 px-3 py-2 text-sm font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-            Demande en cours de revision
+          <div className="inline-flex items-center rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-2 text-sm font-semibold text-amber-400">
+            Demande en cours de révision
           </div>
         ) : (
           <button
             onClick={() => onNavigate('prompt')}
             className="btn-primary flex items-center gap-2"
           >
-            {isAiRestricted ? <Lock size={16} /> : <Flame size={16} />}
+            {isAiRestricted ? <Lock size={15} /> : <Flame size={15} />}
             {promptCardActionLabel}
           </button>
         )}

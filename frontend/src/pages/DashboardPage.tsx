@@ -247,7 +247,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen min-h-dvh flex">
+    <div className="min-h-screen min-h-dvh flex bg-[#070B14] text-white">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -257,20 +257,20 @@ export default function DashboardPage() {
       )}
 
       <aside className={`
-        fixed md:relative inset-y-0 left-0 z-30 w-72 ${sidebarCollapsed ? 'md:w-20' : 'md:w-72'} bg-slate-900 text-white flex flex-col border-r border-slate-700
-        transform transition-[transform,width] duration-200
+        fixed md:relative inset-y-0 left-0 z-30 w-72 ${sidebarCollapsed ? 'md:w-[72px]' : 'md:w-72'} bg-[#0D1117] text-white flex flex-col border-r border-white/[0.06]
+        transform transition-[transform,width] duration-300
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
-        <div className={`${sidebarCollapsed ? 'md:px-3' : 'md:px-5'} p-5 border-b border-gray-700`}>
+        <div className={`${sidebarCollapsed ? 'md:px-3' : 'md:px-5'} p-5 border-b border-white/[0.06]`}>
           <div className={`flex items-center gap-3 ${sidebarCollapsed ? 'md:justify-center' : ''}`}>
-            <div className="p-2 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl">
+            <div className="p-2 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-xl shadow-[0_0_20px_rgba(99,102,241,0.5)]">
               <Brain size={22} />
             </div>
-            <span className={`font-bold text-xl ${sidebarCollapsed ? 'md:hidden' : ''}`}>SmartLife</span>
+            <span className={`font-black text-lg tracking-tight bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent ${sidebarCollapsed ? 'md:hidden' : ''}`}>SmartLife</span>
             <button
               type="button"
               onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
-              className="hidden md:flex absolute -right-3 top-6 z-10 p-1.5 rounded-full bg-slate-900 border border-slate-700 text-gray-400 hover:bg-slate-800 hover:text-white transition-colors"
+              className="hidden md:flex absolute -right-3 top-6 z-10 p-1.5 rounded-full bg-[#0D1117] border border-white/10 text-gray-500 hover:text-white transition-colors"
               aria-label={sidebarCollapsed ? 'Afficher la navigation' : 'Masquer la navigation'}
               title={sidebarCollapsed ? 'Afficher la navigation' : 'Masquer la navigation'}
             >
@@ -285,27 +285,30 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <nav className={`flex-1 p-4 space-y-1 overflow-y-auto ${sidebarCollapsed ? 'md:px-3' : ''}`}>
+        <nav className={`flex-1 p-3 space-y-0.5 overflow-y-auto ${sidebarCollapsed ? 'md:px-2' : ''}`}>
           {navItems.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => handleNavClick(id)}
               title={sidebarCollapsed ? label : undefined}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${sidebarCollapsed ? 'md:justify-center md:px-0' : ''} ${
+              className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${sidebarCollapsed ? 'md:justify-center md:px-0' : ''} ${
                 activePanel === id
-                  ? 'bg-slate-700 text-white'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                  ? `bg-white/[0.08] ${MODULE_ACCENT[id]}`
+                  : 'text-gray-500 hover:text-gray-100 hover:bg-white/[0.05]'
               }`}
             >
-              <Icon size={20} className={activePanel === id ? MODULE_ACCENT[id] : ''} />
+              {activePanel === id && !sidebarCollapsed && (
+                <span className="absolute left-0 inset-y-2 w-0.5 rounded-r-full bg-current" />
+              )}
+              <Icon size={19} className={activePanel === id ? MODULE_ACCENT[id] : ''} />
               <span className={sidebarCollapsed ? 'md:hidden' : ''}>{label}</span>
             </button>
           ))}
         </nav>
 
-        <div className={`p-4 border-t border-gray-700 ${sidebarCollapsed ? 'md:px-3' : ''}`}>
+        <div className={`p-4 border-t border-white/[0.06] ${sidebarCollapsed ? 'md:px-2' : ''}`}>
           <div className={`flex items-center gap-3 mb-3 ${sidebarCollapsed ? 'md:justify-center' : ''}`}>
-            <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center text-base font-bold shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-base font-bold shrink-0 shadow-[0_0_12px_rgba(99,102,241,0.4)]">
               {(firstName ?? email ?? '?')[0].toUpperCase()}
             </div>
             <div className={`flex-1 min-w-0 ${sidebarCollapsed ? 'md:hidden' : ''}`}>
@@ -316,7 +319,7 @@ export default function DashboardPage() {
           <button
             onClick={handleLogout}
             title={sidebarCollapsed ? 'Déconnexion' : undefined}
-            className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-gray-400 hover:bg-gray-800 hover:text-white transition-colors ${sidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
+            className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-white hover:bg-white/[0.05] transition-all ${sidebarCollapsed ? 'md:justify-center md:px-0' : ''}`}
           >
             <LogOut size={18} />
             <span className={sidebarCollapsed ? 'md:hidden' : ''}>Déconnexion</span>
@@ -325,25 +328,25 @@ export default function DashboardPage() {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden min-w-0 pb-20 md:pb-0">
-        <header className="shadow-none border-b border-gray-100 bg-white/80 backdrop-blur-sm px-4 md:px-6 py-4 dark:bg-gray-900/80 dark:border-gray-700">
+        <header className="border-b border-white/[0.06] bg-[#0D1117]/80 backdrop-blur-xl px-4 md:px-6 py-3 sticky top-0 z-10">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-3 text-sm text-gray-500">
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="p-1 -ml-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 md:hidden"
+                className="p-1 -ml-1 text-gray-500 hover:text-white md:hidden"
               >
                 <Menu size={20} />
               </button>
-              <span>SmartLife</span>
-              <ChevronRight size={14} />
-              <span className="text-gray-900 font-medium dark:text-gray-100">
+              <span className="text-gray-600">SmartLife</span>
+              <ChevronRight size={14} className="text-gray-700" />
+              <span className="text-white font-semibold">
                 {navItems.find((n) => n.id === activePanel)?.label}
               </span>
             </div>
             <button
               type="button"
               onClick={toggle}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
               aria-label={isDark ? 'Activer le mode clair' : 'Activer le mode sombre'}
             >
               {isDark ? <Sun size={16} /> : <Moon size={16} />}
@@ -352,9 +355,9 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6 dark:bg-gray-900">
+        <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
           <div key={activePanel} className="w-full min-h-full animate-panel">
-            <div className={`h-1.5 rounded-full mb-6 bg-gradient-to-r ${MODULE_GRADIENT[activePanel]}`} />
+            <div className={`h-px mb-8 bg-gradient-to-r ${MODULE_GRADIENT[activePanel]} opacity-60`} />
 
           <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="w-7 h-7 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" /></div>}>
           {activePanel === 'home' && <HomePanel onNavigate={handleNavClick} displayName={displayName} />}
@@ -524,7 +527,7 @@ export default function DashboardPage() {
           </Suspense>
           {activePanel === 'admin' && aiStatus?.status === 'ADMIN' && (
             <div className="w-full flex flex-col items-center justify-center py-20 animate-panel">
-              <div className="bg-slate-800 rounded-2xl p-8 max-w-sm w-full text-center space-y-4">
+              <div className="glass-card p-8 max-w-sm w-full text-center space-y-4">
                 <ShieldCheck className="w-12 h-12 text-emerald-400 mx-auto" />
                 <h2 className="text-xl font-bold text-slate-100">Panneau d'administration</h2>
                 <p className="text-slate-400 text-sm">
@@ -549,17 +552,17 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-gray-700 dark:bg-gray-900/95 md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] bg-[#0D1117]/90 backdrop-blur-xl px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 md:hidden">
         <div className="flex gap-1 overflow-x-auto">
           {navItems.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
               onClick={() => handleNavClick(id)}
-              className={`flex min-w-[4.75rem] flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-semibold transition-colors ${
+              className={`flex min-w-[4.75rem] flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-semibold transition-all ${
                 activePanel === id
-                  ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
-                  : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800'
+                  ? `bg-white/10 ${MODULE_ACCENT[id]}`
+                  : 'text-gray-500 hover:text-gray-200 hover:bg-white/[0.05]'
               }`}
             >
               <Icon size={19} className={activePanel === id ? MODULE_ACCENT[id] : ''} />
@@ -575,7 +578,7 @@ export default function DashboardPage() {
           onMouseDown={() => setShowAccessModal(false)}
         >
           <div
-            className="h-dvh w-full overflow-y-auto border border-gray-200 bg-white p-6 shadow-2xl dark:border-gray-700 dark:bg-gray-900 sm:h-auto sm:max-w-lg sm:rounded-2xl"
+            className="h-dvh w-full overflow-y-auto border border-white/10 bg-[#0D1117] p-6 shadow-2xl sm:h-auto sm:max-w-lg sm:rounded-2xl"
             onMouseDown={(event) => event.stopPropagation()}
             role="dialog"
             aria-modal="true"
