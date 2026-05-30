@@ -1,12 +1,13 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Bell, Check, Trash2, Plus, AlertTriangle, Clock, Calendar, ChevronDown, Edit2, X, Flag } from 'lucide-react'
+import { Bell, Check, Trash2, Plus, AlertTriangle, Clock, Calendar, ChevronDown, Edit2, X, Flag, BellOff, BellRing, Loader2 } from 'lucide-react'
 import { EmptyPanel, IllustrationReminders } from './EmptyState'
 import { format, isPast, isToday, isTomorrow, isThisWeek, formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
 import DateTimePicker from './DateTimePicker'
+import { usePushNotifications } from '../hooks/usePushNotifications'
 
 interface Reminder {
   id: number
@@ -95,6 +96,57 @@ function ReminderEditModal({
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function PushBanner() {
+  const { isSupported, permission, isSubscribed, isLoading, subscribe, unsubscribe, sendTest } = usePushNotifications()
+
+  if (!isSupported) return null
+  if (permission === 'denied') return (
+    <div className="flex items-center gap-3 glass-card px-4 py-3 mb-4 border border-red-500/20">
+      <BellOff size={16} className="text-red-400 shrink-0" />
+      <p className="text-xs text-gray-400">Les notifications sont bloquées dans votre navigateur. Activez-les dans les paramètres du site.</p>
+    </div>
+  )
+
+  if (isSubscribed) return (
+    <div className="flex items-center gap-3 glass-card px-4 py-3 mb-4 border border-emerald-500/20" style={{ boxShadow: '0 0 20px rgba(16,185,129,0.08)' }}>
+      <BellRing size={16} className="text-emerald-400 shrink-0" />
+      <p className="text-xs text-gray-300 flex-1">Notifications push <span className="text-emerald-400 font-semibold">activées</span> — vous serez alerté à l'heure de chaque rappel.</p>
+      <button
+        type="button"
+        onClick={sendTest}
+        className="text-[10px] text-gray-500 hover:text-white transition-colors shrink-0"
+        title="Envoyer une notification test"
+      >
+        Tester
+      </button>
+      <button
+        type="button"
+        onClick={() => unsubscribe().then(() => toast.success('Notifications désactivées'))}
+        disabled={isLoading}
+        className="text-[10px] text-red-400 hover:text-red-300 transition-colors shrink-0"
+      >
+        Désactiver
+      </button>
+    </div>
+  )
+
+  return (
+    <div className="flex items-center gap-3 glass-card px-4 py-3 mb-4 border border-indigo-500/20" style={{ boxShadow: '0 0 20px rgba(99,102,241,0.08)' }}>
+      <Bell size={16} className="text-indigo-400 shrink-0" />
+      <p className="text-xs text-gray-400 flex-1">Recevez une alerte push à l'heure exacte de chaque rappel.</p>
+      <button
+        type="button"
+        onClick={() => subscribe().then(() => isSubscribed && toast.success('Notifications activées !'))}
+        disabled={isLoading}
+        className="flex items-center gap-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 rounded-lg transition-colors shrink-0 disabled:opacity-50"
+      >
+        {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Bell size={12} />}
+        Activer
+      </button>
     </div>
   )
 }
@@ -277,6 +329,8 @@ export default function RemindersPanel() {
           </div>
         ))}
       </div>
+
+      <PushBanner />
 
       <form onSubmit={handleCreate} onBlur={handleFormBlur} className="card mb-6 max-w-2xl">
         {!formExpanded ? (

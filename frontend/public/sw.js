@@ -21,6 +21,36 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// ── Push notifications ────────────────────────────────────────────────────
+self.addEventListener('push', (event) => {
+  let data = { title: 'SmartLife', body: 'Vous avez un rappel', url: '/smart-life/#reminders', icon: '/smart-life/smartlife-icon.svg' };
+  if (event.data) {
+    try { data = { ...data, ...event.data.json() }; } catch (_) {}
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body:   data.body,
+      icon:   data.icon,
+      badge:  data.icon,
+      data:   { url: data.url },
+      vibrate: [200, 100, 200],
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/smart-life/';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const existing = list.find((c) => c.url.includes('/smart-life/'));
+      if (existing) return existing.focus().then((c) => c.navigate(url));
+      return clients.openWindow(url);
+    })
+  );
+});
+
+// ── Fetch cache ───────────────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   if (request.method !== 'GET') return;
