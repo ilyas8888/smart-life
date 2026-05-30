@@ -242,6 +242,7 @@ public class SocialController {
                 : user.getEmail().split("@")[0];
         String initials = name.length() >= 2 ? name.substring(0, 2).toUpperCase() : name.toUpperCase();
         return Map.of(
+                "userId",      user.getId(),
                 "name",        name,
                 "initials",    initials,
                 "username",    user.getHandle() != null ? user.getHandle() : "",

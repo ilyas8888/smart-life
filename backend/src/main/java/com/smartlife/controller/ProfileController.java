@@ -85,6 +85,22 @@ public class ProfileController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // ── Public profile by userId (for social feed avatar click) ──────────────
+
+    @GetMapping("/by-id/{userId}")
+    public ResponseEntity<?> getProfileById(@PathVariable Long userId) {
+        return userRepository.findById(userId)
+                .map(target -> {
+                    List<Map<String, Object>> badges = badgeService.computeAndAward(target);
+                    List<Map<String, Object>> posts  = postRepository.findByAuthorIdOrderByCreatedAtDesc(target.getId())
+                            .stream().map(this::toPostSummary).toList();
+                    Map<String, Object> profile = buildProfile(target, badges, false);
+                    profile.put("posts", posts);
+                    return ResponseEntity.ok(profile);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     // ── My posts (for profile panel) ─────────────────────────────────────────
 
     @GetMapping("/me/posts")
