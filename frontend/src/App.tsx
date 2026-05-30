@@ -9,6 +9,7 @@ import DashboardPage from './pages/DashboardPage'
 import AdminPage from './pages/AdminPage'
 import OAuth2OtpPage from './pages/OAuth2OtpPage'
 import OAuthCallbackPage from './pages/OAuthCallbackPage'
+import SharedPublicPage from './pages/SharedPublicPage'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token)
@@ -40,6 +41,7 @@ export default function App() {
       <Route path="/admin" element={<PrivateRoute><AdminPage /></PrivateRoute>} />
       <Route path="/oauth2/otp" element={<OAuth2OtpPage />} />
       <Route path="/oauth2/callback" element={<OAuthCallbackPage />} />
+      <Route path="/share/:token" element={<SharedPublicPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

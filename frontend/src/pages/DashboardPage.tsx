@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Brain, CheckSquare, Bell, FileText, Users, LogOut,
-  Send, Sparkles, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon, BookOpen, Dumbbell, Menu, X, Lock, ShieldCheck, ExternalLink
+  Send, Sparkles, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon, BookOpen, Dumbbell, Menu, X, Lock, ShieldCheck, ExternalLink, Globe
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
@@ -20,10 +20,11 @@ import WorkoutPanel from '../components/WorkoutPanel'
 import HomePanel from '../components/HomePanel'
 import SleepPanel from '../components/SleepPanel'
 import StudyPanel from '../components/StudyPanel'
+import SocialPanel from '../components/SocialPanel'
 
-type Panel = 'home' | 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout' | 'sleep' | 'study' | 'admin'
+type Panel = 'home' | 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout' | 'sleep' | 'study' | 'social' | 'admin'
 
-const VALID_PANELS: Panel[] = ['home', 'agenda', 'prompt', 'tasks', 'reminders', 'notes', 'contacts', 'food', 'diary', 'workout', 'sleep', 'study', 'admin']
+const VALID_PANELS: Panel[] = ['home', 'agenda', 'prompt', 'tasks', 'reminders', 'notes', 'contacts', 'food', 'diary', 'workout', 'sleep', 'study', 'social', 'admin']
 
 type AiAccessStatus = {
   status: 'FREE' | 'APPROVED' | 'PREMIUM' | 'ADMIN' | 'BLOCKED'
@@ -175,6 +176,7 @@ export default function DashboardPage() {
     workout: 'text-amber-400',
     sleep: 'text-indigo-400',
     study: 'text-cyan-400',
+    social: 'text-sky-400',
     admin: 'text-emerald-400',
   }
 
@@ -191,6 +193,7 @@ export default function DashboardPage() {
     workout:   'from-amber-500 via-orange-400 to-red-400',
     sleep:     'from-indigo-500 via-sky-500 to-cyan-400',
     study:     'from-cyan-500 via-blue-500 to-violet-500',
+    social:    'from-sky-500 via-blue-500 to-indigo-500',
     admin:     'from-emerald-500 via-teal-500 to-cyan-500',
   }
 
@@ -207,6 +210,7 @@ export default function DashboardPage() {
     { id: 'workout' as Panel, label: 'Sport', icon: Dumbbell },
     { id: 'sleep' as Panel, label: 'Sommeil', icon: Moon },
     { id: 'study' as Panel, label: 'Apprentissage', icon: BookOpen },
+    { id: 'social' as Panel, label: 'Together', icon: Globe },
     ...(aiStatus?.status === 'ADMIN' ? [{
       id: 'admin' as Panel,
       label: pendingAiRequestCount > 0 ? `Admin IA (${pendingAiRequestCount})` : 'Admin IA',
@@ -515,6 +519,7 @@ export default function DashboardPage() {
           {activePanel === 'workout' && <WorkoutPanel />}
           {activePanel === 'sleep' && <SleepPanel />}
           {activePanel === 'study' && <StudyPanel />}
+          {activePanel === 'social' && <SocialPanel />}
           {activePanel === 'admin' && aiStatus?.status === 'ADMIN' && (
             <div className="w-full flex flex-col items-center justify-center py-20 animate-panel">
               <div className="bg-slate-800 rounded-2xl p-8 max-w-sm w-full text-center space-y-4">
