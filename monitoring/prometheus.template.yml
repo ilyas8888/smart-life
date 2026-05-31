@@ -1,0 +1,27 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+remote_write:
+  - url: "YOUR_GRAFANA_CLOUD_REMOTE_WRITE_URL"
+    basic_auth:
+      username: "YOUR_GRAFANA_CLOUD_USER_ID"
+      password: "YOUR_GRAFANA_API_TOKEN"
+
+scrape_configs:
+  # Local Spring Boot backend (docker-compose)
+  - job_name: 'smartlife-backend-local'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['backend:8080']
+        labels:
+          environment: 'local'
+
+  # Production backend (HF Space)
+  - job_name: 'smartlife-backend-prod'
+    metrics_path: '/actuator/prometheus'
+    scheme: https
+    static_configs:
+      - targets: ['ilyas8888-smartlife-backend.hf.space']
+        labels:
+          environment: 'production'
