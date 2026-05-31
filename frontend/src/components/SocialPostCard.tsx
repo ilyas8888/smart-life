@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   MessageSquare, Bookmark, BookmarkCheck, Trash2, ChevronDown, ChevronUp, Send,
@@ -12,13 +12,13 @@ const RESOURCE_LABELS: Record<string, { label: string; icon: string; color: stri
   FOOD_LOG:      { label: 'Food Diary',      icon: '??', color: 'bg-green-500/10 text-green-400 border border-green-500/20' },
   WORKOUT_PLAN:  { label: 'Programme Sport', icon: '??', color: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' },
   SLEEP_LOG:     { label: 'Sommeil',         icon: '??', color: 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' },
-  STUDY_SESSION: { label: '�tude',           icon: '??', color: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' },
+  STUDY_SESSION: { label: 'Étude',           icon: '??', color: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' },
   NOTE:          { label: 'Note',            icon: '??', color: 'bg-violet-500/10 text-violet-400 border border-violet-500/20' },
   JOURNAL:       { label: 'Journal',         icon: '??', color: 'bg-rose-500/10 text-rose-400 border border-rose-500/20' },
 }
 
 const REACTIONS = [
-  { type: 'INSPIRED', emoji: '??', label: 'Inspir�' },
+  { type: 'INSPIRED', emoji: '??', label: 'Inspiré' },
   { type: 'TRYING',   emoji: '??', label: 'Je teste' },
   { type: 'BRAVO',    emoji: '??', label: 'Bravo' },
   { type: 'HOW',      emoji: '?', label: 'Comment ?' },
@@ -75,7 +75,7 @@ export default function SocialPostCard({ post, onDeleted, onAuthorClick }: Props
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ['social-feed'] })
       qc.invalidateQueries({ queryKey: ['social-saved'] })
-      toast.success(data.saved ? 'Ajout� aux inspirations' : 'Retir� des inspirations')
+      toast.success(data.saved ? 'Ajouté aux inspirations' : 'Retiré des inspirations')
     },
   })
 
@@ -84,7 +84,7 @@ export default function SocialPostCard({ post, onDeleted, onAuthorClick }: Props
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['social-feed'] })
       onDeleted?.(post.id)
-      toast.success('Post supprim�')
+      toast.success('Post supprimé')
     },
   })
 
@@ -198,7 +198,7 @@ export default function SocialPostCard({ post, onDeleted, onAuthorClick }: Props
           }`}
         >
           {post.isSaved
-            ? <><BookmarkCheck size={15} /> Sauvegard�</>
+            ? <><BookmarkCheck size={15} /> Sauvegardé</>
             : <><Bookmark size={15} /> Sauvegarder</>
           }
         </button>
@@ -217,7 +217,7 @@ export default function SocialPostCard({ post, onDeleted, onAuthorClick }: Props
           {/* Input */}
           {replyTo && (
             <div className="flex items-center gap-2 text-xs text-sky-600 dark:text-sky-400">
-              <span>? R�ponse � {replyTo.name}</span>
+              <span>? Réponse à {replyTo.name}</span>
               <button onClick={() => setReplyTo(null)} className="underline">Annuler</button>
             </div>
           )}
@@ -227,7 +227,7 @@ export default function SocialPostCard({ post, onDeleted, onAuthorClick }: Props
               value={commentText}
               onChange={e => setCommentText(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && submitComment()}
-              placeholder={replyTo ? `R�pondre � ${replyTo.name}...` : 'Ajouter un commentaire...'}
+              placeholder={replyTo ? `Répondre à ${replyTo.name}...` : 'Ajouter un commentaire...'}
               className="flex-1 rounded-xl border border-white/10 bg-white/5 text-sm px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-400"
             />
             <button
@@ -261,7 +261,7 @@ function CommentItem({ comment, onReply }: { comment: Comment; onReply: (r: { id
             onClick={() => onReply({ id: comment.id, name: comment.author.name })}
             className="text-[11px] text-sky-500 hover:underline mt-1"
           >
-            R�pondre
+            Répondre
           </button>
         </div>
       </div>

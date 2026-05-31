@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Activity, ArrowLeft, Check, ChevronDown, ChevronUp, Clock, Dumbbell,
@@ -29,7 +29,7 @@ type WorkoutPhase = 'exercising' | 'resting' | 'done'
 const SPORT_PRESETS = [
   { label: 'Muscu', emoji: '', rate: 5 },
   { label: 'Course', emoji: '', rate: 10 },
-  { label: 'V�lo', emoji: '', rate: 8 },
+  { label: 'Vélo', emoji: '', rate: 8 },
   { label: 'Natation', emoji: '', rate: 9 },
   { label: 'Yoga', emoji: '', rate: 3 },
   { label: 'Marche', emoji: '', rate: 4 },
@@ -54,7 +54,7 @@ const GOAL_IMAGES: Record<GoalType, string> = {
 const SPORT_IMAGES: [RegExp, string][] = [
   [/muscu|gym|musculation|bench|squat|deadlift|push|pull|legs/i, imgUrl('images/sports/gym.png')],
   [/course|running|run|jogging/i, imgUrl('images/sports/running.png')],
-  [/v�lo|velo|cycling|bike/i, imgUrl('images/sports/cycling.png')],
+  [/vélo|velo|cycling|bike/i, imgUrl('images/sports/cycling.png')],
   [/yoga|pilates/i, imgUrl('images/sports/yoga.png')],
   [/boxe|boxing|mma/i, imgUrl('images/sports/boxing.png')],
 ]
@@ -91,7 +91,7 @@ const GOAL_LABELS: Record<GoalType, string> = {
   MUSCLE_GAIN: 'Prise de masse',
   FAT_LOSS: 'Perte de poids',
   ENDURANCE: 'Endurance',
-  GENERAL: 'G�n�ral',
+  GENERAL: 'Général',
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -102,7 +102,7 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  ACTIVE: 'Actif', PAUSED: 'Pause', COMPLETED: 'Termin�', ARCHIVED: 'Archiv�',
+  ACTIVE: 'Actif', PAUSED: 'Pause', COMPLETED: 'Terminé', ARCHIVED: 'Archivé',
 }
 
 const GOAL_CONFIG: Record<GoalType, {
@@ -130,7 +130,7 @@ const GOAL_CONFIG: Record<GoalType, {
     badge: 'bg-green-500/10 text-green-400 border border-green-500/20',
   },
   GENERAL: {
-    label: 'G�n�ral', emoji: '?',
+    label: 'Général', emoji: '?',
     gradient: 'from-blue-500/10 to-indigo-500/5',
     accentText: 'text-blue-600 dark:text-blue-400',
     borderLeft: 'border-l-blue-500',
@@ -175,10 +175,10 @@ function goalDayBorder(goal: string) {
 
 const EXERCISE_LIBRARY: Record<string, PlanExercise[]> = {
   Push: [
-    { name: 'D�velopp� couch�', sets: 4, reps: 10, weightKg: 60, notes: '' },
-    { name: 'D�velopp� militaire', sets: 4, reps: 8, weightKg: 40, notes: '' },
-    { name: 'D�velopp� inclin�', sets: 3, reps: 10, weightKg: 50, notes: '' },
-    { name: '�cart� halt�res', sets: 3, reps: 12, weightKg: 15, notes: '' },
+    { name: 'Développé couché', sets: 4, reps: 10, weightKg: 60, notes: '' },
+    { name: 'Développé militaire', sets: 4, reps: 8, weightKg: 40, notes: '' },
+    { name: 'Développé incliné', sets: 3, reps: 10, weightKg: 50, notes: '' },
+    { name: 'Écarté haltères', sets: 3, reps: 12, weightKg: 15, notes: '' },
     { name: 'Dips', sets: 3, reps: 10, weightKg: null, notes: '' },
     { name: 'Triceps poulie', sets: 3, reps: 12, weightKg: 25, notes: '' },
     { name: 'Extension triceps', sets: 3, reps: 12, weightKg: 20, notes: '' },
@@ -186,18 +186,18 @@ const EXERCISE_LIBRARY: Record<string, PlanExercise[]> = {
   Pull: [
     { name: 'Tractions', sets: 4, reps: 8, weightKg: null, notes: '' },
     { name: 'Rowing barre', sets: 4, reps: 10, weightKg: 60, notes: '' },
-    { name: 'Rowing halt�re', sets: 3, reps: 12, weightKg: 25, notes: '' },
+    { name: 'Rowing haltère', sets: 3, reps: 12, weightKg: 25, notes: '' },
     { name: 'Tirage vertical', sets: 4, reps: 10, weightKg: 55, notes: '' },
     { name: 'Face pull', sets: 3, reps: 15, weightKg: 20, notes: '' },
     { name: 'Curl biceps barre', sets: 3, reps: 12, weightKg: 30, notes: '' },
-    { name: 'Curl halt�res', sets: 3, reps: 12, weightKg: 12, notes: '' },
+    { name: 'Curl haltères', sets: 3, reps: 12, weightKg: 12, notes: '' },
     { name: 'Curl marteau', sets: 3, reps: 12, weightKg: 14, notes: '' },
   ],
   Legs: [
     { name: 'Squat', sets: 4, reps: 8, weightKg: 80, notes: '' },
     { name: 'Leg press', sets: 4, reps: 10, weightKg: 120, notes: '' },
-    { name: 'Fentes halt�res', sets: 3, reps: 12, weightKg: 20, notes: '' },
-    { name: 'Soulev� de terre', sets: 4, reps: 6, weightKg: 100, notes: '' },
+    { name: 'Fentes haltères', sets: 3, reps: 12, weightKg: 20, notes: '' },
+    { name: 'Soulevé de terre', sets: 4, reps: 6, weightKg: 100, notes: '' },
     { name: 'Leg curl', sets: 3, reps: 12, weightKg: 40, notes: '' },
     { name: 'Leg extension', sets: 3, reps: 12, weightKg: 40, notes: '' },
     { name: 'Mollets debout', sets: 4, reps: 15, weightKg: 60, notes: '' },
@@ -206,15 +206,15 @@ const EXERCISE_LIBRARY: Record<string, PlanExercise[]> = {
   'Full Body': [
     { name: 'Deadlift', sets: 4, reps: 5, weightKg: 100, notes: '' },
     { name: 'Squat', sets: 3, reps: 8, weightKg: 70, notes: '' },
-    { name: 'D�velopp� couch�', sets: 3, reps: 8, weightKg: 60, notes: '' },
+    { name: 'Développé couché', sets: 3, reps: 8, weightKg: 60, notes: '' },
     { name: 'Tractions', sets: 3, reps: 8, weightKg: null, notes: '' },
     { name: 'Pompes', sets: 3, reps: 15, weightKg: null, notes: '' },
     { name: 'Gainage', sets: 3, reps: null, weightKg: null, notes: '60 secondes' },
   ],
   Cardio: [
-    { name: 'Course � pied', sets: null, reps: null, weightKg: null, notes: '30 min' },
-    { name: 'V�lo stationnaire', sets: null, reps: null, weightKg: null, notes: '45 min' },
-    { name: 'Corde � sauter', sets: 5, reps: null, weightKg: null, notes: '2 min/s�rie' },
+    { name: 'Course à pied', sets: null, reps: null, weightKg: null, notes: '30 min' },
+    { name: 'Vélo stationnaire', sets: null, reps: null, weightKg: null, notes: '45 min' },
+    { name: 'Corde à sauter', sets: 5, reps: null, weightKg: null, notes: '2 min/série' },
     { name: 'Rameur', sets: null, reps: null, weightKg: null, notes: '20 min' },
     { name: 'HIIT 20-40', sets: 8, reps: null, weightKg: null, notes: '20s effort / 40s repos' },
   ],
@@ -223,7 +223,7 @@ const EXERCISE_LIBRARY: Record<string, PlanExercise[]> = {
 const SPORT_BADGE_MAP: [RegExp, string][] = [
   [/muscu|gym|musculation|bench|squat|deadlift/i, '???'],
   [/course|running|run|jogging/i, '??'],
-  [/v�lo|velo|cycling|bike/i, '??'],
+  [/vélo|velo|cycling|bike/i, '??'],
   [/natation|swimming|swim|piscine/i, '??'],
   [/yoga|pilates/i, '??'],
   [/marche|walk/i, '??'],
@@ -246,7 +246,7 @@ function sportBadge(title: string): string | null {
 const SPORT_CARD_STYLES: [RegExp, string][] = [
   [/muscu|gym|musculation|bench|squat|deadlift|push|pull|legs/i, 'border-l-[3px] border-amber-400'],
   [/course|running|run|jogging/i,                                'border-l-[3px] border-green-500'],
-  [/v�lo|velo|cycling|bike/i,                                    'border-l-[3px] border-blue-500'],
+  [/vélo|velo|cycling|bike/i,                                    'border-l-[3px] border-blue-500'],
   [/natation|swimming|swim/i,                                    'border-l-[3px] border-cyan-500'],
   [/yoga|pilates/i,                                              'border-l-[3px] border-purple-500'],
   [/marche|walk/i,                                               'border-l-[3px] border-teal-500'],
@@ -267,7 +267,7 @@ function sessionCardBorder(title: string): string {
 const SPORT_CATEGORIES: { label: string; pattern: RegExp; color: string }[] = [
   { label: 'Musculation', pattern: /muscu|gym|musculation|bench|squat|deadlift|push|pull|legs/i, color: '#f59e0b' },
   { label: 'Course',      pattern: /course|running|run|jogging/i,                                 color: '#22c55e' },
-  { label: 'V�lo',        pattern: /v�lo|velo|cycling|bike/i,                                     color: '#3b82f6' },
+  { label: 'Vélo',        pattern: /vélo|velo|cycling|bike/i,                                     color: '#3b82f6' },
   { label: 'Natation',    pattern: /natation|swimming|swim/i,                                     color: '#06b6d4' },
   { label: 'Yoga',        pattern: /yoga|pilates/i,                                               color: '#a855f7' },
   { label: 'Boxe/MMA',    pattern: /boxe|boxing|mma/i,                                            color: '#ef4444' },
@@ -314,14 +314,14 @@ function ActivityHeatmap({ sessions }: { sessions: WorkoutSession[] }) {
 
   return (
     <div className="card mb-5">
-      <p className="text-sm font-semibold text-gray-300 mb-3">Activit� des 12 derni�res semaines</p>
+      <p className="text-sm font-semibold text-gray-300 mb-3">Activité des 12 dernières semaines</p>
       <div className="flex gap-0.5">
         {Array.from({ length: WEEKS }).map((_, wi) => (
           <div key={wi} className="flex flex-col gap-0.5 flex-1">
             {cells.slice(wi * 7, wi * 7 + 7).map((cell) => (
               <div
                 key={cell.date}
-                title={cell.count > 0 ? `${cell.date}: ${cell.count} s�ance${cell.count > 1 ? 's' : ''}` : cell.date}
+                title={cell.count > 0 ? `${cell.date}: ${cell.count} séance${cell.count > 1 ? 's' : ''}` : cell.date}
                 className={`aspect-square rounded-[2px] ${cellColor(cell.count)}`}
               />
             ))}
@@ -410,11 +410,11 @@ function SportDonut({ sessions }: { sessions: WorkoutSession[] }) {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <p className="text-sm font-bold text-gray-800 dark:text-gray-100">{total}</p>
-          <p className="text-[10px] text-gray-500">s�ances</p>
+          <p className="text-[10px] text-gray-500">séances</p>
         </div>
       </div>
       <div className="space-y-1.5 flex-1 min-w-0">
-        <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">R�partition</p>
+        <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">Répartition</p>
         {segments.map((seg) => (
           <div key={seg.label} className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
@@ -466,7 +466,7 @@ function WeeklyVolumeChart({ sessions }: { sessions: WorkoutSession[] }) {
   return (
     <div className="card">
       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">
-        {unit === 'kcal' ? 'Calories br�l�es / semaine' : 'Dur�e / semaine'}
+        {unit === 'kcal' ? 'Calories brûlées / semaine' : 'Durée / semaine'}
       </p>
       <div className="flex items-end gap-1.5" style={{ height: BAR_H + 32 }}>
         {weeks.map((week, i) => {
@@ -541,7 +541,7 @@ function SessionCard({
               <p className="text-xs text-gray-500 mt-0.5">
                 {format(new Date(`${session.sessionDate}T00:00:00`), 'EEEE dd MMMM yyyy', { locale: fr })}
                 {session.planDayId && (
-                  <span className="ml-2 text-amber-500">� Programme</span>
+                  <span className="ml-2 text-amber-500">· Programme</span>
                 )}
               </p>
             </div>
@@ -589,7 +589,7 @@ function SessionCard({
           {groups.slice(0, 4).map(g => (
             <span key={g.name}
               className="text-[11px] bg-white/5 border border-white/10 text-gray-300 px-2 py-0.5 rounded-full">
-              {g.name} � {g.sets.length} s�rie{g.sets.length > 1 ? 's' : ''}
+              {g.name} · {g.sets.length} série{g.sets.length > 1 ? 's' : ''}
             </span>
           ))}
           {groups.length > 4 && (
@@ -610,7 +610,7 @@ function SessionCard({
               <table className="w-full min-w-[300px] text-sm">
                 <thead>
                   <tr className="text-[10px] text-gray-500 uppercase tracking-widest">
-                    <th className="text-left pb-1 font-medium w-10">S�rie</th>
+                    <th className="text-left pb-1 font-medium w-10">Série</th>
                     <th className="text-center pb-1 font-medium">Poids</th>
                     <th className="text-center pb-1 font-medium">Reps</th>
                     <th className="text-center pb-1 font-medium">Volume</th>
@@ -629,11 +629,11 @@ function SessionCard({
                           </span>
                         </td>
                         <td className="py-1.5 text-center font-semibold">
-                          {set.weightKg != null ? `${set.weightKg} kg` : '�'}
+                          {set.weightKg != null ? `${set.weightKg} kg` : '—'}
                         </td>
-                        <td className="py-1.5 text-center">{set.reps ?? '�'}</td>
+                        <td className="py-1.5 text-center">{set.reps ?? '—'}</td>
                         <td className="py-1.5 text-center text-gray-500 text-xs">
-                          {vol > 0 ? `${vol} kg` : '�'}
+                          {vol > 0 ? `${vol} kg` : '—'}
                         </td>
                         <td className="py-1.5 text-center">
                           {pr && (
@@ -690,7 +690,7 @@ function PlanExerciseLine({ ex }: { ex: PlanExercise }) {
   return (
     <li className="flex items-center justify-between gap-3 text-sm py-1.5">
       <span className="font-medium text-gray-200 truncate">{ex.name}</span>
-      <span className="text-xs text-gray-400 shrink-0">{parts.join(' � ')}{ex.notes ? ` � ${ex.notes}` : ''}</span>
+      <span className="text-xs text-gray-400 shrink-0">{parts.join(' · ')}{ex.notes ? ` · ${ex.notes}` : ''}</span>
     </li>
   )
 }
@@ -728,7 +728,7 @@ function AddWorkoutModal({
 
   const guidedMutation = useMutation({
     mutationFn: () => api.post('/workouts', {
-      title: `${prefillTitle || activeSport}${durationMinutes ? ` � ${durationMinutes}min` : ''}`,
+      title: `${prefillTitle || activeSport}${durationMinutes ? ` — ${durationMinutes}min` : ''}`,
       durationMinutes: parseInt(durationMinutes) || null,
       caloriesBurned: caloriesDisplayed || null,
       notes: notes || null,
@@ -745,7 +745,7 @@ function AddWorkoutModal({
       qc.invalidateQueries({ queryKey: ['workouts'] })
       qc.invalidateQueries({ queryKey: ['timeline'] })
       qc.invalidateQueries({ queryKey: ['workout-plans'] })
-      toast.success('S�ance enregistr�e')
+      toast.success('Séance enregistrée')
       onSuccess()
     },
     onError: () => toast.error("Erreur lors de l'enregistrement"),
@@ -756,7 +756,7 @@ function AddWorkoutModal({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workouts'] })
       qc.invalidateQueries({ queryKey: ['timeline'] })
-      toast.success('S�ance enregistr�e')
+      toast.success('Séance enregistrée')
       onSuccess()
     },
     onError: () => toast.error("Erreur lors de l'analyse"),
@@ -779,7 +779,7 @@ function AddWorkoutModal({
       <div className="relative bg-white/5 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-white/10 border-white/10">
           <h3 className="text-lg font-black text-white flex items-center gap-2">
-            <Dumbbell size={20} className="text-amber-500" /> Nouvelle s�ance
+            <Dumbbell size={20} className="text-amber-500" /> Nouvelle séance
           </h3>
           <button type="button" onClick={onClose} disabled={isLoading}
             className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-white/[0.05] transition-colors">
@@ -796,9 +796,9 @@ function AddWorkoutModal({
                   <Activity size={22} />
                 </div>
                 <div>
-                  <p className="font-semibold text-white">Par activit�</p>
+                  <p className="font-semibold text-white">Par activité</p>
                   <p className="text-sm text-gray-400 mt-0.5">
-                    Choisissez le sport et la dur�e, les calories sont estim�es automatiquement.
+                    Choisissez le sport et la durée, les calories sont estimées automatiquement.
                   </p>
                 </div>
               </button>
@@ -810,7 +810,7 @@ function AddWorkoutModal({
                 <div>
                   <p className="font-semibold text-white">Par description</p>
                   <p className="text-sm text-gray-400 mt-0.5">
-                    D�crivez votre s�ance, l'IA extrait tout automatiquement.
+                    Décrivez votre séance, l'IA extrait tout automatiquement.
                   </p>
                 </div>
               </button>
@@ -826,7 +826,7 @@ function AddWorkoutModal({
                 </button>
               )}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Type d'activit�</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Type d'activité</label>
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                   {SPORT_PRESETS.map(preset => (
                     <button key={preset.label} type="button" onClick={() => selectSport(preset.label)}
@@ -850,18 +850,18 @@ function AddWorkoutModal({
                 </div>
                 {sportLabel === 'Autre' && (
                   <input ref={customInputRef} className="input mt-3" value={customSport}
-                    onChange={e => setCustomSport(e.target.value)} placeholder="Nom de l'activit�" />
+                    onChange={e => setCustomSport(e.target.value)} placeholder="Nom de l'activité" />
                 )}
               </div>
               <div className="relative mb-4">
                 <Clock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input type="number" placeholder="Dur�e (min)" className="input pl-8" value={durationMinutes}
+                <input type="number" placeholder="Durée (min)" className="input pl-8" value={durationMinutes}
                   onChange={e => setDurationMinutes(e.target.value)} min="1" />
               </div>
               <div className="mb-4 rounded-xl bg-amber-900/20 border border-amber-500/20 px-3 py-2.5">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm font-medium text-amber-300 flex items-center gap-2">
-                    <Flame size={15} /> � {Number.isFinite(caloriesDisplayed) ? caloriesDisplayed : 0} kcal estim�es
+                    <Flame size={15} /> ≈ {Number.isFinite(caloriesDisplayed) ? caloriesDisplayed : 0} kcal estimées
                   </p>
                   <button type="button" onClick={() => setShowCaloriesOverride(v => !v)}
                     className="text-xs font-medium text-amber-300 hover:text-amber-200 hover:underline transition-colors">
@@ -870,7 +870,7 @@ function AddWorkoutModal({
                 </div>
                 {showCaloriesOverride && (
                   <input type="number" className="input mt-2" value={caloriesOverride}
-                    onChange={e => setCaloriesOverride(e.target.value)} min="0" placeholder="Calories br�l�es" />
+                    onChange={e => setCaloriesOverride(e.target.value)} min="0" placeholder="Calories brûlées" />
                 )}
               </div>
               <button type="button" onClick={() => setShowExercises(v => !v)}
@@ -878,17 +878,17 @@ function AddWorkoutModal({
                 <span className="flex items-center gap-2">
                   <Dumbbell size={15} className="text-amber-500" />
                   {exercises.filter(e => e.name.trim()).length > 0
-                    ? `Exercices � ${exercises.filter(e => e.name.trim()).length} ajout�${exercises.filter(e => e.name.trim()).length > 1 ? 's' : ''}`
+                    ? `Exercices · ${exercises.filter(e => e.name.trim()).length} ajouté${exercises.filter(e => e.name.trim()).length > 1 ? 's' : ''}`
                     : 'Exercices (facultatif)'}
                 </span>
                 {showExercises ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
               {showExercises && (
                 <div className="space-y-2 mb-4">
-                  {/* Biblioth�que rapide si le sport correspond */}
+                  {/* Bibliothèque rapide si le sport correspond */}
                   {(EXERCISE_LIBRARY as Record<string, typeof EXERCISE_LIBRARY[keyof typeof EXERCISE_LIBRARY]>)[sportLabel] && (
                     <div className="rounded-xl bg-white/[0.03]/40 px-3 py-2.5">
-                      <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Biblioth�que rapide � {sportLabel}</p>
+                      <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mb-2">Bibliothèque rapide — {sportLabel}</p>
                       <div className="flex flex-wrap gap-1.5">
                         {(EXERCISE_LIBRARY as Record<string, typeof EXERCISE_LIBRARY[keyof typeof EXERCISE_LIBRARY]>)[sportLabel].map(ex => (
                           <button key={ex.name} type="button"
@@ -923,11 +923,11 @@ function AddWorkoutModal({
                           <X size={14} />
                         </button>
                       </div>
-                      {/* Blocs m�triques */}
+                      {/* Blocs métriques */}
                       <div className="grid grid-cols-3 divide-x divide-gray-100 dark:divide-gray-700">
                         {[
-                          { label: 'S�ries', field: 'sets' as keyof ExerciseForm, step: '1' },
-                          { label: 'R�p�titions', field: 'reps' as keyof ExerciseForm, step: '1' },
+                          { label: 'Séries', field: 'sets' as keyof ExerciseForm, step: '1' },
+                          { label: 'Répétitions', field: 'reps' as keyof ExerciseForm, step: '1' },
                           { label: 'Poids (kg)', field: 'weightKg' as keyof ExerciseForm, step: '0.5' },
                         ].map(({ label, field, step }) => (
                           <div key={field} className="flex flex-col items-center py-3 px-2">
@@ -937,7 +937,7 @@ function AddWorkoutModal({
                               className="w-full text-center font-bold text-xl text-white bg-transparent border-none focus:outline-none p-0 leading-none"
                               value={exercise[field]}
                               onChange={e => updateExercise(i, field, e.target.value)}
-                              placeholder="�"
+                              placeholder="—"
                             />
                           </div>
                         ))}
@@ -956,7 +956,7 @@ function AddWorkoutModal({
               <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                 <button type="button" onClick={onClose} disabled={isLoading} className="btn-secondary w-full sm:w-auto">Annuler</button>
                 <button type="button" onClick={() => guidedMutation.mutate()} disabled={!canSaveGuided || isLoading}
-                  className="btn-primary w-full sm:w-auto">Enregistrer la s�ance</button>
+                  className="btn-primary w-full sm:w-auto">Enregistrer la séance</button>
               </div>
             </div>
           )}
@@ -967,14 +967,14 @@ function AddWorkoutModal({
                 className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4 flex items-center gap-1">
                 ? Retour
               </button>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">D�crivez votre s�ance</label>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Décrivez votre séance</label>
               <textarea className="input resize-none mb-4" rows={5} value={promptText}
                 onChange={e => setPromptText(e.target.value)}
-                placeholder="Ex: J'ai fait 45min de muscu, dos et biceps. Tractions 4�10, Rowing 4�12 � 60kg. Puis 20min de v�lo." />
+                placeholder="Ex: J'ai fait 45min de muscu, dos et biceps. Tractions 4×10, Rowing 4×12 à 60kg. Puis 20min de vélo." />
               {isLoading && (
                 <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400 mb-3">
                   <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
-                  L'IA analyse votre s�ance�
+                  L'IA analyse votre séance…
                 </div>
               )}
               <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
@@ -993,14 +993,14 @@ function AddWorkoutModal({
 const REST_SECONDS = 90
 const MUSCLE_LABELS_INLINE: Record<string, string> = {
   chest: 'Pecto',
-  shoulders: '�paules',
+  shoulders: 'Épaules',
   biceps: 'Biceps',
   triceps: 'Triceps',
   forearms: 'Avant-bras',
   core: 'Abdos',
   quads: 'Quadri',
   lats: 'Dorsaux',
-  traps: 'Trap�zes',
+  traps: 'Trapèzes',
   'lower-back': 'Lombaires',
   glutes: 'Fessiers',
   hamstrings: 'Ischios',
@@ -1079,7 +1079,7 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
 
   const saveMutation = useMutation({
     mutationFn: () => api.post('/workouts', {
-      title: `${plan.name} � ${day.label}`,
+      title: `${plan.name} — ${day.label}`,
       durationMinutes: Math.max(1, Math.round(elapsed / 60)),
       caloriesBurned: null,
       planDayId: day.id,
@@ -1107,7 +1107,7 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
       qc.invalidateQueries({ queryKey: ['timeline'] })
       qc.invalidateQueries({ queryKey: ['workout-plans'] })
       qc.invalidateQueries({ queryKey: ['plan-progress'] })
-      toast.success('S�ance enregistr�e !')
+      toast.success('Séance enregistrée !')
       onFinish()
     },
     onError: () => toast.error("Erreur lors de l'enregistrement"),
@@ -1124,11 +1124,11 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
           <X size={16} /> Abandonner
         </button>
         <div className="flex-1 text-center">
-          <p className="text-xs text-gray-500 truncate">{plan.name} � {day.label}</p>
+          <p className="text-xs text-gray-500 truncate">{plan.name} — {day.label}</p>
           <p className="text-2xl font-mono font-bold text-amber-400 leading-none mt-0.5">{formatTime(elapsed)}</p>
         </div>
         <div className="text-right">
-          <p className="text-xs text-gray-500">{doneSets}/{totalSets} s�ries</p>
+          <p className="text-xs text-gray-500">{doneSets}/{totalSets} séries</p>
           <p className="text-xs font-semibold text-amber-400">{currentExIdx + 1}/{exercises.length} ex.</p>
         </div>
       </div>
@@ -1143,8 +1143,8 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
           <div>
             <div className="text-center py-8">
               <div className="text-6xl mb-3"></div>
-              <h2 className="text-2xl font-bold">S�ance termin�e !</h2>
-              <p className="text-gray-400 mt-1">{formatTime(elapsed)} � {doneSets} s�ries</p>
+              <h2 className="text-2xl font-bold">Séance terminée !</h2>
+              <p className="text-gray-400 mt-1">{formatTime(elapsed)} · {doneSets} séries</p>
             </div>
             <div className="space-y-3 mb-6">
               {exercises.map((ep, i) => (
@@ -1158,19 +1158,19 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
                       {ep.setLogs.map((log, j) => (
                         <div key={j} className="bg-white/5 rounded-xl px-3 py-2 text-sm flex items-center gap-2">
                           <Check size={12} className="text-green-400 shrink-0" />
-                          <span className="text-gray-300">S{j + 1} � {log.weightKg || '�'}kg � {log.reps || '�'}</span>
+                          <span className="text-gray-300">S{j + 1} · {log.weightKg || '—'}kg × {log.reps || '—'}</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-600 italic">Non effectu�</p>
+                    <p className="text-xs text-gray-600 italic">Non effectué</p>
                   )}
                 </div>
               ))}
             </div>
             <button type="button" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}
               className="w-full py-4 bg-amber-500 hover:bg-amber-400 disabled:opacity-60 rounded-2xl font-bold text-black text-lg transition-colors">
-              {saveMutation.isPending ? 'Enregistrement�' : 'Enregistrer la s�ance'}
+              {saveMutation.isPending ? 'Enregistrement…' : 'Enregistrer la séance'}
             </button>
           </div>
         ) : currentEx ? (
@@ -1211,9 +1211,9 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
                     />
                   </div>
                   <p className="text-sm text-gray-400 mt-0.5">
-                    {targetSets} s�ries
-                    {currentEx.exercise.reps ? ` � ${currentEx.exercise.reps} reps` : ''}
-                    {planExerciseWeight(currentEx.exercise) ? ` � ${planExerciseWeight(currentEx.exercise)} kg cible` : ''}
+                    {targetSets} séries
+                    {currentEx.exercise.reps ? ` × ${currentEx.exercise.reps} reps` : ''}
+                    {planExerciseWeight(currentEx.exercise) ? ` · ${planExerciseWeight(currentEx.exercise)} kg cible` : ''}
                   </p>
                 </div>
               </div>
@@ -1225,8 +1225,8 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
                       <div className="w-6 h-6 rounded-full bg-green-900 flex items-center justify-center shrink-0">
                         <Check size={12} className="text-green-400" />
                       </div>
-                      <span className="text-gray-400">S�rie {log.setNumber}</span>
-                      <span className="font-semibold text-white">{log.weightKg || '�'} kg � {log.reps || '�'} reps</span>
+                      <span className="text-gray-400">Série {log.setNumber}</span>
+                      <span className="font-semibold text-white">{log.weightKg || '—'} kg × {log.reps || '—'} reps</span>
                     </div>
                   ))}
                 </div>
@@ -1236,7 +1236,7 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
                 <div className="p-4">
                   <div className="flex items-center gap-2 mb-4">
                     <span className="px-3 py-1 rounded-full bg-amber-500 text-black text-sm font-bold">
-                      S�rie {currentSetNum}/{targetSets}
+                      Série {currentSetNum}/{targetSets}
                     </span>
                   </div>
                   {(() => {
@@ -1275,7 +1275,7 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
                         placeholder="0" />
                     </div>
                     <div className="bg-white/5 rounded-xl p-4">
-                      <p className="text-xs text-gray-500 uppercase tracking-widest mb-2 text-center">R�p�titions</p>
+                      <p className="text-xs text-gray-500 uppercase tracking-widest mb-2 text-center">Répétitions</p>
                       <input type="number" inputMode="numeric" min="0" step="1"
                         className="w-full text-center text-4xl font-bold bg-transparent border-none outline-none text-white placeholder-gray-700"
                         value={repsInput}
@@ -1285,7 +1285,7 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
                   </div>
                   <button type="button" onClick={confirmSet}
                     className="w-full py-4 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] rounded-xl font-bold text-black text-base transition-all flex items-center justify-center gap-2">
-                    <Check size={20} /> Valider la s�rie {currentSetNum}
+                    <Check size={20} /> Valider la série {currentSetNum}
                   </button>
                 </div>
               )}
@@ -1310,7 +1310,7 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
                     </span>
                   </div>
                 </div>
-                <p className="text-sm text-gray-500 mb-3">Pr�parez-vous pour la s�rie {currentSetNum}</p>
+                <p className="text-sm text-gray-500 mb-3">Préparez-vous pour la série {currentSetNum}</p>
                 <button type="button" onClick={advanceAfterRest}
                   className="flex items-center gap-2 mx-auto text-sm text-gray-400 hover:text-white transition-colors px-4 py-2 rounded-xl border border-white/10 hover:border-gray-500">
                   <SkipForward size={14} /> Sauter le repos
@@ -1342,7 +1342,7 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
       {showDiscard && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60">
           <div className="bg-[#0D1117] rounded-2xl p-6 max-w-sm w-full border border-white/10">
-            <h3 className="font-bold text-lg mb-2">Abandonner la s�ance ?</h3>
+            <h3 className="font-bold text-lg mb-2">Abandonner la séance ?</h3>
             <p className="text-gray-400 text-sm mb-5">La progression en cours sera perdue.</p>
             <div className="flex gap-3">
               <button type="button" onClick={() => setShowDiscard(false)}
@@ -1430,17 +1430,17 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange, onEdi
                     </button>
                     <button type="button" onClick={() => changeStatus('COMPLETED')}
                       className="text-xs font-medium px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-900/50 transition-colors">
-                      ? Marquer termin�
+                      ? Marquer terminé
                     </button>
                   </>}
                   {localStatus === 'PAUSED' && <>
                     <button type="button" onClick={() => changeStatus('ACTIVE')}
                       className="text-xs font-medium px-3 py-1.5 rounded-xl bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-900/50 transition-colors">
-                      ? R�activer
+                      ? Réactiver
                     </button>
                     <button type="button" onClick={() => changeStatus('COMPLETED')}
                       className="text-xs font-medium px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-900/50 transition-colors">
-                      ? Marquer termin�
+                      ? Marquer terminé
                     </button>
                   </>}
                   {localStatus === 'COMPLETED' && (
@@ -1457,7 +1457,7 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange, onEdi
                 <p className="text-base font-black text-white">
                   {progress?.doneSessions ?? 0}/{progress?.totalSessions ?? 0}
                 </p>
-                <p className="text-[10px] text-white/70">s�ances</p>
+                <p className="text-[10px] text-white/70">séances</p>
               </div>
               <div>
                 <p className="text-base font-black text-white">
@@ -1495,13 +1495,13 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange, onEdi
         <div className={`rounded-2xl border-2 p-4 mb-5 ${goalTodayBorder(plan.goal)} ${goalTodayBg(plan.goal)}`}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
             <div>
-              <p className={`text-xs font-semibold uppercase tracking-wide mb-0.5 ${cfg.accentText}`}>S�ance d'aujourd'hui</p>
+              <p className={`text-xs font-semibold uppercase tracking-wide mb-0.5 ${cfg.accentText}`}>Séance d'aujourd'hui</p>
               <p className="font-black text-white text-base">{today.label}</p>
               <p className="text-xs text-gray-400">{today.exercises.length} exercices</p>
             </div>
             <button type="button" onClick={() => onStartSession(today)}
               className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white transition-colors w-full sm:w-auto ${goalAccentBtn(plan.goal)}`}>
-              <Play size={16} /> D�marrer
+              <Play size={16} /> Démarrer
             </button>
           </div>
           <ul className="space-y-0 divide-y divide-white/[0.06]">
@@ -1541,11 +1541,11 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange, onEdi
                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${cfg.badge}`}>Aujourd'hui</span>
                       )}
                       {completed && !isToday && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">? Compl�t�</span>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">? Complété</span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500">
-                      {isRest ? 'Repos' : `${day?.label} � ${day?.exercises.length} exercices`}
+                      {isRest ? 'Repos' : `${day?.label} · ${day?.exercises.length} exercices`}
                     </p>
                   </div>
                   {!isRest && day && (
@@ -1560,7 +1560,7 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange, onEdi
                     {day.exercises.map((ex, i) => {
                       const weight = planExerciseWeight(ex)
                       const parts = [
-                        ex.sets && ex.reps ? `${ex.sets}�${ex.reps}` : ex.sets ? `${ex.sets}s` : '',
+                        ex.sets && ex.reps ? `${ex.sets}×${ex.reps}` : ex.sets ? `${ex.sets}s` : '',
                         weight ? `${weight}kg` : '',
                       ].filter(Boolean)
                       return (
@@ -1569,7 +1569,7 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange, onEdi
                             {i + 1}
                           </span>
                           <span className="text-sm font-medium text-gray-200 truncate">{ex.name}</span>
-                          {parts.length > 0 && <span className="text-xs text-gray-400 shrink-0">{parts.join(' � ')}</span>}
+                          {parts.length > 0 && <span className="text-xs text-gray-400 shrink-0">{parts.join(' · ')}</span>}
                           <ExerciseInfoButton exerciseName={ex.name} sets={ex.sets} reps={ex.reps} weightKg={weight} />
                         </div>
                       )
@@ -1628,17 +1628,17 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
     mutationFn: () => api.post('/workout-plans', planBody()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workout-plans'] })
-      toast.success('Programme cr�� !')
+      toast.success('Programme créé !')
       onSuccess()
     },
-    onError: () => toast.error('Erreur lors de la cr�ation'),
+    onError: () => toast.error('Erreur lors de la création'),
   })
 
   const updateMutation = useMutation({
     mutationFn: () => api.put(`/workout-plans/${editingPlan!.id}`, planBody()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workout-plans'] })
-      toast.success('Programme modifi� ?')
+      toast.success('Programme modifié ?')
       onSuccess()
     },
     onError: () => toast.error('Erreur lors de la modification'),
@@ -1688,7 +1688,7 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
       <div className="relative bg-white/5 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-xl max-h-[calc(100dvh-1rem)] sm:max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-white/10 border-white/10">
           <h3 className="text-lg font-black text-white">
-            {isEdit ? 'Modifier le programme' : 'Cr�er un programme'}
+            {isEdit ? 'Modifier le programme' : 'Créer un programme'}
           </h3>
           <button type="button" onClick={handleBackdrop} disabled={isPending}
             className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-white/[0.05] transition-colors">
@@ -1745,7 +1745,7 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
                   </div>
                 ))}
               </div>
-              <p className="text-sm text-gray-400 mb-4">{activeDays.length} jours d'entra�nement / semaine</p>
+              <p className="text-sm text-gray-400 mb-4">{activeDays.length} jours d'entraînement / semaine</p>
               <div className="flex justify-end">
                 <button type="button" onClick={() => { setCurrentDayIndex(0); setStep(3) }} disabled={activeDays.length === 0} className="btn-primary">Suivant ?</button>
               </div>
@@ -1761,7 +1761,7 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
                 {activeDays.map((day, index) => (
                   <button key={day.dayNumber} type="button" onClick={() => setCurrentDayIndex(index)}
                     className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap ${currentDayIndex === index ? 'bg-slate-800 text-white' : 'bg-white/[0.05] text-gray-400'}`}>
-                    {DAY_SHORT[day.dayNumber - 1]} � {day.label}
+                    {DAY_SHORT[day.dayNumber - 1]} · {day.label}
                   </button>
                 ))}
               </div>
@@ -1771,7 +1771,7 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
               />
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
                 <input className="input col-span-2 sm:col-span-1" value={customExercise.name} onChange={e => setCustomExercise(prev => ({ ...prev, name: e.target.value }))} placeholder="Exercice" />
-                <input className="input" type="number" value={customExercise.sets} onChange={e => setCustomExercise(prev => ({ ...prev, sets: e.target.value }))} placeholder="S�ries" />
+                <input className="input" type="number" value={customExercise.sets} onChange={e => setCustomExercise(prev => ({ ...prev, sets: e.target.value }))} placeholder="Séries" />
                 <input className="input" type="number" value={customExercise.reps} onChange={e => setCustomExercise(prev => ({ ...prev, reps: e.target.value }))} placeholder="Reps" />
                 <input className="input" type="number" value={customExercise.weightKg} onChange={e => setCustomExercise(prev => ({ ...prev, weightKg: e.target.value }))} placeholder="Poids" />
                 <button type="button" onClick={addCustomExercise} className="btn-secondary flex items-center justify-center gap-1"><Plus size={14} /></button>
@@ -1786,7 +1786,7 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
                         className="p-2 text-gray-300 hover:text-red-400"><X size={14} /></button>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
-                      <input className="input" type="number" value={ex.sets ?? ''} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'sets', e.target.value)} placeholder="S�ries" />
+                      <input className="input" type="number" value={ex.sets ?? ''} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'sets', e.target.value)} placeholder="Séries" />
                       <input className="input" type="number" value={ex.reps ?? ''} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'reps', e.target.value)} placeholder="Reps" />
                       <input className="input" type="number" value={planExerciseWeight(ex) ?? ''} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'weightKg', e.target.value)} placeholder="Poids" />
                     </div>
@@ -1797,7 +1797,7 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
               <div className="flex justify-end">
                 <button type="button" onClick={handleSave} disabled={!name.trim() || activeDays.length === 0 || isPending}
                   className="btn-primary flex items-center gap-2">
-                  <Check size={16} /> {isEdit ? 'Modifier le programme' : 'Cr�er le programme'}
+                  <Check size={16} /> {isEdit ? 'Modifier le programme' : 'Créer le programme'}
                 </button>
               </div>
             </div>
@@ -1856,7 +1856,7 @@ function ProgramCard({ plan, onClick, onDelete }: {
         </div>
         <div className="flex flex-wrap gap-1.5 mb-3">
           <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/[0.05] text-gray-400">
-            {plan.daysPerWeek}j/sem � {plan.weeks}sem
+            {plan.daysPerWeek}j/sem · {plan.weeks}sem
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -1899,7 +1899,7 @@ function WeekHeroCard({ sessions, onAddSession }: { sessions: WorkoutSession[]; 
           <p className="text-white/80 text-sm font-medium uppercase tracking-wide mb-1">Cette semaine</p>
           <div className="flex items-baseline gap-1 mb-3">
             <span className="text-5xl font-black text-white">{weekCount}</span>
-            <span className="text-white/70 text-lg font-medium">/{weekGoal} s�ances</span>
+            <span className="text-white/70 text-lg font-medium">/{weekGoal} séances</span>
           </div>
           <div className="flex flex-wrap gap-3">
             {weekCalories > 0 && (
@@ -1920,13 +1920,13 @@ function WeekHeroCard({ sessions, onAddSession }: { sessions: WorkoutSession[]; 
           {streak >= 2 && (
             <div className="mt-3 inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1">
               <Flame size={13} className="text-white" />
-              <span className="text-white text-xs font-bold">{streak} semaines cons�cutives</span>
+              <span className="text-white text-xs font-bold">{streak} semaines consécutives</span>
             </div>
           )}
           {weekCount === 0 && (
             <button type="button" onClick={onAddSession}
               className="mt-4 rounded-xl bg-white/20 hover:bg-white/30 px-3 py-2 text-sm font-semibold text-white transition-colors">
-              Commencer une s�ance
+              Commencer une séance
             </button>
           )}
         </div>
@@ -1967,7 +1967,7 @@ function TodaySessionBanner({ plans, onStartSession, onViewProgram }: {
       <div className="card mb-5 text-center py-6">
         <span className="text-3xl block mb-2">??</span>
         <p className="font-semibold text-gray-300">Jour de repos</p>
-        <p className="text-sm text-gray-400 mt-1">{activePlan.name} � Profite de la r�cup�ration</p>
+        <p className="text-sm text-gray-400 mt-1">{activePlan.name} · Profite de la récupération</p>
       </div>
     )
   }
@@ -1977,13 +1977,13 @@ function TodaySessionBanner({ plans, onStartSession, onViewProgram }: {
     <div className={`card mb-5 border-l-4 ${goalDayBorder(activePlan.goal)} bg-gradient-to-r ${cfg.gradient}`}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-3">
         <div>
-          <p className={`text-xs font-bold uppercase tracking-wide mb-0.5 ${cfg.accentText}`}>S�ance d'aujourd'hui</p>
+          <p className={`text-xs font-bold uppercase tracking-wide mb-0.5 ${cfg.accentText}`}>Séance d'aujourd'hui</p>
           <h3 className="text-lg font-black text-white">{today.label}</h3>
-          <p className="text-sm text-gray-400">{today.exercises.length} exercices � {activePlan.name}</p>
+          <p className="text-sm text-gray-400">{today.exercises.length} exercices · {activePlan.name}</p>
         </div>
         <button type="button" onClick={() => onStartSession(activePlan, today)}
           className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white ${goalAccentBtn(activePlan.goal)} shadow-md w-full sm:w-auto`}>
-          <Play size={16} /> D�marrer
+          <Play size={16} /> Démarrer
         </button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -1991,7 +1991,7 @@ function TodaySessionBanner({ plans, onStartSession, onViewProgram }: {
           <div key={`${exercise.name}-${index}`} className="flex items-center gap-2 text-sm text-gray-300">
             <span className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shrink-0">{index + 1}</span>
             <span className="truncate">{exercise.name}</span>
-            {exercise.sets && exercise.reps && <span className="text-xs text-gray-400 ml-auto shrink-0">{exercise.sets}�{exercise.reps}</span>}
+            {exercise.sets && exercise.reps && <span className="text-xs text-gray-400 ml-auto shrink-0">{exercise.sets}×{exercise.reps}</span>}
             <ExerciseInfoButton exerciseName={exercise.name} sets={exercise.sets} reps={exercise.reps} weightKg={exercise.weightKg} />
           </div>
         ))}
@@ -2036,7 +2036,7 @@ function PRSection({ sessions }: { sessions: WorkoutSession[] }) {
             </div>
             <div className="text-right shrink-0">
               <p className="text-xl font-black text-amber-600 dark:text-amber-400">{pr.weightKg}<span className="text-xs font-medium"> kg</span></p>
-              {pr.reps && <p className="text-[10px] text-gray-400">� {pr.reps} reps</p>}
+              {pr.reps && <p className="text-[10px] text-gray-400">× {pr.reps} reps</p>}
             </div>
           </div>
         ))}
@@ -2067,7 +2067,7 @@ function FeaturedProgram({ plan, onClick }: { plan: WorkoutPlan; onClick: () => 
               <span className="w-2 h-2 rounded-full bg-green-400 ring-2 ring-white animate-pulse" />
             </div>
             <h3 className="text-lg font-black text-white truncate">{plan.name}</h3>
-            <p className="text-sm text-white/70">{plan.daysPerWeek}j/sem � {plan.weeks} semaines</p>
+            <p className="text-sm text-white/70">{plan.daysPerWeek}j/sem · {plan.weeks} semaines</p>
           </div>
           <div className="relative shrink-0">
             <ProgressRing percent={progress?.percent ?? 0} />
@@ -2104,14 +2104,14 @@ export default function WorkoutPanel() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workouts'] })
       qc.invalidateQueries({ queryKey: ['timeline'] })
-      toast.success('S�ance supprim�e')
+      toast.success('Séance supprimée')
     },
   })
   const deletePlanMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/workout-plans/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workout-plans'] })
-      toast.success('Programme supprim�')
+      toast.success('Programme supprimé')
     },
   })
 
@@ -2144,7 +2144,7 @@ export default function WorkoutPanel() {
     setShowAddModal(false)
   }
 
-  if (sessionsLoading || plansLoading) return <div className="text-center py-12 text-gray-500">Chargement�</div>
+  if (sessionsLoading || plansLoading) return <div className="text-center py-12 text-gray-500">Chargement…</div>
 
   if (view === 'session' && activePlan && activeDay) {
     return (
@@ -2182,12 +2182,12 @@ export default function WorkoutPanel() {
     <div className="w-full">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-5">
         <h2 className="font-black text-white text-2xl flex items-center gap-2">
-          <Dumbbell className="text-amber-500" /> Sport & Entra�nement
+          <Dumbbell className="text-amber-500" /> Sport & Entraînement
         </h2>
         <div className="flex gap-2">
           <button type="button" onClick={() => setShowAddModal(true)}
             className="btn-primary flex items-center justify-center gap-2 text-sm w-full sm:w-auto">
-            <Plus size={16} /> Nouvelle s�ance
+            <Plus size={16} /> Nouvelle séance
           </button>
         </div>
       </div>
@@ -2195,7 +2195,7 @@ export default function WorkoutPanel() {
       <div className="flex gap-4 overflow-x-auto border-b border-white/10 border-white/10 mb-6">
         {[
           ['today', "Aujourd'hui"],
-          ['sessions', 'S�ances'],
+          ['sessions', 'Séances'],
           ['programs', 'Programmes'],
           ['progression', 'Progression'],
         ].map(([key, label]) => (
@@ -2220,7 +2220,7 @@ export default function WorkoutPanel() {
           />
           {sessions.length > 0 ? (
             <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Derni�res s�ances</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Dernières séances</p>
               <div className="space-y-3">
                 {[...sessions]
                   .sort((a, b) => b.sessionDate.localeCompare(a.sessionDate))
@@ -2235,16 +2235,16 @@ export default function WorkoutPanel() {
               {sessions.length > 3 && (
                 <button type="button" onClick={() => setActiveTab('sessions')}
                   className="mt-4 w-full text-sm text-amber-600 dark:text-amber-400 font-medium hover:underline">
-                  Voir tout l'historique ({sessions.length} s�ances) ?
+                  Voir tout l'historique ({sessions.length} séances) ?
                 </button>
               )}
             </div>
           ) : (
             <div className="card text-center py-10">
               <Dumbbell size={32} className="mx-auto text-gray-500 mb-3" />
-              <p className="font-semibold text-gray-400 mb-1">Pr�t pour ton premier entra�nement ?</p>
-              <p className="text-sm text-gray-400 mb-4">Enregistre ta premi�re s�ance et suis ta progression.</p>
-              <button type="button" onClick={() => setShowAddModal(true)} className="btn-primary">+ Nouvelle s�ance</button>
+              <p className="font-semibold text-gray-400 mb-1">Prêt pour ton premier entraînement ?</p>
+              <p className="text-sm text-gray-400 mb-4">Enregistre ta première séance et suis ta progression.</p>
+              <button type="button" onClick={() => setShowAddModal(true)} className="btn-primary">+ Nouvelle séance</button>
             </div>
           )}
         </>
@@ -2255,13 +2255,13 @@ export default function WorkoutPanel() {
           {weekSessions.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
               <span className="rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300 px-3 py-1.5 text-sm font-medium">
-                {weekStats.count} s�ance{weekStats.count > 1 ? 's' : ''} cette semaine
+                {weekStats.count} séance{weekStats.count > 1 ? 's' : ''} cette semaine
               </span>
               <span className="rounded-full bg-white/[0.05] text-gray-300 px-3 py-1.5 text-sm font-medium">
                 {Math.floor(weekStats.minutes / 60)}h {weekStats.minutes % 60}min
               </span>
               <span className="rounded-full bg-white/[0.05] text-gray-300 px-3 py-1.5 text-sm font-medium">
-                {weekStats.calories} kcal br�l�es
+                {weekStats.calories} kcal brûlées
               </span>
             </div>
           )}
@@ -2270,16 +2270,16 @@ export default function WorkoutPanel() {
             <EmptyPanel
               illustration={<IllustrationWorkout />}
               gradient="from-amber-500 to-orange-400"
-              headline="Commence � t'entra�ner"
-              description="Enregistre tes s�ances, suis ta progression et bats tes records semaine apr�s semaine."
+              headline="Commence à t'entraîner"
+              description="Enregistre tes séances, suis ta progression et bats tes records semaine après semaine."
               preview={
                 <div className="card border-l-4 border-l-amber-500">
                   <div className="flex items-center justify-between mb-2">
-                    <p className="font-semibold text-white">Push Day � Pectoraux & �paules</p>
-                    <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">45 min � 380 kcal</span>
+                    <p className="font-semibold text-white">Push Day — Pectoraux & Épaules</p>
+                    <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">45 min · 380 kcal</span>
                   </div>
                   <div className="space-y-1">
-                    {[['D�velopp� couch�', '80 kg � 4�10'], ['Dips lest�s', '20 kg � 3�12']].map(([ex, detail]) => (
+                    {[['Développé couché', '80 kg × 4×10'], ['Dips lestés', '20 kg × 3×12']].map(([ex, detail]) => (
                       <div key={ex} className="flex items-center gap-2 text-sm text-gray-400">
                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
                         <span>{ex}</span>
@@ -2289,7 +2289,7 @@ export default function WorkoutPanel() {
                   </div>
                 </div>
               }
-              primaryLabel="+ Enregistrer ma premi�re s�ance"
+              primaryLabel="+ Enregistrer ma première séance"
               onPrimary={() => setShowAddModal(true)}
             />
           ) : (
@@ -2305,7 +2305,7 @@ export default function WorkoutPanel() {
                     <div className="flex items-center gap-3 mb-3">
                       <h3 className="text-sm font-bold text-gray-300 capitalize">{monthLabel}</h3>
                       <div className="flex-1 h-px bg-white/[0.05]" />
-                      <span className="text-xs text-gray-400">{monthSessions.length} s�ance{monthSessions.length > 1 ? 's' : ''}</span>
+                      <span className="text-xs text-gray-400">{monthSessions.length} séance{monthSessions.length > 1 ? 's' : ''}</span>
                       {monthVolume > 0 && (
                         <span className="text-xs text-gray-400">{monthVolume >= 1000 ? `${(monthVolume / 1000).toFixed(1)}t` : `${Math.round(monthVolume)}kg`}</span>
                       )}
@@ -2340,8 +2340,8 @@ export default function WorkoutPanel() {
           {sessions.length === 0 && (
             <div className="card text-center py-10">
               <Activity size={32} className="mx-auto text-gray-500 mb-3" />
-              <p className="font-semibold text-gray-400">Aucune donn�e pour l'instant</p>
-              <p className="text-sm text-gray-400 mt-1">Enregistre des s�ances pour voir ta progression.</p>
+              <p className="font-semibold text-gray-400">Aucune donnée pour l'instant</p>
+              <p className="text-sm text-gray-400 mt-1">Enregistre des séances pour voir ta progression.</p>
             </div>
           )}
         </>
@@ -2352,15 +2352,15 @@ export default function WorkoutPanel() {
           <EmptyPanel
             illustration={<IllustrationPrograms />}
             gradient="from-red-500 to-amber-400"
-            headline="Structure ton entra�nement"
-            description="Programmes sur mesure � objectif, dur�e, jours par semaine. L'IA g�n�re ton plan complet."
+            headline="Structure ton entraînement"
+            description="Programmes sur mesure — objectif, durée, jours par semaine. L'IA génère ton plan complet."
             preview={
               <div className="card">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-xl">??</div>
                   <div>
                     <p className="font-semibold text-white">Programme Prise de masse</p>
-                    <p className="text-xs text-gray-400">12 semaines � 4 jours/sem � Interm�diaire</p>
+                    <p className="text-xs text-gray-400">12 semaines · 4 jours/sem · Intermédiaire</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -2370,7 +2370,7 @@ export default function WorkoutPanel() {
                 </div>
               </div>
             }
-            primaryLabel="+ Cr�er mon programme"
+            primaryLabel="+ Créer mon programme"
             onPrimary={() => setShowCreatePlan(true)}
           />
         ) : (

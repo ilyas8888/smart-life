@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BookOpenCheck, Check, Clock, GraduationCap, Plus, RotateCcw, Target, Trash2, X } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -113,7 +113,7 @@ function TopicModal({ onClose, onSave }: { onClose: () => void; onSave: (body: R
             <button type="button" className="btn-secondary" onClick={onClose}>Annuler</button>
             <button type="button" className="btn-primary" disabled={!name.trim()}
               onClick={() => onSave({ name: name.trim(), goal: goal.trim() || null, targetHours: targetHours || null, deadline: deadline || null, color })}>
-              Cr�er
+              Créer
             </button>
           </div>
         </div>
@@ -140,20 +140,20 @@ function FinishSessionModal({ session, onClose, onFinish }: {
       <div className="relative bg-white/5 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 border-white/10">
           <div>
-            <p className="text-xs text-gray-400">Cl�ture de session</p>
+            <p className="text-xs text-gray-400">Clôture de session</p>
             <h3 className="font-black text-white">{session.title}</h3>
           </div>
           <button type="button" onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600"><X size={18} /></button>
         </div>
         <div className="p-5 space-y-4">
           <ScoreButtons label="Concentration" value={focusScore} onChange={setFocusScore} />
-          <ScoreButtons label="Difficult�" value={difficultyScore} onChange={setDifficultyScore} />
+          <ScoreButtons label="Difficulté" value={difficultyScore} onChange={setDifficultyScore} />
           <textarea className="input min-h-[80px] resize-none" value={learned} onChange={e => setLearned(e.target.value)} placeholder="Qu'as-tu appris ?" />
           <textarea className="input min-h-[70px] resize-none" value={nextStep} onChange={e => setNextStep(e.target.value)} placeholder="Prochaine action claire" />
           <textarea className="input min-h-[70px] resize-none" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes rapides" />
           <label className="flex items-center gap-2 text-sm text-gray-400">
             <input type="checkbox" checked={createReview} onChange={e => setCreateReview(e.target.checked)} className="accent-primary-600" />
-            Cr�er des r�visions J+1, J+3, J+7, J+14
+            Créer des révisions J+1, J+3, J+7, J+14
           </label>
           <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
             <button type="button" className="btn-secondary" onClick={onClose}>Annuler</button>
@@ -200,26 +200,26 @@ export default function StudyPanel() {
 
   const createTopic = useMutation({
     mutationFn: (body: Record<string, unknown>) => api.post('/study/topics', body),
-    onSuccess: () => { invalidateStudy(); setShowTopicModal(false); toast.success('Sujet cr��') },
+    onSuccess: () => { invalidateStudy(); setShowTopicModal(false); toast.success('Sujet créé') },
   })
   const startSession = useMutation({
     mutationFn: () => api.post('/study/sessions/start', {
       title: sessionDraft.title.trim(),
       topicId: sessionDraft.topicId || null,
     }),
-    onSuccess: () => { invalidateStudy(); setSessionDraft({ topicId: '', title: '' }); toast.success('Session d�marr�e') },
+    onSuccess: () => { invalidateStudy(); setSessionDraft({ topicId: '', title: '' }); toast.success('Session démarrée') },
   })
   const finishSession = useMutation({
     mutationFn: ({ id, body }: { id: number; body: Record<string, unknown> }) => api.put(`/study/sessions/${id}/finish`, body),
-    onSuccess: () => { invalidateStudy(); setFinishingSession(null); toast.success('Session termin�e') },
+    onSuccess: () => { invalidateStudy(); setFinishingSession(null); toast.success('Session terminée') },
   })
   const completeReview = useMutation({
     mutationFn: (id: number) => api.patch(`/study/reviews/${id}`, { status: 'DONE', masteryScore: 4 }),
-    onSuccess: () => { invalidateStudy(); toast.success('R�vision valid�e') },
+    onSuccess: () => { invalidateStudy(); toast.success('Révision validée') },
   })
   const deleteSession = useMutation({
     mutationFn: (id: number) => api.delete(`/study/sessions/${id}`),
-    onSuccess: () => { invalidateStudy(); toast.success('Session supprim�e') },
+    onSuccess: () => { invalidateStudy(); toast.success('Session supprimée') },
   })
 
   const activeSession = summary?.activeSession ?? sessions.find(s => !s.endedAt) ?? null
@@ -234,7 +234,7 @@ export default function StudyPanel() {
             Apprentissage
           </h2>
           <p className="text-sm text-gray-500 mt-1">
-            Sessions focus, r�visions et prochaines actions.
+            Sessions focus, révisions et prochaines actions.
           </p>
         </div>
         <button type="button" className="btn-primary flex items-center gap-2" onClick={() => setShowTopicModal(true)}>
@@ -246,8 +246,8 @@ export default function StudyPanel() {
         {[
           { label: 'Cette semaine', value: minutesLabel(summary?.weekMinutes ?? 0), icon: <Clock size={15} /> },
           { label: 'Sessions', value: summary?.weekSessions ?? 0, icon: <BookOpenCheck size={15} /> },
-          { label: 'Focus moyen', value: summary?.focusAverage ? `${summary.focusAverage}/5` : '�', icon: <Target size={15} /> },
-          { label: '� r�viser', value: summary?.dueReviews ?? reviews.length, icon: <RotateCcw size={15} /> },
+          { label: 'Focus moyen', value: summary?.focusAverage ? `${summary.focusAverage}/5` : '—', icon: <Target size={15} /> },
+          { label: 'À réviser', value: summary?.dueReviews ?? reviews.length, icon: <RotateCcw size={15} /> },
         ].map(stat => (
           <div key={stat.label} className="glass-card px-4 py-4 text-center">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center mx-auto mb-2 text-white">{stat.icon}</div>
@@ -263,9 +263,9 @@ export default function StudyPanel() {
             <div>
               <p className="text-xs text-primary-600 dark:text-primary-400 font-semibold">Session en cours</p>
               <h3 className="font-black text-white">{activeSession.title}</h3>
-              <p className="text-xs text-gray-400 mt-1">D�marr�e � {new Date(activeSession.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+              <p className="text-xs text-gray-400 mt-1">Démarrée à {new Date(activeSession.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
             </div>
-            <button type="button" className="btn-primary" onClick={() => setFinishingSession(activeSession)}>Cl�turer</button>
+            <button type="button" className="btn-primary" onClick={() => setFinishingSession(activeSession)}>Clôturer</button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-2">
@@ -277,7 +277,7 @@ export default function StudyPanel() {
               placeholder="Objectif de session" />
             <button type="button" className="btn-primary" disabled={!sessionDraft.title.trim() || startSession.isPending}
               onClick={() => startSession.mutate()}>
-              D�marrer
+              Démarrer
             </button>
           </div>
         )}
@@ -289,7 +289,7 @@ export default function StudyPanel() {
             <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide">Historique</h3>
           </div>
           {completedSessions.length === 0 ? (
-            <div className="card text-sm text-gray-400">Aucune session termin�e pour le moment.</div>
+            <div className="card text-sm text-gray-400">Aucune session terminée pour le moment.</div>
           ) : completedSessions.map(session => (
             <div key={session.id} className="glass-card-hover">
               <div className="flex items-start justify-between gap-3">
@@ -301,7 +301,7 @@ export default function StudyPanel() {
                   )}
                   <h4 className="font-black text-white mt-1">{session.title}</h4>
                   <p className="text-xs text-gray-400 mt-1 font-mono">
-                    {minutesLabel(session.durationMinutes ?? 0)} � Focus {session.focusScore ?? '�'}/5 � Difficult� {session.difficultyScore ?? '�'}/5
+                    {minutesLabel(session.durationMinutes ?? 0)} · Focus {session.focusScore ?? '—'}/5 · Difficulté {session.difficultyScore ?? '—'}/5
                   </p>
                   {session.nextStep && <p className="text-sm text-primary-300 mt-2">Prochaine action: {session.nextStep}</p>}
                 </div>
@@ -318,7 +318,7 @@ export default function StudyPanel() {
             <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Sujets</h3>
             <div className="space-y-2">
               {topics.length === 0 ? (
-                <div className="card text-sm text-gray-400">Cr�ez un premier sujet pour organiser vos sessions.</div>
+                <div className="card text-sm text-gray-400">Créez un premier sujet pour organiser vos sessions.</div>
               ) : topics.map(topic => (
                 <div key={topic.id} className="rounded-xl border border-white/10 border-white/10 bg-white/5 p-3">
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${topicColor(topic)}`}>{topic.name}</span>
@@ -329,14 +329,14 @@ export default function StudyPanel() {
           </section>
 
           <section>
-            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">R�visions dues</h3>
+            <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Révisions dues</h3>
             <div className="space-y-2">
               {reviews.length === 0 ? (
-                <div className="card text-sm text-gray-400">Aucune r�vision due aujourd'hui.</div>
+                <div className="card text-sm text-gray-400">Aucune révision due aujourd'hui.</div>
               ) : reviews.map(review => (
                 <div key={review.id} className="rounded-xl border border-amber-900/40 bg-amber-900/20 p-3" style={{ boxShadow: '0 0 12px rgba(245,158,11,0.15)' }}>
-                  <p className="text-sm font-semibold text-white">{review.sessionTitle ?? 'R�vision'}</p>
-                  <p className="text-xs text-gray-400 mt-1">{review.topic?.name ?? 'Sujet libre'} � {review.reviewDate}</p>
+                  <p className="text-sm font-semibold text-white">{review.sessionTitle ?? 'Révision'}</p>
+                  <p className="text-xs text-gray-400 mt-1">{review.topic?.name ?? 'Sujet libre'} · {review.reviewDate}</p>
                   <button type="button" onClick={() => completeReview.mutate(review.id)}
                     className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-emerald-300 hover:text-emerald-200 transition-colors">
                     <Check size={13} /> Marquer revue

@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+﻿import { useMemo, useState, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Bell, Check, Trash2, Plus, AlertTriangle, Clock, Calendar, ChevronDown, Edit2, X, Flag, BellOff, BellRing, Loader2 } from 'lucide-react'
 import { EmptyPanel, IllustrationReminders } from './EmptyState'
@@ -56,10 +56,10 @@ function ReminderEditModal({
     })
       .then(() => {
         onSaved()
-        toast.success('Rappel mis � jour')
+        toast.success('Rappel mis à jour')
         onClose()
       })
-      .catch(() => toast.error('Erreur lors de la mise � jour'))
+      .catch(() => toast.error('Erreur lors de la mise à jour'))
       .finally(() => setSaving(false))
   }
 
@@ -175,9 +175,9 @@ export default function RemindersPanel() {
       setRemindAt('')
       setPriority('MEDIUM')
       setFormExpanded(false)
-      toast.success('Rappel cr��')
+      toast.success('Rappel créé')
     },
-    onError: () => toast.error('Erreur lors de la cr�ation'),
+    onError: () => toast.error('Erreur lors de la création'),
   })
 
   const doneMutation = useMutation({
@@ -187,7 +187,7 @@ export default function RemindersPanel() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/reminders/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['reminders'] }); toast.success('Rappel supprim�') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['reminders'] }); toast.success('Rappel supprimé') },
   })
 
   const normalizedReminders = useMemo(() =>
@@ -252,8 +252,8 @@ export default function RemindersPanel() {
             {reminder.description && <p className="text-sm text-gray-400 mt-1">{reminder.description}</p>}
             <div className={`flex flex-wrap items-center gap-2 text-xs mt-2 ${isOverdue ? 'text-red-400 font-medium' : 'text-gray-500'}`}>
               <Calendar size={12} />
-              <span>{format(date, 'dd MMM yyyy � HH:mm', { locale: fr })}</span>
-              <span>�</span>
+              <span>{format(date, 'dd MMM yyyy à HH:mm', { locale: fr })}</span>
+              <span>·</span>
               <Clock size={12} />
               <span>{formatDistanceToNow(date, { addSuffix: true, locale: fr })}</span>
             </div>
@@ -355,7 +355,7 @@ export default function RemindersPanel() {
             <button type="submit" className="btn-primary w-full flex items-center justify-center gap-2"
               disabled={!title.trim() || !remindAt || createMutation.isPending}>
               <Plus size={16} />
-              {createMutation.isPending ? 'Cr�ation...' : 'Ajouter'}
+              {createMutation.isPending ? 'Création...' : 'Ajouter'}
             </button>
           </div>
         )}
@@ -366,25 +366,25 @@ export default function RemindersPanel() {
           illustration={<IllustrationReminders />}
           gradient="from-orange-500 to-amber-400"
           headline="Ne rate plus aucun rendez-vous"
-          description="Rappels horodat�s avec priorit� � SmartLife te pr�vient au bon moment, pour que tu n'oublies jamais rien."
+          description="Rappels horodatés avec priorité — SmartLife te prévient au bon moment, pour que tu n'oublies jamais rien."
           preview={
             <div className="card border-l-4 border-l-orange-500">
               <div className="flex items-start gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <p className="font-semibold text-white">Appeler le m�decin</p>
+                    <p className="font-semibold text-white">Appeler le médecin</p>
                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">?? Haute</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
                     <Calendar size={12} /><span>Demain 09:00</span>
-                    <span>�</span>
+                    <span>·</span>
                     <Clock size={12} /><span>dans 18 heures</span>
                   </div>
                 </div>
               </div>
             </div>
           }
-          primaryLabel="+ Cr�er mon premier rappel"
+          primaryLabel="+ Créer mon premier rappel"
           onPrimary={() => setFormExpanded(true)}
         />
       ) : (
@@ -400,7 +400,7 @@ export default function RemindersPanel() {
               <button type="button" onClick={() => setShowCompleted(v => !v)}
                 className="flex items-center gap-2 text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
                 <ChevronDown size={15} className={`transition-transform ${showCompleted ? '' : '-rotate-90'}`} />
-                Compl�t�s ({done.length})
+                Complétés ({done.length})
               </button>
               {showCompleted && (
                 <div className="space-y-3">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Globe, Plus, Copy, EyeOff, Trash2, Check, X,
@@ -61,7 +61,7 @@ const RESOURCE_TYPES = [
   { value: 'FOOD_LOG',       label: 'Food Diary',       icon: '??', bg: 'bg-green-100 dark:bg-green-900/30',   text: 'text-green-700 dark:text-green-400' },
   { value: 'WORKOUT_PLAN',   label: 'Programme Sport',  icon: '??', bg: 'bg-amber-100 dark:bg-amber-900/30',   text: 'text-amber-700 dark:text-amber-400' },
   { value: 'SLEEP_LOG',      label: 'Sommeil',          icon: '??', bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-700 dark:text-indigo-400' },
-  { value: 'STUDY_SESSION',  label: 'Session �tude',    icon: '??', bg: 'bg-cyan-100 dark:bg-cyan-900/30',    text: 'text-cyan-700 dark:text-cyan-400' },
+  { value: 'STUDY_SESSION',  label: 'Session Étude',    icon: '??', bg: 'bg-cyan-100 dark:bg-cyan-900/30',    text: 'text-cyan-700 dark:text-cyan-400' },
   { value: 'NOTE',           label: 'Note',             icon: '??', bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-700 dark:text-violet-400' },
   { value: 'JOURNAL',        label: 'Journal',          icon: '??', bg: 'bg-rose-100 dark:bg-rose-900/30',    text: 'text-rose-700 dark:text-rose-400' },
 ]
@@ -75,10 +75,10 @@ const EXPIRY_OPTIONS = [
 
 const TABS = [
   { id: 'shares',     label: 'Mes Partages',     icon: Link2,     active: true  },
-  { id: 'received',   label: 'Partag� avec moi', icon: Users2,    active: true  },
-  { id: 'community',  label: 'Communaut�',        icon: Globe,     active: true  },
+  { id: 'received',   label: 'Partagé avec moi', icon: Users2,    active: true  },
+  { id: 'community',  label: 'Communauté',        icon: Globe,     active: true  },
   { id: 'saved',      label: 'Inspirations',      icon: Bookmark,  active: true  },
-  { id: 'challenges', label: 'D�fis',             icon: Trophy,    active: false },
+  { id: 'challenges', label: 'Défis',             icon: Trophy,    active: false },
 ]
 
 const RESOURCE_ENDPOINTS: Record<string, string> = {
@@ -235,7 +235,7 @@ export default function SocialPanel() {
     mutationFn: (payload: object) => api.post('/social/posts', payload).then(r => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['social-feed'] })
-      toast.success('Publi� dans la Communaut� !')
+      toast.success('Publié dans la Communauté !')
       setShowPostModal(false)
       setPostForm(defaultPostForm())
       setActiveTab('community')
@@ -256,7 +256,7 @@ export default function SocialPanel() {
   const cloneMutation = useMutation({
     mutationFn: (token: string) => api.post(`/shares/${token}/clone`).then(r => r.data),
     onSuccess: () => {
-      toast.success('Ressource clon�e dans ton compte !')
+      toast.success('Ressource clonée dans ton compte !')
       qc.invalidateQueries({ queryKey: ['shared-links-received'] })
     },
     onError: (err: any) => {
@@ -285,27 +285,27 @@ export default function SocialPanel() {
     mutationFn: (payload: object) => api.post('/shares', payload).then(r => r.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['shared-links'] })
-      toast.success('Lien de partage cr�� !')
+      toast.success('Lien de partage créé !')
       setShowModal(false)
       setForm(defaultForm())
     },
-    onError: () => toast.error('Erreur lors de la cr�ation'),
+    onError: () => toast.error('Erreur lors de la création'),
   })
 
   const revokeMutation = useMutation({
     mutationFn: (id: number) => api.patch(`/shares/${id}/revoke`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['shared-links'] })
-      toast.success('Lien r�voqu�')
+      toast.success('Lien révoqué')
     },
-    onError: () => toast.error('Erreur lors de la r�vocation'),
+    onError: () => toast.error('Erreur lors de la révocation'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/shares/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['shared-links'] })
-      toast.success('Lien supprim�')
+      toast.success('Lien supprimé')
     },
     onError: () => toast.error('Erreur lors de la suppression'),
   })
@@ -313,7 +313,7 @@ export default function SocialPanel() {
   function handleCopy(link: SharedLink) {
     navigator.clipboard.writeText(linkUrl(link.token))
     setCopiedId(link.id)
-    toast.success('Lien copi� !')
+    toast.success('Lien copié !')
     setTimeout(() => setCopiedId(null), 2000)
   }
 
@@ -347,7 +347,7 @@ export default function SocialPanel() {
           </div>
           <div>
             <h1 className="text-xl font-black text-white">Together</h1>
-            <p className="text-sm text-gray-400">Partage contr�l�, social utile</p>
+            <p className="text-sm text-gray-400">Partage contrôlé, social utile</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -413,16 +413,16 @@ export default function SocialPanel() {
               <div className="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center mx-auto mb-4">
                 <Link2 size={28} className="text-sky-400" />
               </div>
-              <p className="font-semibold text-gray-300">Aucun lien partag�</p>
+              <p className="font-semibold text-gray-300">Aucun lien partagé</p>
               <p className="text-sm text-gray-400 mt-1 mb-5 max-w-xs mx-auto">
-                Partagez un programme sport, une journ�e food ou un journal avec n'importe qui � sans qu'ils aient un compte.
+                Partagez un programme sport, une journée food ou un journal avec n'importe qui — sans qu'ils aient un compte.
               </p>
               <button
                 onClick={() => setShowModal(true)}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition-colors"
               >
                 <Plus size={16} />
-                Cr�er mon premier lien
+                Créer mon premier lien
               </button>
             </div>
           ) : (
@@ -447,7 +447,7 @@ export default function SocialPanel() {
               {inactiveLinks.length > 0 && (
                 <div className="space-y-3">
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                    Expir�s / R�voqu�s ({inactiveLinks.length})
+                    Expirés / Révoqués ({inactiveLinks.length})
                   </p>
                   {inactiveLinks.map(link => (
                     <LinkCard
@@ -466,7 +466,7 @@ export default function SocialPanel() {
         </div>
       )}
 
-      {/* Partag� avec moi */}
+      {/* Partagé avec moi */}
       {activeTab === 'received' && (
         <div className="space-y-4">
           {receivedLoading ? (
@@ -478,15 +478,15 @@ export default function SocialPanel() {
               <div className="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center mx-auto mb-4">
                 <Users2 size={28} className="text-sky-400" />
               </div>
-              <p className="font-semibold text-gray-300">Aucun contenu re�u</p>
+              <p className="font-semibold text-gray-300">Aucun contenu reçu</p>
               <p className="text-sm text-gray-400 mt-1 max-w-xs mx-auto">
-                Les ressources partag�es avec ton email SmartLife appara�tront ici.
+                Les ressources partagées avec ton email SmartLife apparaîtront ici.
               </p>
             </div>
           ) : (
             <div className="space-y-3">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Re�us ({received.length})
+                Reçus ({received.length})
               </p>
               {received.map(link => {
                 const rt = rtConfig(link.resourceType)
@@ -536,7 +536,7 @@ export default function SocialPanel() {
         </div>
       )}
 
-      {/* Communaut� */}
+      {/* Communauté */}
       {activeTab === 'community' && (
         <div className="space-y-4">
           {/* Filtres */}
@@ -548,7 +548,7 @@ export default function SocialPanel() {
               { value: 'NOTE', label: '?? Notes' },
               { value: 'JOURNAL', label: '?? Journal' },
               { value: 'SLEEP_LOG', label: '?? Sommeil' },
-              { value: 'STUDY_SESSION', label: '?? �tude' },
+              { value: 'STUDY_SESSION', label: '?? Étude' },
             ].map(f => (
               <button
                 key={f.value}
@@ -571,8 +571,8 @@ export default function SocialPanel() {
           ) : feed.length === 0 ? (
             <div className="text-center py-16">
               <Globe size={36} className="mx-auto mb-3 text-gray-500" />
-              <p className="font-semibold text-gray-400">Aucun post dans la communaut�</p>
-              <p className="text-sm text-gray-400 mt-1 mb-5">Soyez le premier � partager quelque chose !</p>
+              <p className="font-semibold text-gray-400">Aucun post dans la communauté</p>
+              <p className="text-sm text-gray-400 mt-1 mb-5">Soyez le premier à partager quelque chose !</p>
               <button
                 onClick={() => setShowPostModal(true)}
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white rounded-xl text-sm font-medium hover:bg-sky-700 transition-colors"
@@ -600,8 +600,8 @@ export default function SocialPanel() {
           ) : saved.length === 0 ? (
             <div className="text-center py-16">
               <Bookmark size={36} className="mx-auto mb-3 text-gray-500" />
-              <p className="font-semibold text-gray-400">Aucune inspiration sauvegard�e</p>
-              <p className="text-sm text-gray-400 mt-1">Sauvegardez des posts depuis la Communaut�.</p>
+              <p className="font-semibold text-gray-400">Aucune inspiration sauvegardée</p>
+              <p className="text-sm text-gray-400 mt-1">Sauvegardez des posts depuis la Communauté.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -642,7 +642,7 @@ export default function SocialPanel() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="relative w-full max-w-lg bg-white/5 rounded-2xl shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black text-white">Publier dans la Communaut�</h2>
+              <h2 className="text-lg font-black text-white">Publier dans la Communauté</h2>
               <button onClick={() => setShowPostModal(false)} className="p-1 rounded-xl hover:bg-white/[0.05]">
                 <X size={18} className="text-gray-400" />
               </button>
@@ -702,7 +702,7 @@ export default function SocialPanel() {
                 type="text"
                 value={postForm.title}
                 onChange={e => setPostForm(f => ({ ...f, title: e.target.value }))}
-                placeholder="Ex: Mon programme �t� 2026"
+                placeholder="Ex: Mon programme été 2026"
                 className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
               />
             </div>
@@ -710,7 +710,7 @@ export default function SocialPanel() {
             {/* Caption */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                L�gende <span className="text-gray-400 font-normal">(optionnel)</span>
+                Légende <span className="text-gray-400 font-normal">(optionnel)</span>
               </label>
               <textarea
                 value={postForm.caption}
@@ -821,7 +821,7 @@ export default function SocialPanel() {
                 type="text"
                 value={form.title}
                 onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                placeholder="Ex: Mon programme �t� 2026"
+                placeholder="Ex: Mon programme été 2026"
                 className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
               />
             </div>
@@ -829,7 +829,7 @@ export default function SocialPanel() {
             {/* Recipient email */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Envoyer � <span className="text-gray-400 font-normal">(email SmartLife, optionnel)</span>
+                Envoyer à <span className="text-gray-400 font-normal">(email SmartLife, optionnel)</span>
               </label>
               <input
                 type="email"
@@ -838,7 +838,7 @@ export default function SocialPanel() {
                 placeholder="ami@example.com"
                 className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
               />
-              <p className="text-xs text-gray-400 mt-1">Appara�tra dans "Partag� avec moi" de ce compte.</p>
+              <p className="text-xs text-gray-400 mt-1">Apparaîtra dans "Partagé avec moi" de ce compte.</p>
             </div>
 
             {/* Expiry */}
@@ -867,10 +867,10 @@ export default function SocialPanel() {
             <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-300">Permissions</label>
               {([
-                { key: 'allowReactions' as const, label: 'R�actions', desc: 'Inspir�, Je teste, Bravo...' },
+                { key: 'allowReactions' as const, label: 'Réactions', desc: 'Inspiré, Je teste, Bravo...' },
                 { key: 'allowComments' as const, label: 'Commentaires', desc: 'Questions et retours' },
                 ...(form.resourceType === 'FOOD_LOG'
-                  ? [{ key: 'maskCalories' as const, label: 'Masquer calories & macros', desc: 'Partage sans donn�es sensibles' }]
+                  ? [{ key: 'maskCalories' as const, label: 'Masquer calories & macros', desc: 'Partage sans données sensibles' }]
                   : []),
               ] as { key: keyof CreateForm; label: string; desc: string }[]).map(({ key, label, desc }) => (
                 <label key={key} className="flex items-center justify-between gap-3 cursor-pointer select-none">
@@ -905,7 +905,7 @@ export default function SocialPanel() {
                 disabled={createMutation.isPending}
                 className="flex-1 py-2.5 rounded-xl bg-sky-600 text-white text-sm font-medium hover:bg-sky-700 disabled:opacity-50 transition-colors"
               >
-                {createMutation.isPending ? 'Cr�ation...' : 'Cr�er le lien'}
+                {createMutation.isPending ? 'Création...' : 'Créer le lien'}
               </button>
             </div>
           </div>
@@ -947,12 +947,12 @@ function LinkCard({ link, copiedId, onCopy, onRevoke, onDelete }: LinkCardProps)
             </span>
             {link.revoked && (
               <span className="text-[10px] font-medium bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-full px-2 py-0.5 shrink-0">
-                R�voqu�
+                Révoqué
               </span>
             )}
             {!link.revoked && link.isExpired && (
               <span className="text-[10px] font-medium bg-white/[0.05] text-gray-500 border border-white/10 rounded-full px-2 py-0.5 shrink-0">
-                Expir�
+                Expiré
               </span>
             )}
           </div>
@@ -964,7 +964,7 @@ function LinkCard({ link, copiedId, onCopy, onRevoke, onDelete }: LinkCardProps)
             {(link.clonesCount ?? 0) > 0 && (
               <span className="flex items-center gap-1 text-green-500">
                 <Copy size={11} />
-                {link.clonesCount} clon�{link.clonesCount !== 1 ? 's' : ''}
+                {link.clonesCount} cloné{link.clonesCount !== 1 ? 's' : ''}
               </span>
             )}
             <span className="flex items-center gap-1">
@@ -993,7 +993,7 @@ function LinkCard({ link, copiedId, onCopy, onRevoke, onDelete }: LinkCardProps)
             <button
               onClick={() => onRevoke(link.id)}
               className="p-2 rounded-xl hover:bg-white/[0.05] text-gray-400 hover:text-orange-500 transition-colors"
-              title="R�voquer le lien"
+              title="Révoquer le lien"
             >
               <EyeOff size={15} />
             </button>

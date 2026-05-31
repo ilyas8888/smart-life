@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+﻿import { useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   BookMarked, BookOpen, ChevronLeft, ChevronRight, Edit2, Flame,
@@ -177,7 +177,7 @@ function EntryContent({ entry }: { entry: DiaryEntry }) {
       {shouldTruncate && (
         <button type="button" onClick={() => setExpanded(v => !v)}
           className="text-xs font-medium text-primary-600 dark:text-primary-400 mt-2 hover:underline">
-          {expanded ? 'R�duire' : 'Lire la suite'}
+          {expanded ? 'Réduire' : 'Lire la suite'}
         </button>
       )}
     </div>
@@ -206,14 +206,14 @@ export default function DiaryPanel() {
       qc.invalidateQueries({ queryKey: ['diary'] })
       setContent('')
       setMood('')
-      toast.success('Entr�e ajout�e')
+      toast.success('Entrée ajoutée')
     },
     onError: () => toast.error("Erreur lors de l'ajout"),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/diary/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['diary'] }); toast.success('Entr�e supprim�e') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['diary'] }); toast.success('Entrée supprimée') },
   })
 
   const totalWords = entries.reduce((s, e) => s + wordCount(e.content), 0)
@@ -279,7 +279,7 @@ export default function DiaryPanel() {
   }
   const saveEdit = (id: number) => {
     api.put(`/diary/${id}`, { content: editContent, mood: editMood || null })
-      .then(() => { qc.invalidateQueries({ queryKey: ['diary'] }); cancelEdit(); toast.success('Modifi�') })
+      .then(() => { qc.invalidateQueries({ queryKey: ['diary'] }); cancelEdit(); toast.success('Modifié') })
       .catch(() => toast.error('Erreur'))
   }
 
@@ -341,7 +341,7 @@ export default function DiaryPanel() {
         <textarea
           ref={textareaRef}
           className="w-full resize-none border-0 outline-none text-white placeholder-gray-400 dark:placeholder-gray-500 bg-transparent text-[15px] leading-relaxed min-h-[160px]"
-          placeholder="Comment s'est pass�e ta journ�e ? Tes pens�es, tes �motions..."
+          placeholder="Comment s'est passée ta journée ? Tes pensées, tes émotions..."
           value={content}
           onChange={(e) => setContent(e.target.value)}
           disabled={createMutation.isPending}
@@ -392,20 +392,20 @@ export default function DiaryPanel() {
           illustration={<IllustrationDiary />}
           gradient="from-rose-500 to-fuchsia-500"
           headline="Ton journal t'attend"
-          description="5 minutes par jour pour mieux te conna�tre. Humeur, pens�es, accomplissements � tout compte."
+          description="5 minutes par jour pour mieux te connaître. Humeur, pensées, accomplissements — tout compte."
           preview={
             <div className="card border-l-4 border-l-blue-400">
               <div className="flex items-start gap-3 mb-3">
                 <div className="text-2xl">??</div>
                 <div className="flex-1">
                   <p className="font-semibold text-white">Lundi 25 mai 2026</p>
-                  <p className="text-xs text-gray-400">Bonne humeur � 124 mots</p>
+                  <p className="text-xs text-gray-400">Bonne humeur · 124 mots</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-400 line-clamp-2 italic">"Bonne journ�e aujourd'hui. J'ai termin� le rapport de stage et pr�par� la soutenance. Je me sens pr�t..."</p>
+              <p className="text-sm text-gray-400 line-clamp-2 italic">"Bonne journée aujourd'hui. J'ai terminé le rapport de stage et préparé la soutenance. Je me sens prêt..."</p>
             </div>
           }
-          primaryLabel="?? �crire ma premi�re entr�e"
+          primaryLabel="?? Écrire ma première entrée"
           onPrimary={() => { textareaRef.current?.scrollIntoView({ behavior: 'smooth' }); textareaRef.current?.focus() }}
         />
       ) : (
@@ -420,7 +420,7 @@ export default function DiaryPanel() {
                 <div className="flex items-center gap-3 mb-3">
                   <h3 className="text-sm font-bold text-gray-300 capitalize">{monthLabel}</h3>
                   <div className="flex-1 h-px bg-white/[0.05]" />
-                  <span className="text-xs text-gray-400">{monthEntries.length} entr�e{monthEntries.length > 1 ? 's' : ''}</span>
+                  <span className="text-xs text-gray-400">{monthEntries.length} entrée{monthEntries.length > 1 ? 's' : ''}</span>
                 </div>
                 <div className="space-y-4">
                   {monthEntries.map((e) => {
@@ -438,7 +438,7 @@ export default function DiaryPanel() {
                               {format(parseISO(e.entryDate), 'EEEE dd MMMM', { locale: fr })}
                             </p>
                             <p className="text-xs text-gray-400">
-                              {moodMeta ? moodMeta.label : 'Sans humeur'} � {wordCount(e.content)} mots
+                              {moodMeta ? moodMeta.label : 'Sans humeur'} · {wordCount(e.content)} mots
                             </p>
                           </div>
                           <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">

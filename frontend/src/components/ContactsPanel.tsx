@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Users, Trash2, Phone, Mail, MapPin, Search, Plus, X, Edit2, FileText } from 'lucide-react'
 import { EmptyPanel, IllustrationContacts } from './EmptyState'
@@ -123,7 +123,7 @@ function ContactFormFields({
         className="input"
         value={form.phone}
         onChange={(e) => onChange({ ...form, phone: e.target.value })}
-        placeholder="T�l�phone"
+        placeholder="Téléphone"
       />
       <input
         className="input"
@@ -278,7 +278,7 @@ function ContactModal({
                 </div>
               )}
               {!contact.phone && !contact.email && !contact.address && !contact.notes && (
-                <p className="text-sm text-gray-500 text-center py-8">Aucune information suppl�mentaire.</p>
+                <p className="text-sm text-gray-500 text-center py-8">Aucune information supplémentaire.</p>
               )}
             </div>
 
@@ -363,7 +363,7 @@ export default function ContactsPanel() {
     mutationFn: (id: number) => api.delete(`/contacts/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['contacts'] })
-      toast.success('Contact supprim�')
+      toast.success('Contact supprimé')
     },
     onError: () => toast.error('Erreur lors de la suppression'),
   })
@@ -373,9 +373,9 @@ export default function ContactsPanel() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['contacts'] })
       setShowAddModal(false)
-      toast.success('Contact ajout�')
+      toast.success('Contact ajouté')
     },
-    onError: () => toast.error('Erreur lors de la cr�ation'),
+    onError: () => toast.error('Erreur lors de la création'),
   })
 
   const updateMutation = useMutation({
@@ -383,9 +383,9 @@ export default function ContactsPanel() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['contacts'] })
       setSelectedContact(null)
-      toast.success('Contact mis � jour')
+      toast.success('Contact mis à jour')
     },
-    onError: () => toast.error('Erreur lors de la mise � jour'),
+    onError: () => toast.error('Erreur lors de la mise à jour'),
   })
 
   const filteredContacts = useMemo(() => {
@@ -445,7 +445,7 @@ export default function ContactsPanel() {
 
         <div className="grid grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4 gap-3">
           <StatTile label="Total contacts" value={stats.total} icon={Users} />
-          <StatTile label="Avec t�l�phone" value={stats.phone} icon={Phone} />
+          <StatTile label="Avec téléphone" value={stats.phone} icon={Phone} />
           <StatTile label="Avec email" value={stats.email} icon={Mail} />
           <StatTile label="Avec notes" value={stats.notes} icon={FileText} />
         </div>
@@ -454,7 +454,7 @@ export default function ContactsPanel() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
           <input
             className="input pl-9 pr-9 w-full"
-            placeholder="Rechercher par nom, t�l�phone ou email..."
+            placeholder="Rechercher par nom, téléphone ou email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -472,7 +472,7 @@ export default function ContactsPanel() {
           illustration={<IllustrationContacts />}
           gradient="from-teal-600 to-cyan-400"
           headline="Ton cercle de confiance"
-          description="Centralise tes contacts importants avec t�l�phone, email et notes personnalis�es."
+          description="Centralise tes contacts importants avec téléphone, email et notes personnalisées."
           preview={
             <div className="card flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-rose-500 flex items-center justify-center text-white font-bold text-lg shrink-0">SA</div>
@@ -491,7 +491,7 @@ export default function ContactsPanel() {
       ) : filteredContacts.length === 0 ? (
         <div className="text-center py-16">
           <Search size={34} className="mx-auto mb-3 text-gray-500" />
-          <p className="font-semibold text-gray-300">Aucun contact trouv�</p>
+          <p className="font-semibold text-gray-300">Aucun contact trouvé</p>
         </div>
       ) : (
         <div>

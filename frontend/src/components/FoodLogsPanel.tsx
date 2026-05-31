@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ChevronDown, ChevronRight, ChevronUp, Droplet, Droplets,
@@ -67,7 +67,7 @@ type UserFood = {
 const dailyGoals = { calories: 2000, proteinG: 50, carbsG: 250, fatG: 70, fiberG: 25 }
 const mealOrder = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK']
 const mealLabels: Record<string, string> = {
-  BREAKFAST: 'Petit-d�jeuner', LUNCH: 'D�jeuner', DINNER: 'D�ner', SNACK: 'Snack',
+  BREAKFAST: 'Petit-déjeuner', LUNCH: 'Déjeuner', DINNER: 'Dîner', SNACK: 'Snack',
 }
 const mealDots: Record<string, string> = {
   BREAKFAST: 'bg-yellow-400', LUNCH: 'bg-green-500', DINNER: 'bg-blue-500', SNACK: 'bg-gray-400',
@@ -138,7 +138,7 @@ function MacroDonut({ protein, carbs, fat }: { protein: number; carbs: number; f
   const r = 38
   const circumference = 2 * Math.PI * r
   const segments = [
-    { value: protein, color: '#22c55e', label: 'Prot�ines', unit: 'g' },
+    { value: protein, color: '#22c55e', label: 'Protéines', unit: 'g' },
     { value: carbs, color: '#f59e0b', label: 'Glucides', unit: 'g' },
     { value: fat, color: '#3b82f6', label: 'Lipides', unit: 'g' },
   ]
@@ -250,7 +250,7 @@ function WeeklyCalorieChart({
                 <p className={`text-xs font-semibold ${selected ? 'text-primary-600 dark:text-primary-400' : 'text-gray-800 dark:text-gray-200'}`}>
                   {format(day, 'd')}
                 </p>
-                <span className={`block h-1.5 mt-0.5 text-primary-600 ${key === todayString() ? 'opacity-100' : 'opacity-0'}`}>�</span>
+                <span className={`block h-1.5 mt-0.5 text-primary-600 ${key === todayString() ? 'opacity-100' : 'opacity-0'}`}>•</span>
               </div>
             </button>
           )
@@ -350,7 +350,7 @@ function StreakBadge({ logs }: { logs: FoodLog[] }) {
 
   return (
     <span className="bg-orange-900/30 text-orange-300 border border-orange-500/20 px-3 py-1 rounded-full text-xs font-semibold">
-      {streak} jour{streak > 1 ? 's' : ''} de tracking cons�cutif{streak > 1 ? 's' : ''}
+      {streak} jour{streak > 1 ? 's' : ''} de tracking consécutif{streak > 1 ? 's' : ''}
     </span>
   )
 }
@@ -408,7 +408,7 @@ function FoodLogRow({ log, onDelete }: { log: FoodLog; onDelete: (id: number) =>
           {hasDetails(log.nutritionDetails) && (
             <button type="button" onClick={() => setIsExpanded(v => !v)}
               className="mt-2 flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
-              D�tails nutritionnels {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+              Détails nutritionnels {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
             </button>
           )}
         </div>
@@ -491,7 +491,7 @@ function UserFoodFormModal({
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white/5 rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-1rem)] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 border-white/10">
-          <h3 className="font-black text-white">{food ? 'Modifier un aliment' : 'Cr�er un aliment'}</h3>
+          <h3 className="font-black text-white">{food ? 'Modifier un aliment' : 'Créer un aliment'}</h3>
           <button type="button" onClick={onClose} className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
             <X size={18} />
           </button>
@@ -500,7 +500,7 @@ function UserFoodFormModal({
           <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="Nom de l'aliment*" />
           <input className="input" type="number" min="0" step="0.1" value={calories} onChange={e => setCalories(e.target.value)} placeholder="Calories pour 100g*" />
           <div className="grid grid-cols-2 gap-2">
-            <input className="input" type="number" min="0" step="0.1" value={proteinG} onChange={e => setProteinG(e.target.value)} placeholder="Prot�ines (g)" />
+            <input className="input" type="number" min="0" step="0.1" value={proteinG} onChange={e => setProteinG(e.target.value)} placeholder="Protéines (g)" />
             <input className="input" type="number" min="0" step="0.1" value={carbsG} onChange={e => setCarbsG(e.target.value)} placeholder="Glucides (g)" />
             <input className="input" type="number" min="0" step="0.1" value={fatG} onChange={e => setFatG(e.target.value)} placeholder="Lipides (g)" />
             <input className="input" type="number" min="0" step="0.1" value={fiberG} onChange={e => setFiberG(e.target.value)} placeholder="Fibres (g)" />
@@ -524,7 +524,7 @@ function UserFoodFormModal({
           <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="btn-secondary w-full sm:w-auto">Annuler</button>
             <button type="button" onClick={submit} disabled={!name.trim() || !calories || isSaving} className="btn-primary w-full sm:w-auto">
-              {isSaving ? 'Sauvegarde...' : food ? 'Sauvegarder' : 'Cr�er'}
+              {isSaving ? 'Sauvegarde...' : food ? 'Sauvegarder' : 'Créer'}
             </button>
           </div>
         </div>
@@ -547,7 +547,7 @@ function MyFoodsView() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['user-foods'] })
       setShowFoodForm(false)
-      toast.success('Aliment cr��')
+      toast.success('Aliment créé')
     },
   })
   const updateFoodMutation = useMutation({
@@ -555,14 +555,14 @@ function MyFoodsView() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['user-foods'] })
       setEditingFood(null)
-      toast.success('Aliment mis � jour')
+      toast.success('Aliment mis à jour')
     },
   })
   const deleteFoodMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/user-foods/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['user-foods'] })
-      toast.success('Aliment supprim�')
+      toast.success('Aliment supprimé')
     },
   })
 
@@ -576,18 +576,18 @@ function MyFoodsView() {
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
           <h3 className="text-lg font-black text-white">Mes Aliments</h3>
-          <p className="text-xs text-gray-500">Aliments et recettes personnalis�s pour 100g.</p>
+          <p className="text-xs text-gray-500">Aliments et recettes personnalisés pour 100g.</p>
         </div>
         <button type="button" onClick={openCreate} className="btn-primary flex items-center gap-2 text-sm">
-          <Plus size={16} /> Cr�er un aliment
+          <Plus size={16} /> Créer un aliment
         </button>
       </div>
       {isLoading ? (
         <div className="text-center py-12 text-gray-500">Chargement...</div>
       ) : userFoods.length === 0 ? (
         <div className="glass-card text-center py-10">
-          <p className="text-sm font-semibold text-white">Aucun aliment personnalis�</p>
-          <p className="text-xs text-gray-500 mt-1">Cr�ez vos recettes maison et aliments fr�quents.</p>
+          <p className="text-sm font-semibold text-white">Aucun aliment personnalisé</p>
+          <p className="text-xs text-gray-500 mt-1">Créez vos recettes maison et aliments fréquents.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -623,7 +623,7 @@ function MyFoodsView() {
                         : portion
                       return (
                         <span key={unit} className="text-[10px] rounded-full bg-white/[0.05] text-gray-400 px-2 py-0.5">
-                          {unit} � {String(grams)}g
+                          {unit} ≈ {String(grams)}g
                         </span>
                       )
                     })}
@@ -694,7 +694,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     },
     onSuccess: () => {
       const count = foodItems.length
-      toast.success(`${count} aliment${count > 1 ? 's' : ''} ajout�${count > 1 ? 's' : ''} ?`)
+      toast.success(`${count} aliment${count > 1 ? 's' : ''} ajouté${count > 1 ? 's' : ''} ?`)
       onSuccess()
     },
     onError: () => toast.error("Erreur lors de l'enregistrement"),
@@ -707,7 +707,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     }),
     onSuccess: (res) => {
       const count = Array.isArray(res.data) ? res.data.length : 1
-      toast.success(`${count} aliment${count > 1 ? 's' : ''} ajout�${count > 1 ? 's' : ''} ?`)
+      toast.success(`${count} aliment${count > 1 ? 's' : ''} ajouté${count > 1 ? 's' : ''} ?`)
       onSuccess()
     },
     onError: () => toast.error("Erreur lors de l'analyse"),
@@ -784,7 +784,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                 <div>
                   <p className="font-semibold text-white">Par description libre</p>
                   <p className="text-sm text-gray-400 mt-0.5">
-                    D�crivez votre repas en quelques mots, l'IA extrait et estime tout.
+                    Décrivez votre repas en quelques mots, l'IA extrait et estime tout.
                   </p>
                 </div>
               </button>
@@ -802,9 +802,9 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-300 mb-1.5">Type de repas</label>
                 <select className="input" value={mealType} onChange={e => setMealType(e.target.value as MealType)}>
-                  <option value="BREAKFAST">Petit-d�jeuner</option>
-                  <option value="LUNCH">D�jeuner</option>
-                  <option value="DINNER">D�ner</option>
+                  <option value="BREAKFAST">Petit-déjeuner</option>
+                  <option value="LUNCH">Déjeuner</option>
+                  <option value="DINNER">Dîner</option>
                   <option value="SNACK">Snack</option>
                 </select>
               </div>
@@ -832,7 +832,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                         portions: portions ?? undefined,
                       })
                       setTimeout(() => {
-                        const qtyInput = document.querySelector<HTMLInputElement>('input[placeholder="Qt�"]')
+                        const qtyInput = document.querySelector<HTMLInputElement>('input[placeholder="Qté"]')
                         qtyInput?.focus()
                         qtyInput?.select()
                       }, 50)
@@ -841,7 +841,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                   />
                   <input className="input flex-1 sm:flex-none sm:w-24" value={newQty}
                     onChange={e => setNewQty(e.target.value)} onKeyDown={handleFoodKeyDown}
-                    placeholder="Qt�" />
+                    placeholder="Qté" />
                   <select className="input w-24" value={newUnit} onChange={e => setNewUnit(e.target.value)}>
                     {foodUnits.map(unit => <option key={unit} value={unit}>{unit}</option>)}
                   </select>
@@ -875,9 +875,9 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                               : 'bg-white/5 text-gray-400 border-white/10 hover:border-primary-400'
                         }`}>
                         <span>{label}</span>
-                        <span className={isSelected ? 'text-primary-200' : 'text-gray-400'}>�{grams}g</span>
+                        <span className={isSelected ? 'text-primary-200' : 'text-gray-400'}>≈{grams}g</span>
                         {(estimated || confidence < 0.5) && (
-                          <span className="text-yellow-500 text-[10px]">estim�</span>
+                          <span className="text-yellow-500 text-[10px]">estimé</span>
                         )}
                       </button>
                     )
@@ -885,15 +885,15 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                   return (
                     <>
                       <p className="text-xs text-amber-600 dark:text-amber-400 mt-1.5 font-medium">
-                        � {Math.round(selectedMacros.calories * scale)} kcal
-                        {' � '}P {(selectedMacros.proteinG * scale).toFixed(1)}g
-                        {' � '}G {(selectedMacros.carbsG * scale).toFixed(1)}g
-                        {' � '}L {(selectedMacros.fatG * scale).toFixed(1)}g
+                        ≈ {Math.round(selectedMacros.calories * scale)} kcal
+                        {' · '}P {(selectedMacros.proteinG * scale).toFixed(1)}g
+                        {' · '}G {(selectedMacros.carbsG * scale).toFixed(1)}g
+                        {' · '}L {(selectedMacros.fatG * scale).toFixed(1)}g
                         {selectedMacros.fiberG > 0 && (
-                          <> � F {(selectedMacros.fiberG * scale).toFixed(1)}g</>
+                          <> · F {(selectedMacros.fiberG * scale).toFixed(1)}g</>
                         )}
                         <span className="text-gray-500" title={lbl ?? undefined}>
-                          {showEstimatedWeight && <> (� {totalG}g{conf < 0.5 ? ' estim�' : ''})</>}
+                          {showEstimatedWeight && <> (≈ {totalG}g{conf < 0.5 ? ' estimé' : ''})</>}
                           {' '}(pour {newQty || 1} {newUnit})
                         </span>
                       </p>
@@ -919,7 +919,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                     </>
                   )
                 })()}
-                <p className="text-xs text-gray-500 mt-1">Appuyez sur Entr�e pour ajouter rapidement</p>
+                <p className="text-xs text-gray-500 mt-1">Appuyez sur Entrée pour ajouter rapidement</p>
               </div>
 
               {foodItems.length > 0 && (
@@ -933,19 +933,19 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                           return (
                             <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
                               {Math.round(item.calories * scale)} kcal
-                              {' � '}P {((item.proteinG ?? 0) * scale).toFixed(1)}g
-                              {' � '}G {((item.carbsG ?? 0) * scale).toFixed(1)}g
-                              {' � '}L {((item.fatG ?? 0) * scale).toFixed(1)}g
+                              {' · '}P {((item.proteinG ?? 0) * scale).toFixed(1)}g
+                              {' · '}G {((item.carbsG ?? 0) * scale).toFixed(1)}g
+                              {' · '}L {((item.fatG ?? 0) * scale).toFixed(1)}g
                             </p>
                           )
                         })()}
                         {!item.hasNutrition && (
                           <p className="text-xs text-amber-500 dark:text-amber-400 mt-0.5">
-                            ? Valeurs estim�es par l'IA
+                            ? Valeurs estimées par l'IA
                           </p>
                         )}
                         {item.quantity && (
-                          <span className="ml-2 text-xs text-gray-500">� {item.quantity} {item.unit}</span>
+                          <span className="ml-2 text-xs text-gray-500">· {item.quantity} {item.unit}</span>
                         )}
                       </div>
                       <button type="button" onClick={() => setFoodItems(prev => prev.filter((_, j) => j !== i))}
@@ -967,9 +967,9 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                 <div className="flex items-center gap-2 text-sm mb-3">
                   {foodItems.some(f => !f.hasNutrition)
                     ? <><div className="w-4 h-4 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
-                        <span className="text-primary-600 dark:text-primary-400">L'IA calcule les nutriments�</span></>
+                        <span className="text-primary-600 dark:text-primary-400">L'IA calcule les nutriments…</span></>
                     : <><div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                        <span className="text-emerald-600 dark:text-emerald-400">Enregistrement�</span></>
+                        <span className="text-emerald-600 dark:text-emerald-400">Enregistrement…</span></>
                   }
                 </div>
               )}
@@ -999,29 +999,29 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                   Type de repas <span className="text-gray-400 font-normal">(optionnel)</span>
                 </label>
                 <select className="input" value={mealType} onChange={e => setMealType(e.target.value as MealType)}>
-                  <option value="BREAKFAST">Petit-d�jeuner</option>
-                  <option value="LUNCH">D�jeuner</option>
-                  <option value="DINNER">D�ner</option>
+                  <option value="BREAKFAST">Petit-déjeuner</option>
+                  <option value="LUNCH">Déjeuner</option>
+                  <option value="DINNER">Dîner</option>
                   <option value="SNACK">Snack</option>
                 </select>
               </div>
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                  D�crivez ce que vous avez mang�
+                  Décrivez ce que vous avez mangé
                 </label>
                 <textarea className="input resize-none" rows={4} value={promptText}
                   onChange={e => setPromptText(e.target.value)}
-                  placeholder="Ex: J'ai mang� une assiette de couscous avec du poulet et une salade verte, plus une banane en dessert" />
+                  placeholder="Ex: J'ai mangé une assiette de couscous avec du poulet et une salade verte, plus une banane en dessert" />
                 <p className="text-xs text-gray-500 mt-1">
-                  L'IA d�compose votre repas et estime les valeurs nutritionnelles de chaque aliment.
+                  L'IA décompose votre repas et estime les valeurs nutritionnelles de chaque aliment.
                 </p>
               </div>
 
               {isLoading && (
                 <div className="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 mb-3">
                   <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
-                  L'IA analyse votre repas�
+                  L'IA analyse votre repas…
                 </div>
               )}
 
@@ -1061,7 +1061,7 @@ export default function FoodLogsPanel() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['food-logs'] })
       qc.invalidateQueries({ queryKey: ['timeline'] })
-      toast.success('Repas supprim�')
+      toast.success('Repas supprimé')
     },
   })
 
@@ -1106,7 +1106,7 @@ export default function FoodLogsPanel() {
     setShowModal(false)
   }
 
-  if (isLoading) return <div className="text-center py-12 text-gray-500">Chargement�</div>
+  if (isLoading) return <div className="text-center py-12 text-gray-500">Chargement…</div>
 
   return (
     <div>
@@ -1117,7 +1117,7 @@ export default function FoodLogsPanel() {
             Alimentation
           </h2>
           <p className="text-sm text-gray-500 mt-1">
-            {foodLogs.length} repas � {distinctTrackedDays} jours track�s � {averageCalories} kcal/jour moy.
+            {foodLogs.length} repas · {distinctTrackedDays} jours trackés · {averageCalories} kcal/jour moy.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:justify-end">
@@ -1132,7 +1132,7 @@ export default function FoodLogsPanel() {
           <button type="button"
             onClick={() => setCollapsedMeals(allCollapsed ? new Set() : new Set(visibleMealTypes))}
             className="text-xs text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 font-normal transition-colors">
-            {allCollapsed ? 'Tout d�velopper' : 'Tout r�duire'}
+            {allCollapsed ? 'Tout développer' : 'Tout réduire'}
           </button>
         )}
         </div>
@@ -1164,16 +1164,16 @@ export default function FoodLogsPanel() {
           illustration={<IllustrationFood />}
           gradient="from-green-600 to-teal-400"
           headline="Prends soin de ton alimentation"
-          description="Suis tes calories, prot�ines, glucides et lipides. SmartLife calcule tout automatiquement."
+          description="Suis tes calories, protéines, glucides et lipides. SmartLife calcule tout automatiquement."
           preview={
             <div className="card">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-base">??</span>
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">D�jeuner</span>
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Déjeuner</span>
                 <span className="ml-auto text-xs text-gray-400">500 kcal</span>
               </div>
               <div className="space-y-2">
-                {[['Poulet grill�', '320 kcal'], ['Riz basmati', '180 kcal']].map(([name, cal]) => (
+                {[['Poulet grillé', '320 kcal'], ['Riz basmati', '180 kcal']].map(([name, cal]) => (
                   <div key={name} className="flex items-center justify-between rounded-xl bg-green-50 dark:bg-green-900/20 px-3 py-1.5">
                     <span className="text-sm text-green-800 dark:text-green-300">{name}</span>
                     <span className="text-xs text-green-600 dark:text-green-400">{cal}</span>

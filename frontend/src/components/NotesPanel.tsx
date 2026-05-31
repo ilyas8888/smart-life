@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+﻿import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   BookMarked, Edit2, FileText, Palette, Pin, Plus,
@@ -21,7 +21,7 @@ interface Note {
 }
 
 const NOTE_COLORS: { value: string; label: string; bg: string; dark: string }[] = [
-  { value: 'default', label: 'D�faut', bg: '', dark: '' },
+  { value: 'default', label: 'Défaut', bg: '', dark: '' },
   { value: 'yellow', label: 'Jaune', bg: 'bg-yellow-100 border-yellow-300', dark: 'dark:bg-yellow-800/40 dark:border-yellow-600' },
   { value: 'pink', label: 'Rose', bg: 'bg-pink-100 border-pink-300', dark: 'dark:bg-pink-800/40 dark:border-pink-600' },
   { value: 'green', label: 'Vert', bg: 'bg-green-100 border-green-300', dark: 'dark:bg-green-800/40 dark:border-green-600' },
@@ -115,7 +115,7 @@ function NoteModal({
 
   const saveEdit = () => {
     api.put(`/notes/${note.id}`, { title: editTitle || null, content: editContent })
-      .then(() => { onUpdate(); setEditMode(false); toast.success('Note mise � jour') })
+      .then(() => { onUpdate(); setEditMode(false); toast.success('Note mise à jour') })
       .catch(() => toast.error('Erreur'))
   }
 
@@ -180,7 +180,7 @@ function NoteModal({
         </div>
 
         <div className="px-5 py-3 border-t border-black/5 border-white/10 text-xs text-gray-400">
-          Cr��e le {format(new Date(note.createdAt), 'dd MMMM yyyy � HH:mm', { locale: fr })}
+          Créée le {format(new Date(note.createdAt), 'dd MMMM yyyy à HH:mm', { locale: fr })}
         </div>
       </div>
     </div>
@@ -227,9 +227,9 @@ export default function NotesPanel() {
       setFormTags([])
       setNewTag('')
       setFormExpanded(false)
-      toast.success('Note cr��e')
+      toast.success('Note créée')
     },
-    onError: () => toast.error('Erreur lors de la cr�ation'),
+    onError: () => toast.error('Erreur lors de la création'),
   })
 
   const pinMutation = useMutation({
@@ -245,7 +245,7 @@ export default function NotesPanel() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/notes/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['notes'] }); toast.success('Note supprim�e') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['notes'] }); toast.success('Note supprimée') },
   })
 
   const stats = useMemo(() => ({
@@ -326,7 +326,7 @@ export default function NotesPanel() {
             </div>
           )}
           <p className="text-xs text-gray-500 mt-3">
-            {format(new Date(n.createdAt), 'dd MMM yyyy', { locale: fr })} � {wordCount(n.content)} mots
+            {format(new Date(n.createdAt), 'dd MMM yyyy', { locale: fr })} · {wordCount(n.content)} mots
           </p>
         </div>
       ))}
@@ -463,17 +463,17 @@ export default function NotesPanel() {
         <EmptyPanel
           illustration={<IllustrationNotes />}
           gradient="from-violet-600 to-fuchsia-400"
-          headline="Tes id�es m�ritent d'�tre captur�es"
-          description="Notes color�es, �pingl�es, �tiquet�es. Retrouve n'importe quelle id�e en quelques secondes."
+          headline="Tes idées méritent d'être capturées"
+          description="Notes colorées, épinglées, étiquetées. Retrouve n'importe quelle idée en quelques secondes."
           preview={
             <div className="card border border-yellow-300 bg-yellow-50 dark:bg-yellow-800/40 dark:border-yellow-600">
               <div className="flex items-center gap-2 mb-2">
                 <Pin size={13} className="text-yellow-600 dark:text-yellow-400" />
-                <span className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-widest">�pingl�e</span>
+                <span className="text-[10px] font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-widest">Épinglée</span>
                 <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/20">#PFE</span>
               </div>
               <p className="font-semibold text-white mb-1">Architecture SmartLife</p>
-              <p className="text-sm text-gray-400 line-clamp-2">Spring Boot + React + Keycloak + Neon PostgreSQL. D�ploiement HF Spaces avec supervisord...</p>
+              <p className="text-sm text-gray-400 line-clamp-2">Spring Boot + React + Keycloak + Neon PostgreSQL. Déploiement HF Spaces avec supervisord...</p>
             </div>
           }
           primaryLabel="+ Prendre une note"
@@ -483,7 +483,7 @@ export default function NotesPanel() {
         <>
           {pinnedNotes.length > 0 && (
             <>
-              <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-3">�pingl�es</p>
+              <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-3">Épinglées</p>
               {renderNotes(pinnedNotes)}
               {unpinnedNotes.length > 0 && (
                 <p className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mb-3 mt-6">Autres</p>
