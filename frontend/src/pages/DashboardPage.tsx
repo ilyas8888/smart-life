@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
 import { useThemeStore } from '../store/themeStore'
 import api from '../api/axios'
+import NotificationBell from '../components/NotificationBell'
 const HomePanel      = lazy(() => import('../components/HomePanel'))
 const AgendaPage     = lazy(() => import('./AgendaPage'))
 const TasksPanel     = lazy(() => import('../components/TasksPanel'))
@@ -366,14 +367,17 @@ export default function DashboardPage() {
                 {navItems.find((n) => n.id === activePanel)?.label}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={toggle}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-            >
-              {isDark ? <Sun size={16} /> : <Moon size={16} />}
-              <span className="hidden sm:inline">{isDark ? 'Mode clair' : 'Mode sombre'}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <NotificationBell />
+              <button
+                type="button"
+                onClick={toggle}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+              >
+                {isDark ? <Sun size={16} /> : <Moon size={16} />}
+                <span className="hidden sm:inline">{isDark ? 'Mode clair' : 'Mode sombre'}</span>
+              </button>
+            </div>
           </div>
         </header>
 

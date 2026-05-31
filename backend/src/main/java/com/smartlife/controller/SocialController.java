@@ -1,7 +1,9 @@
 package com.smartlife.controller;
 
+import com.smartlife.dto.NotificationDTO;
 import com.smartlife.model.*;
 import com.smartlife.repository.*;
+import com.smartlife.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -35,6 +37,7 @@ public class SocialController {
     private final StudySessionRepository   studySessionRepo;
     private final NoteRepository           noteRepo;
     private final DiaryEntryRepository     diaryRepo;
+    private final NotificationService      notificationService;
 
     // ─── Feed ───────────────────────────────────────────────────────────────
 
@@ -128,6 +131,12 @@ public class SocialController {
                     .postId(id).userId(user.getId()).reactionType(type).build());
             post.setReactionsCount(post.getReactionsCount() + 1);
             postRepo.save(post);
+            if (!post.getAuthor().getId().equals(user.getId())) {
+                String actor = actorName(user);
+                notificationService.notifyUser(post.getAuthor().getEmail(),
+                        new NotificationDTO("REACTION", actor + " a réagi à votre publication",
+                                actor, id, LocalDateTime.now()));
+            }
         }
         return ResponseEntity.ok(Map.of("removed", false, "type", type));
     }
@@ -173,6 +182,13 @@ public class SocialController {
         post.setCommentsCount(post.getCommentsCount() + 1);
         postRepo.save(post);
 
+        if (!post.getAuthor().getId().equals(user.getId())) {
+            String actor = actorName(user);
+            notificationService.notifyUser(post.getAuthor().getEmail(),
+                    new NotificationDTO("COMMENT", actor + " a commenté votre publication",
+                            actor, id, LocalDateTime.now()));
+        }
+
         return ResponseEntity.status(HttpStatus.CREATED).body(toCommentMap(saved));
     }
 
@@ -211,6 +227,12 @@ public class SocialController {
         saveRepo.save(SocialSave.builder().postId(id).userId(user.getId()).build());
         post.setSavesCount(post.getSavesCount() + 1);
         postRepo.save(post);
+        if (!post.getAuthor().getId().equals(user.getId())) {
+            String actor = actorName(user);
+            notificationService.notifyUser(post.getAuthor().getEmail(),
+                    new NotificationDTO("SAVE", actor + " a sauvegardé votre publication",
+                            actor, id, LocalDateTime.now()));
+        }
         return ResponseEntity.ok(Map.of("saved", true));
     }
 
@@ -354,6 +376,12 @@ public class SocialController {
         long days = hrs / 24;
         if (days < 7)   return days + "j";
         return dt.toLocalDate().toString();
+    }
+
+    private String actorName(User user) {
+        return (user.getFirstName() != null && !user.getFirstName().isBlank())
+                ? user.getFirstName()
+                : user.getEmail().split("@")[0];
     }
 
     private User currentUser() {

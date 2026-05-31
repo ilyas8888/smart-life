@@ -55,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/public/shares/**").permitAll()
                         .requestMatchers("/api/profile/avatar/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
