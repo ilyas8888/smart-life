@@ -16,6 +16,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
@@ -42,7 +43,11 @@ public class CacheConfig {
             String[] parts = uri.getUserInfo().split(":", 2);
             if (parts.length == 2) config.setPassword(parts[1]);
         }
-        LettuceConnectionFactory factory = new LettuceConnectionFactory(config);
+        boolean ssl = "rediss".equals(uri.getScheme());
+        LettuceClientConfiguration clientConfig = ssl
+                ? LettuceClientConfiguration.builder().useSsl().build()
+                : LettuceClientConfiguration.builder().build();
+        LettuceConnectionFactory factory = new LettuceConnectionFactory(config, clientConfig);
         factory.afterPropertiesSet();
         return factory;
     }
