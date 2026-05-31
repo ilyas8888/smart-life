@@ -38,3 +38,5 @@ application-local.yml
 # Monitoring configs (contain API tokens)
 monitoring/alloy-config.alloy
 monitoring/prometheus.yml
+
+mobile-android/app/google-services.json
