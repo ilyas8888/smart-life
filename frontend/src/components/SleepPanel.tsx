@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from 'react'
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Moon, Star, Trash2, Edit2, X, Clock, TrendingUp, Bed,
@@ -1197,6 +1197,164 @@ function SleepRow({ log, onEdit, onDelete }: {
   )
 }
 
+// ─── Sleep Wave Editor ────────────────────────────────────────────────────────
+
+interface SleepSegment { id: string; startPct: number; endPct: number }
+
+function pctToTime(bedtimeISO: string, durationMins: number, pct: number): string {
+  const bed = new Date(bedtimeISO)
+  const mins = Math.round((pct / 100) * durationMins)
+  const t = new Date(bed.getTime() + mins * 60000)
+  return `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`
+}
+
+function hourMarkers(bedtimeISO: string, durationMins: number): { pct: number; label: string }[] {
+  if (!bedtimeISO || durationMins <= 0) return []
+  const bed = new Date(bedtimeISO)
+  const markers: { pct: number; label: string }[] = []
+  const step = durationMins <= 300 ? 60 : durationMins <= 600 ? 120 : 180
+  for (let offset = step; offset < durationMins - 20; offset += step) {
+    const t = new Date(bed.getTime() + offset * 60000)
+    const h = t.getHours()
+    if (h % (step / 60) === 0) {
+      markers.push({ pct: (offset / durationMins) * 100, label: `${h}h` })
+    }
+  }
+  return markers
+}
+
+function SleepWaveEditor({ bedtimeISO, durationMins, segments, onChange }: {
+  bedtimeISO: string
+  durationMins: number
+  segments: SleepSegment[]
+  onChange: (segs: SleepSegment[]) => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [dragStart, setDragStart] = useState<number | null>(null)
+  const [dragCurrent, setDragCurrent] = useState(0)
+
+  function getPct(e: React.MouseEvent | MouseEvent): number {
+    if (!ref.current) return 0
+    const rect = ref.current.getBoundingClientRect()
+    return Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100))
+  }
+
+  function onMouseDown(e: React.MouseEvent) {
+    e.preventDefault()
+    setDragStart(getPct(e))
+    setDragCurrent(getPct(e))
+  }
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => { if (dragStart !== null) setDragCurrent(getPct(e)) }
+    const onUp = (e: MouseEvent) => {
+      if (dragStart === null) return
+      const end = getPct(e)
+      const lo = Math.min(dragStart, end)
+      const hi = Math.max(dragStart, end)
+      if (hi - lo > 1.5) {
+        onChange([...segments, { id: crypto.randomUUID(), startPct: lo, endPct: hi }].slice(-5))
+      }
+      setDragStart(null)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+  }, [dragStart, segments, onChange])
+
+  const awakeMins = segments.reduce((s, seg) => s + ((seg.endPct - seg.startPct) / 100) * durationMins, 0)
+  const sleepMins = Math.max(0, durationMins - awakeMins)
+  const efficiency = durationMins > 0 ? Math.round((sleepMins / durationMins) * 100) : 100
+  const markers = useMemo(() => hourMarkers(bedtimeISO, durationMins), [bedtimeISO, durationMins])
+
+  const dragLo = dragStart !== null ? Math.min(dragStart, dragCurrent) : null
+  const dragHi = dragStart !== null ? Math.max(dragStart, dragCurrent) : null
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-gray-400 font-medium">Perturbations nocturnes</span>
+        <span className={efficiency >= 85 ? 'text-emerald-400' : efficiency >= 70 ? 'text-yellow-400' : 'text-red-400'}>
+          {efficiency}% efficacité
+        </span>
+      </div>
+
+      {/* Interactive wave bar */}
+      <div
+        ref={ref}
+        onMouseDown={onMouseDown}
+        className="relative h-14 rounded-2xl overflow-hidden cursor-crosshair select-none border border-white/[0.08]"
+        title="Glisse pour marquer une période d'éveil"
+      >
+        {/* Sleep background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-900/80 via-indigo-700/60 to-indigo-800/80" />
+
+        {/* Sleep wave pattern (subtle sine-like bars) */}
+        <svg className="absolute inset-0 w-full h-full opacity-20 pointer-events-none" preserveAspectRatio="none">
+          <path d="M0,28 Q12,14 24,28 Q36,42 48,28 Q60,14 72,28 Q84,42 96,28 Q108,14 120,28 Q132,42 144,28 Q156,14 168,28 Q180,42 192,28 Q204,14 216,28 Q228,42 240,28 Q252,14 264,28 Q276,42 288,28 Q300,14 312,28 Q324,42 336,28 Q348,14 360,28 Q372,42 384,28 Q396,14 408,28 Q420,42 432,28 Q444,14 456,28 Q468,42 480,28" stroke="white" strokeWidth="1.5" fill="none" />
+        </svg>
+
+        {/* Awake segments */}
+        {segments.map(seg => (
+          <div
+            key={seg.id}
+            className="absolute top-0 bottom-0 bg-amber-500/75 cursor-pointer group"
+            style={{ left: `${seg.startPct}%`, width: `${seg.endPct - seg.startPct}%` }}
+            onMouseDown={e => { e.stopPropagation(); onChange(segments.filter(s => s.id !== seg.id)) }}
+            title={`${pctToTime(bedtimeISO, durationMins, seg.startPct)} — ${pctToTime(bedtimeISO, durationMins, seg.endPct)} · cliquer pour supprimer`}
+          >
+            <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,transparent,transparent_4px,rgba(0,0,0,0.15)_4px,rgba(0,0,0,0.15)_8px)]" />
+            <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-amber-100 opacity-0 group-hover:opacity-100">
+              {pctToTime(bedtimeISO, durationMins, seg.startPct)}–{pctToTime(bedtimeISO, durationMins, seg.endPct)}
+            </span>
+          </div>
+        ))}
+
+        {/* Drag preview */}
+        {dragLo !== null && dragHi !== null && dragHi - dragLo > 0.5 && (
+          <div className="absolute top-0 bottom-0 bg-amber-400/50 border-x border-amber-400"
+               style={{ left: `${dragLo}%`, width: `${dragHi - dragLo}%` }} />
+        )}
+
+        {/* Hour markers */}
+        {markers.map(m => (
+          <div key={m.label} className="absolute top-0 bottom-0 flex flex-col items-center pointer-events-none"
+               style={{ left: `${m.pct}%` }}>
+            <div className="w-px h-full bg-white/15" />
+          </div>
+        ))}
+
+        {/* Labels overlay */}
+        <div className="absolute inset-0 flex items-end justify-between px-2 pb-1 pointer-events-none">
+          {markers.map(m => (
+            <span key={m.label} className="absolute text-[9px] text-white/40 bottom-1"
+                  style={{ left: `${m.pct}%`, transform: 'translateX(-50%)' }}>
+              {m.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Legend + stats */}
+      <div className="flex items-center gap-4 text-[11px]">
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-indigo-500/80" />
+          <span className="text-gray-400">Sommeil {formatDuration(Math.round(sleepMins))}</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-sm bg-amber-500/80" />
+          <span className="text-gray-400">Éveillé {formatDuration(Math.round(awakeMins))}</span>
+        </span>
+        <span className="ml-auto text-gray-500">
+          {segments.length === 0
+            ? 'Glisse pour marquer un éveil'
+            : `${segments.length} réveil${segments.length > 1 ? 's' : ''} · clic pour supprimer`}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 // ─── Sleep AI Coach ───────────────────────────────────────────────────────────
 
 const ANALYSIS_TYPES = [
@@ -1291,6 +1449,13 @@ function EditModal({ form, saving, onClose, onChange, onSave }: {
   onClose: () => void; onChange: (v: FormState | ((p: FormState) => FormState)) => void; onSave: () => void
 }) {
   const duration = calculatedDuration(form)
+  const [segments, setSegments] = useState<SleepSegment[]>([])
+  const bedtimeISO = form.bedDate && form.bedTime ? `${form.bedDate}T${form.bedTime}:00` : ''
+
+  // Sync wakeUps with number of segments
+  useEffect(() => {
+    onChange(f => ({ ...f, wakeUps: segments.length }))
+  }, [segments.length])
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="relative w-full max-w-lg bg-[#0f1117] rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto border border-white/[0.08]">
@@ -1324,6 +1489,17 @@ function EditModal({ form, saving, onClose, onChange, onSave }: {
               {formatDuration(duration)}
             </div>
           )}
+
+          {/* Sleep wave editor */}
+          {duration && duration > 0 && bedtimeISO && (
+            <SleepWaveEditor
+              bedtimeISO={bedtimeISO}
+              durationMins={duration}
+              segments={segments}
+              onChange={setSegments}
+            />
+          )}
+
           <EmojiPicker value={form.energy} onChange={energy => onChange(f => ({ ...f, energy }))} />
           <div className="flex gap-3 pt-1">
             <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-gray-400 text-sm font-medium hover:bg-white/[0.05]">
