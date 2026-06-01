@@ -10,6 +10,7 @@ import com.smartlife.repository.RefreshTokenRepository;
 import com.smartlife.repository.RevokedTokenRepository;
 import com.smartlife.repository.UserRepository;
 import com.smartlife.security.JwtService;
+import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -54,6 +55,7 @@ public class AuthService {
         return authResponse(user);
     }
 
+    @Observed(name = "smartlife.auth.login")
     public Object login(AuthRequest request, String ip) {
         var user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new IllegalArgumentException("Email ou mot de passe incorrect"));
@@ -67,6 +69,7 @@ public class AuthService {
         return authResponse(user);
     }
 
+    @Observed(name = "smartlife.auth.verify_otp")
     public AuthResponse verifyOtp(Long userId, String code, String ip) {
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouve"));

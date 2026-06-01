@@ -71,7 +71,7 @@ public class OpenFoodFactsService {
                 "confidence", 0.75
             ));
         } catch (Exception e) {
-            log.warn("Open Food Facts serving lookup failed for '{}': {}", foodName, e.getMessage());
+            log.warn("Open Food Facts serving lookup failed errorType={}", e.getClass().getSimpleName());
             return Optional.empty();
         }
     }

@@ -50,7 +50,7 @@ public class EmbeddingService {
                 .collect(Collectors.joining(",")) + "]";
             return Optional.of(vec);
         } catch (Exception e) {
-            log.warn("Embedding failed for '{}': {}", text, e.getMessage());
+            log.warn("Embedding request failed errorType={}", e.getClass().getSimpleName());
             return Optional.empty();
         }
     }

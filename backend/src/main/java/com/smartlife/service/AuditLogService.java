@@ -31,7 +31,7 @@ public class AuditLogService {
                     .ipAddress(ip)
                     .build());
         } catch (Exception e) {
-            log.warn("Audit log failed: {}", e.getMessage());
+            log.warn("Audit log failed errorType={}", e.getClass().getSimpleName());
         }
     }
 }
