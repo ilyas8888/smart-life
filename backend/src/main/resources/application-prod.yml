@@ -25,7 +25,7 @@ logging:
 management:
   tracing:
     sampling:
-      probability: 0.1
+      probability: 1.0
   otlp:
     tracing:
       endpoint: "https://otlp-gateway-prod-eu-west-2.grafana.net/otlp/v1/traces"
