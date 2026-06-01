@@ -4,6 +4,7 @@ import com.smartlife.dto.PromptRequest;
 import com.smartlife.dto.PromptResponse;
 import com.smartlife.model.*;
 import com.smartlife.repository.*;
+import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +42,7 @@ public class AiService {
     @Value("${ai.internal.secret}")
     private String aiInternalSecret;
 
+    @Observed(name = "smartlife.ai.prompt.process")
     @SuppressWarnings("unchecked")
     public PromptResponse processPrompt(String rawPrompt, User user, String ip) {
         Map<String, Object> requestBody = new HashMap<>();

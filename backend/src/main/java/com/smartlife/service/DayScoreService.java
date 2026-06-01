@@ -3,6 +3,7 @@ package com.smartlife.service;
 import com.smartlife.model.*;
 import com.smartlife.repository.*;
 import lombok.RequiredArgsConstructor;
+import io.micrometer.observation.annotation.Observed;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class DayScoreService {
     private final StudySessionRepository studySessionRepository;
     private final DiaryEntryRepository diaryEntryRepository;
 
+    @Observed(name = "smartlife.day_score.compute")
     @Caching(cacheable = {
         @Cacheable(value = "day-score-today",
                    condition = "#date.equals(T(java.time.LocalDate).now())",
