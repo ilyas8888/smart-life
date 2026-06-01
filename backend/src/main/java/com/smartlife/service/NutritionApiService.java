@@ -1,5 +1,6 @@
 package com.smartlife.service;
 
+import io.micrometer.observation.annotation.Observed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,6 +48,7 @@ public class NutritionApiService {
         return Optional.empty();
     }
 
+    @Observed(name = "smartlife.food.search")
     @SuppressWarnings("unchecked")
     public List<NutritionResult> searchMultiple(String query, int limit) {
         if (usdaApiKey == null || usdaApiKey.isBlank()) return List.of();
@@ -68,8 +70,7 @@ public class NutritionApiService {
 
             return results;
         } catch (Exception e) {
-            log.warn("USDA searchMultiple failed for '{}': {}: {}", query,
-                e.getClass().getSimpleName(), e.getMessage(), e);
+            log.warn("USDA searchMultiple failed errorType={}", e.getClass().getSimpleName());
             return List.of();
         }
     }
@@ -97,8 +98,8 @@ public class NutritionApiService {
                 ? List.of()
                 : (List<Map<String, Object>>) response.getOrDefault("foods", List.of());
         } catch (Exception e) {
-            log.warn("USDA source search failed for '{}' types {}: {}: {}", query,
-                Arrays.toString(dataTypes), e.getClass().getSimpleName(), e.getMessage());
+            log.warn("USDA source search failed types={} errorType={}",
+                Arrays.toString(dataTypes), e.getClass().getSimpleName());
             return List.of();
         }
     }
@@ -289,7 +290,7 @@ public class NutritionApiService {
 
             return Optional.of(new NutritionResult(name, calories, protein, carbs, fat, fiber, portions, richPortions, "usda"));
         } catch (Exception e) {
-            log.warn("USDA lookup failed for '{}': {}", query, e.getMessage());
+            log.warn("USDA lookup failed errorType={}", e.getClass().getSimpleName());
             return Optional.empty();
         }
     }

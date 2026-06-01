@@ -42,7 +42,7 @@ public class PortionResolverService {
         if (allLowConfidence) {
             openFoodFactsService.searchServing(foodName).ifPresent(serving -> {
                 portions.put("serving", serving);
-                log.info("OFF enrichment for {}: {}g", foodName, serving.get("grams"));
+                log.info("OFF enrichment applied grams={}", serving.get("grams"));
             });
         }
 

@@ -56,7 +56,7 @@ public class OtpService {
         if (!brevoApiKey.isBlank() && !fromEmail.isBlank()) {
             sendViaBrevoApi(user.getEmail(), code);
         } else {
-            log.info("OTP [DEV] {} → {}", user.getEmail(), code);
+            log.info("OTP generated in development mode; email delivery skipped");
         }
     }
 
@@ -73,12 +73,12 @@ public class OtpService {
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 400) {
-                log.warn("Brevo API error {}: {}", response.statusCode(), response.body());
+                log.warn("Brevo OTP API error status={}", response.statusCode());
             } else {
-                log.info("OTP email sent via Brevo to {}", toEmail);
+                log.info("OTP email sent via Brevo");
             }
         } catch (Exception e) {
-            log.warn("Échec envoi email OTP via Brevo: {}", e.getMessage());
+            log.warn("OTP email delivery failed errorType={}", e.getClass().getSimpleName());
         }
     }
 
@@ -110,10 +110,10 @@ public class OtpService {
                     .build();
             HttpResponse<String> response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 400) {
-                log.warn("Brevo security alert API error {}: {}", response.statusCode(), response.body());
+                log.warn("Brevo security alert API error status={}", response.statusCode());
             }
         } catch (Exception e) {
-            log.warn("Echec envoi notification de connexion OAuth2 via Brevo: {}", e.getMessage());
+            log.warn("OAuth2 security alert delivery failed errorType={}", e.getClass().getSimpleName());
         }
     }
 

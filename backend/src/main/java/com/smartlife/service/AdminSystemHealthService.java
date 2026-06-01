@@ -80,7 +80,7 @@ public class AdminSystemHealthService {
                     "latencyMs", latencyMs
             );
         } catch (Exception e) {
-            log.warn("AI service health check failed: {}", e.getMessage());
+            log.warn("AI service health check failed errorType={}", e.getClass().getSimpleName());
             return Map.of(
                     "status", "DOWN",
                     "latencyMs", -1,

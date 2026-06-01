@@ -29,12 +29,12 @@ public class MailService {
 
     public void send(String toEmail, String subject, String textContent) {
         if (isBlank(toEmail)) {
-            log.info("[MAIL SKIPPED] Missing recipient for subject: {}", subject);
+            log.info("Email delivery skipped: missing recipient");
             emailLogService.log(toEmail, subject, "SKIPPED", "Missing recipient");
             return;
         }
         if (isBlank(brevoApiKey) || isBlank(fromEmail)) {
-            log.info("[MAIL DEV] To: {} | Subject: {} | Body: {}", toEmail, subject, textContent);
+            log.info("Email delivery skipped in development mode");
             emailLogService.log(toEmail, subject, "SKIPPED", "Dev mode");
             return;
         }
@@ -56,15 +56,15 @@ public class MailService {
                     .send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() >= 400) {
-                log.warn("Brevo API error {}: {}", response.statusCode(), response.body());
+                log.warn("Brevo email API error status={}", response.statusCode());
                 emailLogService.log(toEmail, subject, "FAILED", "Brevo error " + response.statusCode());
             } else {
-                log.info("Email sent via Brevo to {}", toEmail);
+                log.info("Email sent via Brevo");
                 emailLogService.log(toEmail, subject, "SENT", null);
             }
         } catch (Exception e) {
-            log.warn("Failed to send email via Brevo: {}", e.getMessage());
-            emailLogService.log(toEmail, subject, "FAILED", e.getMessage());
+            log.warn("Email delivery failed errorType={}", e.getClass().getSimpleName());
+            emailLogService.log(toEmail, subject, "FAILED", e.getClass().getSimpleName());
         }
     }
 

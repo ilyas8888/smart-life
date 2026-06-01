@@ -3,6 +3,7 @@ package com.smartlife.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartlife.model.PushSubscription;
 import com.smartlife.repository.PushSubscriptionRepository;
+import io.micrometer.observation.annotation.Observed;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +45,8 @@ public class PushNotificationService {
                 pushService = new PushService(vapidPublicKey, vapidPrivateKey, vapidSubject);
                 log.info("VAPID push service initialized");
             } catch (Exception e) {
-                log.error("Failed to initialize VAPID push service — push notifications disabled", e);
+                log.error("Failed to initialize VAPID push service; notifications disabled errorType={}",
+                        e.getClass().getSimpleName());
             }
         } else {
             log.warn("VAPID keys not configured — push notifications disabled");
@@ -56,6 +58,7 @@ public class PushNotificationService {
     }
 
     @Transactional
+    @Observed(name = "smartlife.push.send")
     public void sendToUser(Long userId, String title, String body, String url) {
         if (pushService == null) return;
 
@@ -78,10 +81,10 @@ public class PushNotificationService {
                 if (status == 410 || status == 404) {
                     // Subscription expired or invalid — remove it
                     pushSubscriptionRepository.delete(sub);
-                    log.debug("Removed expired push subscription {} for user {}", sub.getId(), userId);
+                    log.debug("Removed expired push subscription");
                 }
             } catch (Exception e) {
-                log.warn("Failed to send push to subscription {} (user {})", sub.getId(), userId, e);
+                log.warn("Failed to send push notification errorType={}", e.getClass().getSimpleName());
             }
         }
     }
