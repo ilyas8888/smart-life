@@ -7,7 +7,7 @@ spring:
 
 app:
   mail:
-    security-alert-recipient: ilyassboulouiz@gmail.com
+    security-alert-recipient: ${SECURITY_ALERT_EMAIL:}
 
 keycloak:
   admin:
@@ -28,7 +28,7 @@ management:
       probability: 0.1
   otlp:
     tracing:
-      endpoint: "${OTLP_ENDPOINT:https://otlp-gateway-prod-eu-west-2.grafana.net/otlp/v1/traces}"
+      endpoint: "https://otlp-gateway-prod-eu-west-2.grafana.net/otlp/v1/traces"
       headers:
         Authorization: "Basic ${OTLP_TOKEN:}"
 
@@ -37,4 +37,3 @@ sentry:
   enabled: false
   traces-sample-rate: 0.1
   environment: production
-
