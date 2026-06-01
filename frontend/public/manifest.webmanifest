@@ -6,8 +6,8 @@
   "scope": "/smart-life/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#f8fafc",
+  "theme_color": "#6366f1",
   "categories": ["productivity", "health", "lifestyle"],
   "icons": [
     {

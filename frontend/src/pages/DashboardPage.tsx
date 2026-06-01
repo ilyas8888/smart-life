@@ -55,16 +55,12 @@ function panelFromHash(): Panel {
 export default function DashboardPage() {
   const navigate = useNavigate()
   const { firstName, lastName, email, logout } = useAuthStore()
-  const { isDark, toggle } = useThemeStore()
+  const { isDark, preference, setPreference } = useThemeStore()
   const [activePanel, setActivePanel] = useState<Panel>(panelFromHash)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [showAccessModal, setShowAccessModal] = useState(false)
   const [accessMessage, setAccessMessage] = useState('')
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDark)
-  }, [isDark])
 
   useEffect(() => {
     const onHash = () => setActivePanel(panelFromHash())
@@ -352,7 +348,7 @@ export default function DashboardPage() {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden min-w-0 pb-20 md:pb-0">
-        <header className="border-b border-white/[0.06] bg-[#0D1117]/80 backdrop-blur-xl px-4 md:px-6 py-3 sticky top-0 z-10">
+        <header className="app-header border-b border-subtle backdrop-blur-xl px-4 md:px-6 py-3 sticky top-0 z-10">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 text-sm text-gray-500">
               <button
@@ -369,14 +365,19 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-2">
               <NotificationBell />
-              <button
-                type="button"
-                onClick={toggle}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-sm text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-              >
+              <label className="flex items-center gap-2 px-3 py-2 rounded-xl border border-subtle surface-muted text-sm text-secondary">
                 {isDark ? <Sun size={16} /> : <Moon size={16} />}
-                <span className="hidden sm:inline">{isDark ? 'Mode clair' : 'Mode sombre'}</span>
-              </button>
+                <span className="sr-only">Theme</span>
+                <select
+                  value={preference}
+                  onChange={(event) => setPreference(event.target.value as 'system' | 'light' | 'dark')}
+                  className="bg-transparent text-sm text-secondary focus:outline-none"
+                >
+                  <option value="system">Systeme</option>
+                  <option value="light">Clair</option>
+                  <option value="dark">Sombre</option>
+                </select>
+              </label>
             </div>
           </div>
         </header>
