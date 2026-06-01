@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react'
+import { useMemo, useState, useCallback, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Moon, Star, Trash2, Edit2, X, Clock, TrendingUp, Bed,
@@ -393,6 +393,42 @@ function tonightPlan(logs: SleepLog[]) {
   return 'Ce soir : gardez le même rythme et visez une nuit complète autour de 8h.'
 }
 
+// ─── Planifier helpers ────────────────────────────────────────────────────────
+
+interface EnvStep { id: string; label: string; minutesBefore: number; enabled: boolean }
+
+const DEFAULT_ENV_STEPS: EnvStep[] = [
+  { id: 'caffeine', label: 'Dernière caféine', minutesBefore: 360, enabled: true },
+  { id: 'meal', label: 'Dernier repas lourd', minutesBefore: 180, enabled: true },
+  { id: 'screens', label: 'Écrans éteints', minutesBefore: 60, enabled: true },
+  { id: 'room', label: 'Chambre préparée', minutesBefore: 30, enabled: true },
+  { id: 'relax', label: 'Relaxation / lecture', minutesBefore: 10, enabled: true },
+]
+
+function getCycleOptions(wakeTime: string): { time: string; cycles: number; duration: string }[] {
+  if (!wakeTime || !wakeTime.includes(':')) return []
+  const [h, m] = wakeTime.split(':').map(Number)
+  const wakeMins = h * 60 + m
+  return [4.5, 5, 5.5, 6].map(cycles => {
+    const sleepMins = wakeMins - cycles * 90 - 15
+    const norm = ((sleepMins % 1440) + 1440) % 1440
+    const hh = Math.floor(norm / 60)
+    const mm = norm % 60
+    return {
+      time: `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`,
+      cycles: Math.round(cycles),
+      duration: `${cycles * 1.5}h`,
+    }
+  })
+}
+
+function subtractMinutes(baseTime: string, minutes: number): string {
+  if (!baseTime || !baseTime.includes(':')) return '--'
+  const [h, m] = baseTime.split(':').map(Number)
+  const total = ((h * 60 + m - minutes) % 1440 + 1440) % 1440
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 type Tab = 'nuit' | 'historique' | 'planifier' | 'environnement'
@@ -405,6 +441,9 @@ export default function SleepPanel() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [form, setForm] = useState<FormState>(() => defaultForm())
+  const [planForm, setPlanForm] = useState({ targetBedtime: '23:00', targetWakeTime: '07:00', notes: '' })
+  const [envBedtime, setEnvBedtime] = useState('23:00')
+  const [envSteps, setEnvSteps] = useState<EnvStep[]>(DEFAULT_ENV_STEPS)
 
   const { data: logs = [], isLoading } = useQuery<SleepLog[]>({
     queryKey: ['sleep-logs'],
@@ -447,6 +486,40 @@ export default function SleepPanel() {
       qc.invalidateQueries({ queryKey: ['day-score'] })
       toast.success('Nuit supprimée')
     },
+  })
+
+  // Sleep plan queries
+  const { data: sleepPlanData } = useQuery({
+    queryKey: ['sleep-plan', selectedDate],
+    queryFn: () => api.get(`/sleep/plans/${selectedDate}`).then(r => r.data).catch(() => null),
+    enabled: activeTab === 'planifier',
+  })
+
+  const { data: envPlanData } = useQuery({
+    queryKey: ['sleep-env-plan'],
+    queryFn: () => api.get('/sleep/environment-plan').then(r => r.data),
+    enabled: activeTab === 'environnement',
+  })
+
+  useEffect(() => {
+    if (!envPlanData) return
+    if (envPlanData.targetBedtime) setEnvBedtime(envPlanData.targetBedtime.substring(0, 5))
+    if (envPlanData.steps) {
+      try { setEnvSteps(JSON.parse(envPlanData.steps)) } catch { /* keep defaults */ }
+    }
+  }, [envPlanData])
+
+  const planMutation = useMutation({
+    mutationFn: (payload: { date: string; body: object }) =>
+      api.put(`/sleep/plans/${payload.date}`, payload.body).then(r => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sleep-plan'] }); toast.success('Plan enregistré ✓') },
+    onError: () => toast.error('Erreur lors de l\'enregistrement'),
+  })
+
+  const envMutation = useMutation({
+    mutationFn: (body: object) => api.put('/sleep/environment-plan', body).then(r => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['sleep-env-plan'] }); toast.success('Programme enregistré ✓') },
+    onError: () => toast.error('Erreur lors de l\'enregistrement'),
   })
 
   const selectedLog = useMemo(() => logs.find(l => l.sleepDate === selectedDate) ?? null, [logs, selectedDate])
@@ -799,27 +872,161 @@ export default function SleepPanel() {
 
       {/* ── TAB: Planifier ────────────────────────────────────────────────── */}
       {activeTab === 'planifier' && (
-        <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center">
-            <Calendar size={28} className="text-indigo-400" />
+        <div className="space-y-4">
+          {/* Existing plan badge */}
+          {sleepPlanData && (
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+              <CheckCircle2 size={14} className="text-indigo-400" />
+              <span className="text-sm text-indigo-300 font-medium">Plan existant</span>
+              <span className="text-xs text-indigo-400/70">
+                {sleepPlanData.targetBedtime?.substring(0,5)} → {sleepPlanData.targetWakeTime?.substring(0,5)}
+              </span>
+            </div>
+          )}
+
+          {/* Plan form */}
+          <div className="glass-card border-white/10 p-5 space-y-5">
+            <h2 className="text-sm font-black text-white">
+              Planifier la nuit du {new Date(selectedDate + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </h2>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <Moon size={11} className="inline mr-1 text-indigo-400" />Coucher cible
+                </label>
+                <input type="time" value={planForm.targetBedtime}
+                  onChange={e => setPlanForm(f => ({ ...f, targetBedtime: e.target.value }))}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <Sunrise size={11} className="inline mr-1 text-amber-400" />Réveil cible
+                </label>
+                <input type="time" value={planForm.targetWakeTime}
+                  onChange={e => setPlanForm(f => ({ ...f, targetWakeTime: e.target.value }))}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              </div>
+            </div>
+
+            {/* Cycle optimizer */}
+            <div>
+              <p className="text-xs font-medium text-gray-400 mb-2">
+                Heures de coucher optimales pour {planForm.targetWakeTime}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {getCycleOptions(planForm.targetWakeTime).map(opt => (
+                  <button key={opt.time} type="button"
+                    onClick={() => setPlanForm(f => ({ ...f, targetBedtime: opt.time }))}
+                    className={`flex items-center justify-between px-3 py-2 rounded-xl border text-xs transition-colors ${
+                      planForm.targetBedtime === opt.time
+                        ? 'border-indigo-500 bg-indigo-900/20 text-indigo-300'
+                        : 'border-white/10 text-gray-400 hover:border-indigo-400'
+                    }`}>
+                    <span className="font-bold">{opt.time}</span>
+                    <span>{opt.cycles} cycles · {opt.duration}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-1.5">Note (optionnel)</label>
+              <input type="text" value={planForm.notes}
+                onChange={e => setPlanForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Ex: réunion tôt demain..."
+                className="w-full rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            </div>
+
+            <button onClick={() => planMutation.mutate({ date: selectedDate, body: { targetBedtime: planForm.targetBedtime, targetWakeTime: planForm.targetWakeTime, notes: planForm.notes || null } })}
+              disabled={planMutation.isPending}
+              className="w-full py-3 rounded-2xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors">
+              {planMutation.isPending ? 'Enregistrement...' : '✓ Enregistrer le plan'}
+            </button>
           </div>
-          <h2 className="text-base font-black text-white">Planification à venir</h2>
-          <p className="text-sm text-gray-400 max-w-xs">
-            Définissez vos heures cibles, cycles optimaux et objectifs de sommeil pour les nuits à venir.
-          </p>
         </div>
       )}
 
       {/* ── TAB: Environnement ────────────────────────────────────────────── */}
       {activeTab === 'environnement' && (
-        <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
-            <Leaf size={28} className="text-emerald-400" />
+        <div className="space-y-4">
+          <div className="glass-card border-white/10 p-5 space-y-5">
+            <div>
+              <h2 className="text-sm font-black text-white mb-1">Programme du soir</h2>
+              <p className="text-xs text-gray-400">Routine personnalisée basée sur votre heure de coucher cible.</p>
+            </div>
+
+            {/* Target bedtime */}
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                <Moon size={11} className="inline mr-1 text-indigo-400" />Coucher cible ce soir
+              </label>
+              <input type="time" value={envBedtime}
+                onChange={e => setEnvBedtime(e.target.value)}
+                className="w-40 rounded-xl border border-white/10 bg-white/5 text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            </div>
+
+            {/* Steps */}
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-gray-400">Étapes de routine</p>
+              {envSteps.map((step, idx) => {
+                const stepTime = envBedtime ? subtractMinutes(envBedtime, step.minutesBefore) : '--'
+                return (
+                  <div key={step.id}
+                    className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${
+                      step.enabled ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-white/[0.06] bg-white/[0.02]'
+                    }`}>
+                    <div className="flex items-center gap-3">
+                      <button type="button"
+                        onClick={() => setEnvSteps(s => s.map((st, i) => i === idx ? { ...st, enabled: !st.enabled } : st))}
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                          step.enabled ? 'border-emerald-500 bg-emerald-500' : 'border-white/20'
+                        }`}>
+                        {step.enabled && <span className="text-white text-[10px]">✓</span>}
+                      </button>
+                      <div>
+                        <p className={`text-sm font-medium ${step.enabled ? 'text-white' : 'text-gray-500'}`}>{step.label}</p>
+                        <p className="text-[11px] text-gray-500">−{step.minutesBefore < 60 ? `${step.minutesBefore} min` : `${step.minutesBefore / 60}h`} avant le coucher</p>
+                      </div>
+                    </div>
+                    <span className={`text-sm font-bold tabular-nums ${step.enabled ? 'text-emerald-400' : 'text-gray-600'}`}>
+                      {stepTime}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Insight from last 7 nights */}
+            {last7.length >= 3 && (() => {
+              const screenNights = last7.filter(l => (l.factors ?? []).includes('SCREEN'))
+              const screenAvg = screenNights.length > 0
+                ? Math.round(screenNights.reduce((s, l) => s + l.durationMinutes, 0) / screenNights.length)
+                : null
+              const noScreenNights = last7.filter(l => !(l.factors ?? []).includes('SCREEN'))
+              const noScreenAvg = noScreenNights.length > 0
+                ? Math.round(noScreenNights.reduce((s, l) => s + l.durationMinutes, 0) / noScreenNights.length)
+                : null
+              if (screenAvg && noScreenAvg && noScreenAvg > screenAvg) {
+                const diff = noScreenAvg - screenAvg
+                return (
+                  <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3">
+                    <p className="text-xs text-amber-300">
+                      💡 Sans écran le soir, tu dors en moyenne <span className="font-bold">{formatDuration(diff)} de plus</span> sur tes 7 dernières nuits.
+                    </p>
+                  </div>
+                )
+              }
+              return null
+            })()}
+
+            <button
+              onClick={() => envMutation.mutate({ targetBedtime: envBedtime || null, steps: JSON.stringify(envSteps) })}
+              disabled={envMutation.isPending}
+              className="w-full py-3 rounded-2xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+              {envMutation.isPending ? 'Enregistrement...' : '✓ Enregistrer le programme'}
+            </button>
           </div>
-          <h2 className="text-base font-black text-white">Programme d'environnement à venir</h2>
-          <p className="text-sm text-gray-400 max-w-xs">
-            Routine du soir configurable avec rappels, checklist chambre et corrélations facteurs / score.
-          </p>
         </div>
       )}
 
