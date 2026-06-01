@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
@@ -22,6 +21,7 @@ public class DayScoreService {
     private final WorkoutSessionRepository workoutSessionRepository;
     private final StudySessionRepository studySessionRepository;
     private final DiaryEntryRepository diaryEntryRepository;
+    private final SleepScoreService sleepScoreService;
 
     @Caching(cacheable = {
         @Cacheable(value = "day-score-today",
@@ -42,19 +42,8 @@ public class DayScoreService {
         String sleepLabel = "Non logué";
         boolean hasSleep = sleepLog != null;
         if (hasSleep) {
-            long mins = ChronoUnit.MINUTES.between(sleepLog.getBedtime(), sleepLog.getWakeTime());
-            double h = mins / 60.0;
-            int durScore;
-            if (h >= 7 && h <= 9)   durScore = 100;
-            else if (h > 9)          durScore = 88;
-            else if (h >= 6)         durScore = 75;
-            else if (h >= 5)         durScore = 55;
-            else                     durScore = 30;
-            int qualScore   = sleepLog.getQuality() * 20;
-            int energyScore = sleepLog.getEnergy() != null ? sleepLog.getEnergy() * 20 : 60;
-            int wakeScore   = Math.max(0, 100 - sleepLog.getWakeUps() * 15);
-            sleepScore = (int) Math.round(0.50 * durScore + 0.30 * qualScore + 0.15 * energyScore + 0.05 * wakeScore);
-            sleepLabel = String.format("%.1fh · qualité %d/5", h, sleepLog.getQuality());
+            sleepScore = sleepScoreService.computeScore(sleepLog);
+            sleepLabel = sleepScoreService.computeLabel(sleepLog);
         }
 
         // ── NUTRITION (20%) ──────────────────────────────────────────────
