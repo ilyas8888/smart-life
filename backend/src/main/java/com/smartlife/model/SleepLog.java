@@ -16,6 +16,10 @@ public class SleepLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private String type = "PRIMARY_NIGHT";
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnore

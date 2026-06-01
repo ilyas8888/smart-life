@@ -11,5 +11,7 @@ public interface SleepLogRepository extends JpaRepository<SleepLog, Long> {
     List<SleepLog> findByUserIdOrderBySleepDateDesc(Long userId);
     List<SleepLog> findByUserIdAndSleepDateBetweenOrderBySleepDateDesc(Long userId, LocalDate from, LocalDate to);
     Optional<SleepLog> findFirstByUserIdAndSleepDateOrderByIdDesc(Long userId, LocalDate sleepDate);
+    Optional<SleepLog> findFirstByUserIdAndSleepDateAndTypeOrderByIdDesc(Long userId, LocalDate sleepDate, String type);
+    boolean existsByUserIdAndSleepDateAndType(Long userId, LocalDate sleepDate, String type);
     long countByUserId(Long userId);
 }

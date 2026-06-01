@@ -3,7 +3,10 @@ package com.smartlife.controller;
 import com.smartlife.model.SleepLog;
 import com.smartlife.model.User;
 import com.smartlife.repository.SleepLogRepository;
+import com.smartlife.service.SleepScoreService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,6 +26,8 @@ import java.util.Map;
 public class SleepLogController {
 
     private final SleepLogRepository sleepLogRepository;
+    private final CacheManager cacheManager;
+    private final SleepScoreService sleepScoreService;
 
     @GetMapping
     public List<Map<String, Object>> getLogs(@RequestParam(required = false) String from,
@@ -71,6 +76,47 @@ public class SleepLogController {
         return ResponseEntity.status(HttpStatus.CREATED).body(toResponse(sleepLogRepository.save(log)));
     }
 
+    @PutMapping("/nights/{date}")
+    public ResponseEntity<?> upsertNight(@PathVariable String date, @RequestBody Map<String, Object> body) {
+        User user = currentUser();
+        LocalDateTime bedtime = parseDateTime(body.get("bedtime"));
+        LocalDateTime wakeTime = parseDateTime(body.get("wakeTime"));
+        Short quality = parseQuality(body.get("quality"));
+        Short energy = parseQuality(body.get("energy"));
+        Integer wakeUps = parseNonNegativeInt(body.get("wakeUps"));
+
+        if (bedtime == null || wakeTime == null || quality == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "INVALID_SLEEP_LOG"));
+        }
+        if (!wakeTime.isAfter(bedtime)) {
+            return ResponseEntity.badRequest().body(Map.of("error", "WAKE_BEFORE_BED"));
+        }
+
+        LocalDate sleepDate = LocalDate.parse(date);
+
+        // Upsert : chercher l'existant, sinon créer
+        SleepLog log = sleepLogRepository
+                .findFirstByUserIdAndSleepDateAndTypeOrderByIdDesc(user.getId(), sleepDate, "PRIMARY_NIGHT")
+                .orElseGet(() -> SleepLog.builder().user(user).sleepDate(sleepDate).type("PRIMARY_NIGHT").build());
+
+        log.setBedtime(bedtime);
+        log.setWakeTime(wakeTime);
+        log.setSleepDate(sleepDate);
+        log.setQuality(quality);
+        log.setEnergy(energy);
+        log.setWakeUps(wakeUps != null ? wakeUps : 0);
+        log.setFactors(parseFactors(body.get("factors")));
+        log.setNotes(body.get("notes") instanceof String s ? s.trim() : null);
+        if (log.getId() != null) log.setUpdatedAt(LocalDateTime.now());
+
+        SleepLog saved = sleepLogRepository.save(log);
+
+        // Invalider le cache DayScore pour cette date et la précédente
+        invalidateDayScoreCache(user.getId(), sleepDate);
+
+        return ResponseEntity.ok(toResponse(saved));
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateLog(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         User user = currentUser();
@@ -101,7 +147,9 @@ public class SleepLogController {
                     log.setFactors(parseFactors(body.get("factors")));
                     log.setNotes(body.get("notes") instanceof String s ? s.trim() : null);
                     log.setUpdatedAt(LocalDateTime.now());
-                    return ResponseEntity.ok(toResponse(sleepLogRepository.save(log)));
+                    SleepLog saved = sleepLogRepository.save(log);
+                    invalidateDayScoreCache(user.getId(), saved.getSleepDate());
+                    return ResponseEntity.ok(toResponse(saved));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -115,6 +163,7 @@ public class SleepLogController {
                         return ResponseEntity.status(HttpStatus.FORBIDDEN).<Void>build();
                     }
                     sleepLogRepository.delete(log);
+                    invalidateDayScoreCache(user.getId(), log.getSleepDate());
                     return ResponseEntity.noContent().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -134,7 +183,25 @@ public class SleepLogController {
         r.put("factors", log.getFactors());
         r.put("notes", log.getNotes());
         r.put("createdAt", log.getCreatedAt().toString());
+        r.put("score", sleepScoreService.computeScore(log));
         return r;
+    }
+
+    private void invalidateDayScoreCache(Long userId, LocalDate date) {
+        try {
+            Cache todayCache = cacheManager.getCache("day-score-today");
+            Cache historyCache = cacheManager.getCache("day-score-history");
+            if (todayCache != null) {
+                todayCache.evict(userId + ":" + date);
+                todayCache.evict(userId + ":" + date.plusDays(1));
+            }
+            if (historyCache != null) {
+                historyCache.evict(userId + ":" + date);
+                historyCache.evict(userId + ":" + date.plusDays(1));
+            }
+        } catch (Exception e) {
+            // Cache eviction is best-effort
+        }
     }
 
     private User currentUser() {
