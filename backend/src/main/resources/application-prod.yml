@@ -25,12 +25,17 @@ logging:
 management:
   tracing:
     sampling:
-      probability: 0.1
+      probability: 1.0
   otlp:
     tracing:
       endpoint: ${OTLP_ENDPOINT:}
       headers:
         Authorization: "Basic ${OTLP_TOKEN:}"
+
+logging:
+  level:
+    io.opentelemetry: DEBUG
+    io.micrometer.tracing: DEBUG
 
 sentry:
   dsn: ${SENTRY_DSN:}
