@@ -21,16 +21,14 @@ logging:
     com.smartlife: INFO
     org.springframework.security: WARN
     org.springframework.security.oauth2.client: WARN
-    io.opentelemetry: DEBUG
-    io.micrometer.tracing: DEBUG
 
 management:
   tracing:
     sampling:
-      probability: 1.0
+      probability: 0.1
   otlp:
     tracing:
-      endpoint: "https://otlp-gateway-prod-eu-west-2.grafana.net/otlp/v1/traces"
+      endpoint: "${OTLP_ENDPOINT:https://otlp-gateway-prod-eu-west-2.grafana.net/otlp/v1/traces}"
       headers:
         Authorization: "Basic ${OTLP_TOKEN:}"
 
