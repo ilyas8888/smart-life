@@ -21,6 +21,8 @@ logging:
     com.smartlife: INFO
     org.springframework.security: WARN
     org.springframework.security.oauth2.client: WARN
+    io.opentelemetry: DEBUG
+    io.micrometer.tracing: DEBUG
 
 management:
   tracing:
@@ -28,14 +30,9 @@ management:
       probability: 1.0
   otlp:
     tracing:
-      endpoint: ${OTLP_ENDPOINT:}
+      endpoint: "https://otlp-gateway-prod-eu-west-2.grafana.net/otlp/v1/traces"
       headers:
         Authorization: "Basic ${OTLP_TOKEN:}"
-
-logging:
-  level:
-    io.opentelemetry: DEBUG
-    io.micrometer.tracing: DEBUG
 
 sentry:
   dsn: ${SENTRY_DSN:}
