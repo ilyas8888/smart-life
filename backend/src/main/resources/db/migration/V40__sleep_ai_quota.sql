@@ -1,0 +1,3 @@
+ALTER TABLE user_ai_entitlements
+    ADD COLUMN IF NOT EXISTS sleep_ai_used INT NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS sleep_ai_quota INT NOT NULL DEFAULT 5;
