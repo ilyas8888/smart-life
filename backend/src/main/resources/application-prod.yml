@@ -22,6 +22,16 @@ logging:
     org.springframework.security: WARN
     org.springframework.security.oauth2.client: WARN
 
+management:
+  tracing:
+    sampling:
+      probability: 0.1
+  otlp:
+    tracing:
+      endpoint: ${OTLP_ENDPOINT:}
+      headers:
+        Authorization: "Basic ${OTLP_TOKEN:}"
+
 sentry:
   dsn: ${SENTRY_DSN:}
   enabled: false
