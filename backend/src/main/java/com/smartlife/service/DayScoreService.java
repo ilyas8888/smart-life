@@ -37,8 +37,8 @@ public class DayScoreService {
 
         // ── SLEEP (22%) ──────────────────────────────────────────────────
         // sleep_date = wake_time.toLocalDate() → check today then yesterday
-        SleepLog sleepLog = sleepLogRepository.findByUserIdAndSleepDate(userId, date)
-                .orElseGet(() -> sleepLogRepository.findByUserIdAndSleepDate(userId, date.minusDays(1)).orElse(null));
+        SleepLog sleepLog = sleepLogRepository.findFirstByUserIdAndSleepDateOrderByIdDesc(userId, date)
+                .orElseGet(() -> sleepLogRepository.findFirstByUserIdAndSleepDateOrderByIdDesc(userId, date.minusDays(1)).orElse(null));
 
         int sleepScore = 0;
         String sleepLabel = "Non logué";
@@ -129,7 +129,7 @@ public class DayScoreService {
         }
 
         // ── MOOD / DIARY (8%) ────────────────────────────────────────────
-        Optional<DiaryEntry> diaryOpt = diaryEntryRepository.findByUserIdAndEntryDate(userId, date);
+        Optional<DiaryEntry> diaryOpt = diaryEntryRepository.findFirstByUserIdAndEntryDateOrderByIdDesc(userId, date);
         int moodScore = 0;
         String moodLabel = "Pas d'entrée";
         boolean hasMood = diaryOpt.isPresent();

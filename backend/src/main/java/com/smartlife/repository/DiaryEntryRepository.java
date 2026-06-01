@@ -9,6 +9,6 @@ import java.util.Optional;
 
 public interface DiaryEntryRepository extends JpaRepository<DiaryEntry, Long> {
     List<DiaryEntry> findByUserIdOrderByEntryDateDesc(Long userId);
-    Optional<DiaryEntry> findByUserIdAndEntryDate(Long userId, LocalDate date);
+    Optional<DiaryEntry> findFirstByUserIdAndEntryDateOrderByIdDesc(Long userId, LocalDate date);
     long countByUserId(Long userId);
 }
