@@ -40,6 +40,14 @@ public class UserAiEntitlement {
     @Column(nullable = false)
     private Integer monthlyUsed = 0;
 
+    @Column(name = "sleep_ai_used", nullable = false)
+    @Builder.Default
+    private Integer sleepAiUsed = 0;
+
+    @Column(name = "sleep_ai_quota", nullable = false)
+    @Builder.Default
+    private Integer sleepAiQuota = 5;
+
     private Long approvedBy;
     private LocalDateTime approvedAt;
     private LocalDateTime expiresAt;

@@ -1,5 +1,7 @@
 import os
 import json
+import logging
+from contextlib import contextmanager
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,6 +9,8 @@ from pydantic import BaseModel
 import anthropic
 import secrets
 from dotenv import load_dotenv
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 
 load_dotenv()
 
@@ -21,6 +25,57 @@ app.add_middleware(
 
 client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 INTERNAL_SECRET = os.getenv("AI_INTERNAL_SECRET", "")
+ANTHROPIC_MODEL = "claude-sonnet-4-6"
+tracer = trace.get_tracer("smartlife.ai")
+logger = logging.getLogger("smartlife.ai")
+
+
+@contextmanager
+def record_anthropic_call(operation: str):
+    """Record provider telemetry without attaching user content or secrets."""
+    with tracer.start_as_current_span(
+        f"anthropic.{operation}",
+        attributes={
+            "gen_ai.system": "anthropic",
+            "gen_ai.request.model": ANTHROPIC_MODEL,
+            "smartlife.ai.operation": operation,
+        },
+    ) as span:
+        try:
+            yield span
+        except json.JSONDecodeError as exc:
+            span.set_attribute("smartlife.ai.result", "invalid_json")
+            span.record_exception(exc)
+            span.set_status(Status(StatusCode.ERROR))
+            raise
+        except anthropic.APIError as exc:
+            span.set_attribute("smartlife.ai.result", "provider_error")
+            span.record_exception(exc)
+            span.set_status(Status(StatusCode.ERROR))
+            raise
+        except Exception as exc:
+            span.set_attribute("smartlife.ai.result", "error")
+            span.record_exception(exc)
+            span.set_status(Status(StatusCode.ERROR))
+            raise
+
+
+def record_anthropic_success(span, message) -> None:
+    span.set_attribute("smartlife.ai.result", "success")
+    usage = getattr(message, "usage", None)
+    input_tokens = getattr(usage, "input_tokens", None)
+    output_tokens = getattr(usage, "output_tokens", None)
+    if input_tokens is not None:
+        span.set_attribute("gen_ai.usage.input_tokens", input_tokens)
+    if output_tokens is not None:
+        span.set_attribute("gen_ai.usage.output_tokens", output_tokens)
+
+
+def call_anthropic(operation: str, **kwargs):
+    with record_anthropic_call(operation) as span:
+        message = client.messages.create(**kwargs)
+        record_anthropic_success(span, message)
+        return message
 
 
 class PromptPayload(BaseModel):
@@ -47,6 +102,12 @@ class FoodPromptPayload(BaseModel):
 
 class WorkoutPromptPayload(BaseModel):
     prompt: str
+
+
+class SleepAnalysisPayload(BaseModel):
+    analysis_type: str
+    nights: list[dict]
+    user_id: int
 
 
 SYSTEM_PROMPT = """Tu es un assistant intelligent de gestion personnelle ET un expert en nutrition.
@@ -145,8 +206,9 @@ async def process_prompt(payload: PromptPayload, x_internal_key: str = Header(de
     user_message = f"[Date actuelle: {now}]\n\nTexte de l'utilisateur:\n{user_content}"
 
     try:
-        message = client.messages.create(
-            model="claude-sonnet-4-6",
+        message = call_anthropic(
+            "prompt_process",
+            model=ANTHROPIC_MODEL,
             max_tokens=2048,
             system=[{
                 "type": "text",
@@ -156,7 +218,7 @@ async def process_prompt(payload: PromptPayload, x_internal_key: str = Header(de
             messages=[{"role": "user", "content": user_message}],
             extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
         )
-        print(f"Cache: {message.usage}")
+        logger.info("Anthropic prompt completed usage=%s", message.usage)
 
         raw_text = message.content[0].text.strip()
 
@@ -168,8 +230,7 @@ async def process_prompt(payload: PromptPayload, x_internal_key: str = Header(de
         if raw_text.endswith("```"):
             raw_text = raw_text[:-3]
 
-        result = json.loads(raw_text.strip())
-        return result
+        return json.loads(raw_text.strip())
 
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
@@ -281,8 +342,9 @@ async def decompose_foods(payload: FoodDecomposePayload, x_internal_key: str = H
         for f in payload.foods
     )
     try:
-        message = client.messages.create(
-            model="claude-sonnet-4-6",
+        message = call_anthropic(
+            "food_decompose",
+            model=ANTHROPIC_MODEL,
             max_tokens=1024,
             system=FOOD_DECOMPOSE_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": f"Aliments à analyser:\n{foods_text}"}],
@@ -323,8 +385,9 @@ async def extract_food(payload: FoodExtractPayload, x_internal_key: str = Header
         )
 
     try:
-        message = client.messages.create(
-            model="claude-sonnet-4-6",
+        message = call_anthropic(
+            "food_extract",
+            model=ANTHROPIC_MODEL,
             max_tokens=1024,
             system=FOOD_NUTRIENT_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_content}],
@@ -355,8 +418,9 @@ async def extract_food_from_prompt(payload: FoodPromptPayload, x_internal_key: s
         )
 
     try:
-        message = client.messages.create(
-            model="claude-sonnet-4-6",
+        message = call_anthropic(
+            "food_extract",
+            model=ANTHROPIC_MODEL,
             max_tokens=1024,
             system=FOOD_NUTRIENT_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": user_content}],
@@ -393,8 +457,9 @@ async def extract_workout_from_prompt(payload: WorkoutPromptPayload, x_internal_
     if not INTERNAL_SECRET or not secrets.compare_digest(x_internal_key, INTERNAL_SECRET):
         raise HTTPException(status_code=403, detail="Forbidden")
     try:
-        message = client.messages.create(
-            model="claude-sonnet-4-6",
+        message = call_anthropic(
+            "workout_extract",
+            model=ANTHROPIC_MODEL,
             max_tokens=1024,
             system=WORKOUT_SYSTEM_PROMPT,
             messages=[{"role": "user", "content": f"Séance décrite : {payload.prompt}"}],
@@ -413,6 +478,66 @@ async def extract_workout_from_prompt(payload: WorkoutPromptPayload, x_internal_
         raise HTTPException(status_code=502, detail=f"Claude API error: {e}")
 
 
+@app.post("/sleep-analysis")
+async def sleep_analysis(payload: SleepAnalysisPayload, x_internal_key: str = Header(default="")):
+    if not INTERNAL_SECRET or not secrets.compare_digest(x_internal_key, INTERNAL_SECRET):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    analysis_type = payload.analysis_type
+    nights = payload.nights
+
+    if not nights:
+        return {"analysis": "No sleep data available.", "insights": [], "recommendations": []}
+
+    nights_summary = []
+    for night in nights[:30]:
+        duration_h = round(night.get("duration_minutes", 0) / 60, 1)
+        factors = night.get("factors") or []
+        factors_str = ", ".join(factors) if factors else "none"
+        nights_summary.append(
+            f"- {night.get('date', '?')}: {duration_h}h, quality {night.get('quality', '?')}/5, "
+            f"energy {night.get('energy', '?')}/5, wake-ups {night.get('wake_ups', 0)}, "
+            f"factors: [{factors_str}]"
+        )
+    context = "\n".join(nights_summary)
+
+    if analysis_type == "night":
+        system = (
+            "You are a sleep coach. Analyze the user's last night and give 3 specific, actionable insights "
+            "in French. Focus on what to improve tonight. Be direct and concise."
+        )
+        user_msg = f"Analyze my last night:\n{context}"
+    elif analysis_type == "week":
+        system = (
+            "You are a sleep coach. Analyze the user's sleep over the past 7 nights and identify patterns "
+            "in French. Give 3-4 concrete recommendations."
+        )
+        user_msg = f"Analyze my sleep over the past 7 nights:\n{context}"
+    else:
+        system = (
+            "You are a sleep coach. Based on 30 nights of data, create a 7-day personalized sleep "
+            "improvement program in French. Structure it as day-by-day actions."
+        )
+        user_msg = f"Create a 7-day program based on my sleep data:\n{context}"
+
+    message = call_anthropic(
+        "sleep_coach",
+        model="claude-haiku-4-5-20251001",
+        max_tokens=800,
+        system=system,
+        messages=[{"role": "user", "content": user_msg}],
+    )
+    raw_text = message.content[0].text if message.content else ""
+    paragraphs = [paragraph.strip() for paragraph in raw_text.split("\n\n") if paragraph.strip()]
+
+    return {
+        "analysis": raw_text,
+        "insights": paragraphs[:3] if len(paragraphs) >= 3 else paragraphs,
+        "analysis_type": analysis_type,
+        "nights_analyzed": len(nights),
+    }
+
+
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": "claude-sonnet-4-6"}
+    return {"status": "ok", "model": ANTHROPIC_MODEL}

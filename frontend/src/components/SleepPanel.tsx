@@ -444,6 +444,7 @@ export default function SleepPanel() {
   const [planForm, setPlanForm] = useState({ targetBedtime: '23:00', targetWakeTime: '07:00', notes: '' })
   const [envBedtime, setEnvBedtime] = useState('23:00')
   const [envSteps, setEnvSteps] = useState<EnvStep[]>(DEFAULT_ENV_STEPS)
+  const [aiResult, setAiResult] = useState<any>(null)
 
   const { data: logs = [], isLoading } = useQuery<SleepLog[]>({
     queryKey: ['sleep-logs'],
@@ -520,6 +521,28 @@ export default function SleepPanel() {
     mutationFn: (body: object) => api.put('/sleep/environment-plan', body).then(r => r.data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['sleep-env-plan'] }); toast.success('Programme enregistré ✓') },
     onError: () => toast.error('Erreur lors de l\'enregistrement'),
+  })
+
+  const { data: aiStatus } = useQuery({
+    queryKey: ['sleep-ai-status'],
+    queryFn: () => api.get('/sleep/ai/status').then(r => r.data),
+  })
+
+  const aiMutation = useMutation({
+    mutationFn: (analysisType: string) =>
+      api.post('/sleep/ai/analyze', { analysisType }).then(r => r.data),
+    onSuccess: (data) => {
+      setAiResult(data)
+      qc.invalidateQueries({ queryKey: ['sleep-ai-status'] })
+      toast.success('Analyse terminée ✓')
+    },
+    onError: (err: any) => {
+      if (err?.response?.data?.error === 'SLEEP_AI_QUOTA_EXCEEDED') {
+        toast.error('Quota d\'analyses épuisé')
+      } else {
+        toast.error('Erreur lors de l\'analyse')
+      }
+    },
   })
 
   const selectedLog = useMemo(() => logs.find(l => l.sleepDate === selectedDate) ?? null, [logs, selectedDate])
@@ -804,6 +827,15 @@ export default function SleepPanel() {
                 </div>
                 <p className="text-sm text-gray-400 leading-relaxed">{plan}</p>
               </div>
+
+              {/* AI Coach */}
+              <SleepAiCoach
+                status={aiStatus}
+                result={aiResult}
+                loading={aiMutation.isPending}
+                onAnalyze={type => aiMutation.mutate(type)}
+                onClear={() => setAiResult(null)}
+              />
             </>
           )}
         </div>
@@ -1165,6 +1197,95 @@ function SleepRow({ log, onEdit, onDelete }: {
           <Trash2 size={13} />
         </button>
       </div>
+    </div>
+  )
+}
+
+// ─── Sleep AI Coach ───────────────────────────────────────────────────────────
+
+const ANALYSIS_TYPES = [
+  { id: 'night', label: 'Analyser la nuit', desc: 'Insights sur ta dernière nuit', cost: 1 },
+  { id: 'week', label: 'Analyser 7 nuits', desc: 'Patterns de la semaine', cost: 1 },
+  { id: 'program', label: 'Programme 7 jours', desc: 'Plan personnalisé', cost: 2 },
+]
+
+function SleepAiCoach({ status, result, loading, onAnalyze, onClear }: {
+  status: any
+  result: any
+  loading: boolean
+  onAnalyze: (type: string) => void
+  onClear: () => void
+}) {
+  const remaining = status?.remaining ?? 5
+  const used = status?.sleepAiUsed ?? 0
+  const quota = status?.sleepAiQuota ?? 5
+  const isExhausted = remaining <= 0
+
+  return (
+    <div className="glass-card border-white/10 p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles size={15} className="text-indigo-400" />
+          <h2 className="text-sm font-black text-white">Sleep Coach IA</h2>
+        </div>
+        {/* Quota dots */}
+        <div className="flex items-center gap-1.5">
+          {Array.from({ length: quota }).map((_, i) => (
+            <div key={i} className={`w-2 h-2 rounded-full ${i < used ? 'bg-indigo-900' : 'bg-indigo-400'}`} />
+          ))}
+          <span className="text-xs text-gray-400 ml-1">{remaining}/{quota}</span>
+        </div>
+      </div>
+
+      {isExhausted ? (
+        <div className="rounded-xl bg-white/[0.03] border border-white/[0.08] px-4 py-5 text-center space-y-2">
+          <p className="text-sm font-semibold text-white">Quota épuisé</p>
+          <p className="text-xs text-gray-400">Tes 5 analyses gratuites ont été utilisées.</p>
+          <p className="text-xs text-gray-500">Contacte le support pour en obtenir davantage.</p>
+        </div>
+      ) : (
+        <div className="grid gap-2">
+          {ANALYSIS_TYPES.map(type => (
+            <button key={type.id}
+              onClick={() => onAnalyze(type.id)}
+              disabled={loading || remaining < type.cost}
+              className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-colors text-left ${
+                remaining < type.cost
+                  ? 'border-white/[0.06] opacity-40 cursor-not-allowed'
+                  : 'border-indigo-500/30 hover:border-indigo-500/60 hover:bg-indigo-500/5'
+              }`}>
+              <div>
+                <p className="text-sm font-semibold text-white">{type.label}</p>
+                <p className="text-xs text-gray-400">{type.desc}</p>
+              </div>
+              <span className="text-xs text-indigo-300 font-medium shrink-0 ml-3">
+                {type.cost} crédit{type.cost > 1 ? 's' : ''}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {loading && (
+        <div className="flex items-center justify-center gap-2 py-3">
+          <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+          <span className="text-xs text-gray-400">Analyse en cours...</span>
+        </div>
+      )}
+
+      {result && !loading && (
+        <div className="rounded-xl bg-indigo-950/40 border border-indigo-500/20 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-indigo-300">
+              Analyse · {result.nights_analyzed} nuit{result.nights_analyzed > 1 ? 's' : ''}
+            </span>
+            <button onClick={onClear} className="text-gray-500 hover:text-gray-300 text-xs">✕</button>
+          </div>
+          <div className="text-sm text-gray-300 leading-relaxed whitespace-pre-wrap">
+            {result.analysis}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
