@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  Moon, Plus, Star, Trash2, Edit2, X, Clock, TrendingUp, Bed,
+  Moon, Star, Trash2, Edit2, X, Clock, TrendingUp, Bed,
   Sunrise, Coffee, Smartphone, Dumbbell, ChevronLeft, ChevronRight,
   Utensils, Volume2, ThermometerSun, Brain, Waves, Sparkles,
   CheckCircle2, Zap, BarChart3, Calendar, Leaf,
@@ -206,7 +206,6 @@ function timeStringToOffset(timeStr: string, isNextDay: boolean): number {
 }
 
 function SleepTimeline({ form }: { form: FormState }) {
-  const bedIsNextDay = form.bedDate > form.wakeDate ? false : form.bedTime < '20:00' && form.bedDate === form.wakeDate
   const bedOffset = timeStringToOffset(form.bedTime, false)
   const wakeOffset = timeStringToOffset(form.wakeTime, true)
 
@@ -469,14 +468,6 @@ export default function SleepPanel() {
   }, [])
 
   // When date changes, reset form for that date
-  const handleDateChange = useCallback((date: string) => {
-    setSelectedDate(date)
-    const log = logs.find(l => l.sleepDate === date)
-    if (log) setForm(logToForm(log))
-    else setForm(defaultForm(date))
-    setShowDetails(false)
-  }, [logs])
-
   function handleUpsert() {
     upsertMutation.mutate({
       date: selectedDate,
