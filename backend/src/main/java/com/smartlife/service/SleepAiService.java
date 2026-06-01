@@ -40,10 +40,9 @@ public class SleepAiService {
     private String aiInternalSecret;
 
     public Map<String, Object> analyzeAndConsume(User user, String analysisType) {
-        UserAiEntitlement entitlement = entitlementRepository.findByUserId(user.getId()).orElse(null);
-        if (entitlement == null) {
-            throw new IllegalStateException("Entitlement not found");
-        }
+        UserAiEntitlement entitlement = entitlementRepository.findByUserId(user.getId())
+                .orElseGet(() -> entitlementRepository.save(
+                        UserAiEntitlement.builder().user(user).build()));
 
         int used = entitlement.getSleepAiUsed() != null ? entitlement.getSleepAiUsed() : 0;
         int quota = entitlement.getSleepAiQuota() != null ? entitlement.getSleepAiQuota() : 5;

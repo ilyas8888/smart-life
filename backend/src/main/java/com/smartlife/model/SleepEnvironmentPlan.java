@@ -3,6 +3,8 @@ package com.smartlife.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -24,6 +26,7 @@ public class SleepEnvironmentPlan {
     @Column(name = "target_bedtime")
     private LocalTime targetBedtime;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb", nullable = false)
     private String steps;
 
