@@ -7,7 +7,7 @@ COPY src ./src
 RUN mvn package -DskipTests -q
 
 # Stage 2: Pre-build Keycloak with postgres provider (faster container startup)
-FROM quay.io/keycloak/keycloak:24.0.4 AS keycloak-build
+FROM keycloak/keycloak:24.0.4 AS keycloak-build
 RUN /opt/keycloak/bin/kc.sh build --db=postgres
 
 # Stage 3: Runtime — Java + Nginx + Supervisor + Keycloak + Spring Boot
