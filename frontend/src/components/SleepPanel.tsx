@@ -556,11 +556,7 @@ export default function SleepPanel() {
   const liveScore = useMemo(() => computeLiveScore(form), [form])
 
   const navigateDate = useCallback((delta: number) => {
-    setSelectedDate(prev => {
-      const next = offsetDays(prev, delta)
-      if (next > todayLocalISO()) return prev
-      return next
-    })
+    setSelectedDate(prev => offsetDays(prev, delta))
   }, [])
 
   // When date changes, reset form for that date
@@ -620,7 +616,7 @@ export default function SleepPanel() {
         </div>
         <button
           onClick={() => navigateDate(1)}
-          disabled={selectedDate >= yesterdayLocalISO()}
+          disabled={false}
           className="p-2 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-colors disabled:opacity-30"
         >
           <ChevronRight size={18} />
