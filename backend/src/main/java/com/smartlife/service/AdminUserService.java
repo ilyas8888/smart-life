@@ -102,7 +102,7 @@ public class AdminUserService {
             if (val == null) {
                 line.append("");
             } else {
-                String s = val.toString().replace("\"", "\"\"");
+                String s = neutralizeCsvFormula(val.toString()).replace("\"", "\"\"");
                 if (s.contains(",") || s.contains("\"") || s.contains("\n")) {
                     line.append("\"").append(s).append("\"");
                 } else {
@@ -111,5 +111,16 @@ public class AdminUserService {
             }
         }
         return line.toString();
+    }
+
+    private String neutralizeCsvFormula(String value) {
+        if (value == null || value.isBlank()) {
+            return value;
+        }
+        char first = value.charAt(0);
+        if (first == '=' || first == '+' || first == '-' || first == '@' || first == '\t' || first == '\r') {
+            return "'" + value;
+        }
+        return value;
     }
 }

@@ -15,8 +15,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Date;
-import java.util.UUID;
 import java.util.function.Function;
 
 @Service
@@ -41,7 +42,9 @@ public class JwtService {
     }
 
     public String generateRefreshToken() {
-        return UUID.randomUUID().toString();
+        byte[] bytes = new byte[32];
+        new SecureRandom().nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
