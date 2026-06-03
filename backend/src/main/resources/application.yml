@@ -73,6 +73,7 @@ vapid:
   subject: ${VAPID_SUBJECT:mailto:admin@smartlife.app}
 
 app:
+  frontend-origin: https://ilyas8888.github.io
   mail:
     security-alert-recipient: ${SECURITY_ALERT_EMAIL:}
   otp:
