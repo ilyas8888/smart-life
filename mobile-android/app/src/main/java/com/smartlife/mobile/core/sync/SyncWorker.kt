@@ -63,6 +63,7 @@ class SyncWorker @AssistedInject constructor(
                 val body = action.body.toRequestBody("application/json".toMediaType())
                 val request = Request.Builder()
                     .url("${BuildConfig.API_BASE_URL}/api${action.endpoint}")
+                    .addHeader("X-Idempotency-Key", action.id)
                     .method(action.method, body)
                     .build()
                 val response = httpClient.newCall(request).execute()
