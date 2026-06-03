@@ -106,10 +106,10 @@ const computeScale = (
   return (q * getPortionGrams(portions, unit)) / 100
 }
 const headerBg: Record<string, string> = {
-  BREAKFAST: 'bg-yellow-900/20',
-  LUNCH: 'bg-green-900/20',
-  DINNER: 'bg-blue-900/20',
-  SNACK: 'bg-white/[0.03]',
+  BREAKFAST: 'bg-amber-50 dark:bg-yellow-900/20',
+  LUNCH: 'bg-green-50 dark:bg-green-900/20',
+  DINNER: 'bg-blue-50 dark:bg-blue-900/20',
+  SNACK: 'bg-gray-50 dark:bg-white/[0.03]',
 }
 const headerBorder: Record<string, string> = {
   BREAKFAST: 'border-l-2 border-yellow-400',
@@ -280,7 +280,7 @@ function NutritionDashboard({
   const circumference = 2 * Math.PI * radius
   const dash = circumference * Math.min(caloriePercent, 100) / 100
   const macros = [
-    { label: 'Prot&#xe9;ines', value: protein, goal: goals.proteinG, color: 'fill-blue-500' },
+    { label: 'Protéines', value: protein, goal: goals.proteinG, color: 'fill-blue-500' },
     { label: 'Glucides', value: carbs, goal: goals.carbsG, color: 'fill-amber-500' },
     { label: 'Lipides', value: fat, goal: goals.fatG, color: 'fill-rose-500' },
     { label: 'Fibres', value: fiber, goal: goals.fiberG, color: 'fill-emerald-500' },
@@ -291,7 +291,7 @@ function NutritionDashboard({
       <div className="card flex flex-col items-center justify-center">
         <div className="relative w-40 h-40">
           <svg viewBox="0 0 160 160" className="-rotate-90 w-40 h-40">
-            <circle cx="80" cy="80" r={radius} fill="none" strokeWidth="14" className="stroke-gray-700" />
+            <circle cx="80" cy="80" r={radius} fill="none" strokeWidth="14" className="stroke-gray-200 dark:stroke-gray-700" />
             <circle
               cx="80"
               cy="80"
@@ -304,7 +304,7 @@ function NutritionDashboard({
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-3xl font-black text-white">{Math.round(calories)}</p>
+            <p className="text-3xl font-black text-gray-900 dark:text-white">{Math.round(calories)}</p>
             <p className="text-xs text-gray-500">kcal</p>
           </div>
         </div>
@@ -317,14 +317,14 @@ function NutritionDashboard({
           return (
             <div key={macro.label}>
               <div className="flex items-center gap-3 mb-1.5">
-                <p className="text-sm font-medium text-gray-300 flex-1">{macro.label}</p>
-                <p className="text-xs text-gray-400">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 flex-1">{macro.label}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {formatValue(macro.value)} / {macro.goal}g
                 </p>
-                <p className="text-xs text-gray-500 w-9 text-right">{Math.round(percent)}%</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 w-9 text-right">{Math.round(percent)}%</p>
               </div>
               <svg viewBox="0 0 100 8" className="h-2 w-full rounded-full overflow-hidden" preserveAspectRatio="none" aria-hidden="true">
-                <rect x="0" y="0" width="100" height="8" rx="4" className="fill-gray-700" />
+                <rect x="0" y="0" width="100" height="8" rx="4" className="fill-gray-200 dark:fill-gray-700" />
                 <rect x="0" y="0" width={Math.min(percent, 100)} height="8" rx="4" className={macro.color} />
               </svg>
             </div>
@@ -391,17 +391,17 @@ function FoodLogRow({ log, onDelete }: { log: FoodLog; onDelete: (id: number) =>
     <div className="py-3 border-b border-gray-50 border-white/10 last:border-0">
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white truncate">{log.foodItem}</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{log.foodItem}</p>
           {log.quantity && <p className="text-xs text-gray-500 mt-0.5">{log.quantity}</p>}
           {log.notes && <p className="text-xs text-gray-500 mt-1 line-clamp-1">{log.notes}</p>}
           <div className="flex flex-wrap gap-1.5 mt-2">
-            <span className="text-xs bg-blue-900/30 text-blue-300 px-1.5 py-0.5 rounded-md font-semibold border border-blue-500/20">
+            <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-md font-semibold border border-blue-200 dark:border-blue-500/20">
               P {formatValue(toNumber(log.proteinG))}
             </span>
-            <span className="text-xs bg-amber-900/30 text-amber-300 px-1.5 py-0.5 rounded-md font-semibold border border-amber-500/20">
+            <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-md font-semibold border border-amber-200 dark:border-amber-500/20">
               G {formatValue(toNumber(log.carbsG))}
             </span>
-            <span className="text-xs bg-rose-900/30 text-rose-300 px-1.5 py-0.5 rounded-md font-semibold border border-rose-500/20">
+            <span className="text-xs bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded-md font-semibold border border-rose-200 dark:border-rose-500/20">
               L {formatValue(toNumber(log.fatG))}
             </span>
           </div>
@@ -413,7 +413,7 @@ function FoodLogRow({ log, onDelete }: { log: FoodLog; onDelete: (id: number) =>
           )}
         </div>
         <div className="shrink-0 flex items-start gap-2">
-          <p className="text-base font-bold text-white">
+          <p className="text-base font-bold text-gray-900 dark:text-white">
             {Math.round(toNumber(log.calories))} <span className="text-xs font-normal text-gray-500">kcal</span>
           </p>
           <button type="button" onClick={() => onDelete(log.id)}
@@ -575,7 +575,7 @@ function MyFoodsView() {
     <div>
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
-          <h3 className="text-lg font-black text-white">Mes Aliments</h3>
+          <h3 className="text-lg font-black text-gray-900 dark:text-white">Mes Aliments</h3>
           <p className="text-xs text-gray-500">Aliments et recettes personnalisés pour 100g.</p>
         </div>
         <button type="button" onClick={openCreate} className="btn-primary flex items-center gap-2 text-sm">
@@ -586,7 +586,7 @@ function MyFoodsView() {
         <div className="text-center py-12 text-gray-500">Chargement...</div>
       ) : userFoods.length === 0 ? (
         <div className="glass-card text-center py-10">
-          <p className="text-sm font-semibold text-white">Aucun aliment personnalisé</p>
+          <p className="text-sm font-semibold text-gray-900 dark:text-white">Aucun aliment personnalisé</p>
           <p className="text-xs text-gray-500 mt-1">Créez vos recettes maison et aliments fréquents.</p>
         </div>
       ) : (
@@ -597,7 +597,7 @@ function MyFoodsView() {
               <div key={food.id} className="card">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h4 className="font-black text-white truncate">{food.name}</h4>
+                    <h4 className="font-black text-gray-900 dark:text-white truncate">{food.name}</h4>
                     <p className="text-sm text-amber-400 font-semibold mt-1">{food.calories} kcal / 100g</p>
                   </div>
                   <div className="flex gap-1 shrink-0">
@@ -610,10 +610,10 @@ function MyFoodsView() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-3">
-                  <span className="text-xs bg-blue-900/30 text-blue-300 px-1.5 py-0.5 rounded border border-blue-500/20">P {formatValue(toNumber(food.proteinG))}</span>
-                  <span className="text-xs bg-amber-900/30 text-amber-300 px-1.5 py-0.5 rounded border border-amber-500/20">G {formatValue(toNumber(food.carbsG))}</span>
-                  <span className="text-xs bg-rose-900/30 text-rose-300 px-1.5 py-0.5 rounded border border-rose-500/20">L {formatValue(toNumber(food.fatG))}</span>
-                  <span className="text-xs bg-emerald-900/30 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/20">F {formatValue(toNumber(food.fiberG))}</span>
+                  <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-500/20">P {formatValue(toNumber(food.proteinG))}</span>
+                  <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-500/20">G {formatValue(toNumber(food.carbsG))}</span>
+                  <span className="text-xs bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-500/20">L {formatValue(toNumber(food.fatG))}</span>
+                  <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-500/20">F {formatValue(toNumber(food.fiberG))}</span>
                 </div>
                 {portions.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-3">
@@ -1112,7 +1112,7 @@ export default function FoodLogsPanel() {
     <div>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="font-black text-white text-2xl flex items-center gap-2">
+          <h2 className="font-black text-gray-900 dark:text-white text-2xl flex items-center gap-2">
             <UtensilsCrossed className="text-primary-600" />
             Alimentation
           </h2>
@@ -1146,8 +1146,8 @@ export default function FoodLogsPanel() {
           <button key={tab} type="button" onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${
               activeTab === tab
-                ? 'bg-white/10 text-white'
-                : 'text-gray-500 hover:text-gray-300'
+                ? 'bg-white/10 text-gray-900 dark:text-white'
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             }`}>
             {label}
           </button>
@@ -1216,7 +1216,7 @@ export default function FoodLogsPanel() {
                 <section key={mealType} className="mb-4 glass-card border-white/10  overflow-hidden">
                   <div className={`flex items-center justify-between px-4 py-3 border-b border-white/[0.06] cursor-pointer select-none ${headerBg[mealType]} ${headerBorder[mealType]}`}
                     onClick={() => toggleMeal(mealType)}>
-                    <h3 className="text-sm font-semibold text-gray-100 flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                       {collapsedMeals.has(mealType)
                         ? <ChevronRight size={15} className="text-gray-500" />
                         : <ChevronDown size={15} className="text-gray-500" />}
@@ -1224,7 +1224,7 @@ export default function FoodLogsPanel() {
                       {mealLabels[mealType]}
                       <span className="text-xs font-normal text-gray-500">{logs.length} repas</span>
                     </h3>
-                    <span className="text-sm font-semibold text-gray-400">{Math.round(totalCal)} kcal</span>
+                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">{Math.round(totalCal)} kcal</span>
                   </div>
                   {!collapsedMeals.has(mealType) && (
                     <div className="px-4">
