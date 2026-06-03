@@ -18,12 +18,15 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const isDark = useThemeStore((s) => s.isDark)
+  const syncSystemTheme = useThemeStore((s) => s.syncSystemTheme)
   const navigate = useNavigate()
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDark)
-  }, [isDark])
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    syncSystemTheme()
+    media.addEventListener('change', syncSystemTheme)
+    return () => media.removeEventListener('change', syncSystemTheme)
+  }, [syncSystemTheme])
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Lightning bolt — SmartLife icon -->
+    <path
+        android:fillColor="#6366F1"
+        android:pathData="M62,18 L80,52 L65,52 L46,90 L28,56 L43,56 Z" />
+
+    <!-- Inner highlight -->
+    <path
+        android:fillColor="#818CF8"
+        android:pathData="M62,18 L75,48 L62,48 L46,90 L44,82 L58,52 L65,52 Z" />
+
+</vector>

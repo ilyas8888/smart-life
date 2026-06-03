@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- EncryptedSharedPreferences est lié au Keystore de l'appareil :
+             la clé n'est pas exportable → exclure du backup cloud -->
+        <exclude domain="sharedpref" path="smartlife_secure_tokens.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <!-- Exclure aussi lors des transferts appareil-à-appareil -->
+        <exclude domain="sharedpref" path="smartlife_secure_tokens.xml" />
+    </device-transfer>
+</data-extraction-rules>

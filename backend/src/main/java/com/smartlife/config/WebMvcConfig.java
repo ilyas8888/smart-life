@@ -10,10 +10,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final RateLimitInterceptor rateLimitInterceptor;
+    private final IdempotencyInterceptor idempotencyInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(rateLimitInterceptor)
                 .addPathPatterns("/api/prompt");
+        registry.addInterceptor(idempotencyInterceptor)
+                .addPathPatterns("/api/tasks", "/api/notes", "/api/reminders");
     }
 }

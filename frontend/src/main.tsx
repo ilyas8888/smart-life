@@ -7,8 +7,6 @@ import * as Sentry from '@sentry/react'
 import App from './App'
 import './index.css'
 
-document.documentElement.classList.add('dark')
-
 Sentry.init({
   dsn: import.meta.env.VITE_SENTRY_DSN,
   environment: import.meta.env.MODE,

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- EncryptedSharedPreferences est lié au Keystore de l'appareil :
+         si restauré sur un autre appareil le déchiffrement échoue → exclure -->
+    <exclude domain="sharedpref" path="smartlife_secure_tokens.xml" />
+</full-backup-content>
