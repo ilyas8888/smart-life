@@ -66,10 +66,10 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         }
 
         String accessToken = jwtService.generateToken(user);
-        String refreshToken = UUID.randomUUID().toString();
+        String refreshToken = jwtService.generateRefreshToken();
         refreshTokenRepository.save(RefreshToken.builder()
                 .user(user)
-                .token(refreshToken)
+                .token(jwtService.hashToken(refreshToken))
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .build());
         otpService.sendOAuth2LoginNotification(user, clientIp(request));

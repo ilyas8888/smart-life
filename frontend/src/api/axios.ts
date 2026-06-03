@@ -17,7 +17,7 @@ api.interceptors.response.use(
     const originalRequest = error.config
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true
-      const { refreshToken, setToken, logout } = useAuthStore.getState()
+      const { refreshToken, email, firstName, lastName, setAuth, logout } = useAuthStore.getState()
       if (!refreshToken) {
         logout()
         window.location.href = import.meta.env.BASE_URL + 'login'
@@ -26,7 +26,7 @@ api.interceptors.response.use(
 
       try {
         const { data } = await axios.post(`${import.meta.env.VITE_API_URL ?? ''}/api/auth/refresh`, { refreshToken })
-        setToken(data.accessToken)
+        setAuth(data.accessToken, data.refreshToken ?? refreshToken, email ?? '', firstName, lastName)
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
         return api(originalRequest)
       } catch {
