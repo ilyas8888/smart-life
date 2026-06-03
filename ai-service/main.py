@@ -209,7 +209,7 @@ async def process_prompt(payload: PromptPayload, x_internal_key: str = Header(de
         message = call_anthropic(
             "prompt_process",
             model=ANTHROPIC_MODEL,
-            max_tokens=2048,
+            max_tokens=4096,
             system=[{
                 "type": "text",
                 "text": SYSTEM_PROMPT,

@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.util.retry.Retry;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -559,7 +558,7 @@ public class AiService {
                 .bodyValue(body)
                 .retrieve()
                 .bodyToMono(Map.class)
-                .retryWhen(Retry.fixedDelay(2, Duration.ofSeconds(8)))
+                .timeout(Duration.ofSeconds(90))
                 .block();
     }
 
