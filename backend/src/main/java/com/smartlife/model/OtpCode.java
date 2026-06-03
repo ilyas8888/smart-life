@@ -20,8 +20,12 @@ public class OtpCode {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(nullable = false, length = 6)
-    private String code;
+    @Column(name = "code_hash", nullable = false, length = 64)
+    private String codeHash;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private int attempts = 0;
 
     @Column(nullable = false)
     private LocalDateTime expiresAt;
