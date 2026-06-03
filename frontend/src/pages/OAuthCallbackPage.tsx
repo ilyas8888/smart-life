@@ -16,7 +16,7 @@ export default function OAuthCallbackPage() {
 
     if (token) {
       setAuth(token, refreshToken, email, firstName, lastName)
-      window.location.replace(import.meta.env.BASE_URL)
+      navigate('/', { replace: true })
     } else {
       navigate('/login', { replace: true })
     }

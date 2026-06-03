@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 
 interface AuthState {
   token: string | null
@@ -12,14 +13,21 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>()(
-  (set) => ({
-    token: null,
-    refreshToken: null,
-    email: null,
-    firstName: null,
-    lastName: null,
-    setAuth: (token, refreshToken, email, firstName, lastName) => set({ token, refreshToken, email, firstName, lastName }),
-    setToken: (token) => set({ token }),
-    logout: () => set({ token: null, refreshToken: null, email: null, firstName: null, lastName: null }),
-  })
+  persist(
+    (set) => ({
+      token: null,
+      refreshToken: null,
+      email: null,
+      firstName: null,
+      lastName: null,
+      setAuth: (token, refreshToken, email, firstName, lastName) =>
+        set({ token, refreshToken, email, firstName, lastName }),
+      setToken: (token) => set({ token }),
+      logout: () => set({ token: null, refreshToken: null, email: null, firstName: null, lastName: null }),
+    }),
+    {
+      name: 'smartlife-auth',
+      storage: createJSONStorage(() => sessionStorage),
+    }
+  )
 )
