@@ -65,6 +65,11 @@ public class AuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
+        if (otpService.isEnabled() && !user.isEmailVerified()) {
+            otpService.generateAndSend(user);
+            auditLogService.log(user.getId(), "LOGIN_OTP_REQUIRED", "USER", user.getId(), ip);
+            return Map.of("step", "OTP_REQUIRED", "userId", user.getId());
+        }
         auditLogService.log(user.getId(), "LOGIN", "USER", user.getId(), ip);
         return authResponse(user);
     }
@@ -82,13 +87,31 @@ public class AuthService {
         return authResponse(user);
     }
 
+    @Transactional
     public Map<String, String> refresh(String refreshToken) {
-        var token = refreshTokenRepository.findByToken(refreshToken)
-                .orElseThrow(() -> new RuntimeException("Refresh token invalide ou expire"));
-        if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (refreshToken == null || refreshToken.isBlank()) {
             throw new RuntimeException("Refresh token invalide ou expire");
         }
-        return Map.of("accessToken", jwtService.generateToken(token.getUser()));
+        var token = refreshTokenRepository.findByToken(jwtService.hashToken(refreshToken))
+                .orElseThrow(() -> new RuntimeException("Refresh token invalide ou expire"));
+        if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
+            refreshTokenRepository.delete(token);
+            throw new RuntimeException("Refresh token invalide ou expire");
+        }
+        var user = token.getUser();
+        refreshTokenRepository.delete(token);
+
+        var newRefreshToken = jwtService.generateRefreshToken();
+        refreshTokenRepository.save(RefreshToken.builder()
+                .user(user)
+                .token(jwtService.hashToken(newRefreshToken))
+                .expiresAt(LocalDateTime.now().plusDays(7))
+                .build());
+
+        return Map.of(
+                "accessToken", jwtService.generateToken(user),
+                "refreshToken", newRefreshToken
+        );
     }
 
     @Transactional
@@ -107,7 +130,7 @@ public class AuthService {
         var refreshToken = jwtService.generateRefreshToken();
         refreshTokenRepository.save(RefreshToken.builder()
                 .user(user)
-                .token(refreshToken)
+                .token(jwtService.hashToken(refreshToken))
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .build());
         return new AuthResponse(accessToken, refreshToken, user.getEmail(), user.getFirstName(), user.getLastName());
