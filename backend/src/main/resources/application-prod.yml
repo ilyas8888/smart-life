@@ -8,6 +8,8 @@ spring:
 app:
   mail:
     security-alert-recipient: ${SECURITY_ALERT_EMAIL:}
+  cookie:
+    secure: true
 
 keycloak:
   admin:

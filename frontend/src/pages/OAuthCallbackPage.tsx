@@ -15,7 +15,7 @@ export default function OAuthCallbackPage() {
     const lastName = params.get('lastName') ?? ''
 
     if (token) {
-      setAuth(token, refreshToken, email, firstName, lastName)
+      setAuth(token, email, firstName, lastName)
       navigate('/', { replace: true })
     } else {
       navigate('/login', { replace: true })
