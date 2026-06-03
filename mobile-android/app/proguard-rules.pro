@@ -1,21 +1,44 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# SmartLife ProGuard Rules
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Retrofit + OkHttp
+-keepattributes Signature
+-keepattributes Exceptions
+-keep class retrofit2.** { *; }
+-keepclasseswithmembers class * {
+    @retrofit2.http.* <methods>;
+}
+-dontwarn retrofit2.**
+-dontwarn okhttp3.**
+-dontwarn okio.**
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Gson — keep data classes used in API
+-keep class com.smartlife.mobile.feature.**.data.model.** { *; }
+-keep class com.smartlife.mobile.core.sync.OfflineAction { *; }
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
+# Hilt
+-keep class dagger.hilt.** { *; }
+-keep class javax.inject.** { *; }
+-dontwarn dagger.**
+
+# WorkManager
+-keep class androidx.work.** { *; }
+-keep class com.smartlife.mobile.core.sync.SyncWorker { *; }
+
+# Kotlin coroutines
+-keepclassmembernames class kotlinx.** {
+    volatile <fields>;
+}
+-dontwarn kotlinx.coroutines.**
+
+# Compose — keep lambda classes
+-keep class androidx.compose.** { *; }
+-dontwarn androidx.compose.**
+
+# DataStore
+-keep class androidx.datastore.** { *; }

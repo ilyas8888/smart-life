@@ -13,3 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Firebase debug logs (contiennent email et infos de diagnostic)
+firebase-debug.log
+firebase-debug.log.*
+.firebase/
