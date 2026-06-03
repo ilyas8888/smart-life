@@ -2,7 +2,8 @@ import axios from 'axios'
 import { useAuthStore } from '../store/authStore'
 
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL ?? ''}/api`
+  baseURL: `${import.meta.env.VITE_API_URL ?? ''}/api`,
+  withCredentials: true,
 })
 
 api.interceptors.request.use((config) => {
@@ -20,19 +21,14 @@ api.interceptors.response.use(
     const originalRequest = error.config
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true
-      const { refreshToken, email, firstName, lastName, setAuth, logout } = useAuthStore.getState()
-      if (!refreshToken) {
-        logout()
-        window.location.href = import.meta.env.BASE_URL + 'login'
-        return Promise.reject(error)
-      }
+      const { email, firstName, lastName, setAuth, logout } = useAuthStore.getState()
 
       try {
         if (!refreshPromise) {
           refreshPromise = axios
-            .post(`${import.meta.env.VITE_API_URL ?? ''}/api/auth/refresh`, { refreshToken })
+            .post(`${import.meta.env.VITE_API_URL ?? ''}/api/auth/refresh`, {}, { withCredentials: true })
             .then(({ data }) => {
-              setAuth(data.accessToken, data.refreshToken ?? refreshToken, email ?? '', firstName, lastName)
+              setAuth(data.accessToken, email ?? '', firstName, lastName)
               return data.accessToken as string
             })
             .finally(() => { refreshPromise = null })
