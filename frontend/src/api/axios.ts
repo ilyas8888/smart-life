@@ -11,6 +11,9 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+// Single shared promise to prevent concurrent refresh races (token rotation)
+let refreshPromise: Promise<string> | null = null
+
 api.interceptors.response.use(
   (r) => r,
   async (error) => {
@@ -25,9 +28,17 @@ api.interceptors.response.use(
       }
 
       try {
-        const { data } = await axios.post(`${import.meta.env.VITE_API_URL ?? ''}/api/auth/refresh`, { refreshToken })
-        setAuth(data.accessToken, data.refreshToken ?? refreshToken, email ?? '', firstName, lastName)
-        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
+        if (!refreshPromise) {
+          refreshPromise = axios
+            .post(`${import.meta.env.VITE_API_URL ?? ''}/api/auth/refresh`, { refreshToken })
+            .then(({ data }) => {
+              setAuth(data.accessToken, data.refreshToken ?? refreshToken, email ?? '', firstName, lastName)
+              return data.accessToken as string
+            })
+            .finally(() => { refreshPromise = null })
+        }
+        const newToken = await refreshPromise
+        originalRequest.headers.Authorization = `Bearer ${newToken}`
         return api(originalRequest)
       } catch {
         logout()
