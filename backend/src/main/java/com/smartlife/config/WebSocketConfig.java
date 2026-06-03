@@ -3,9 +3,11 @@ package com.smartlife.config;
 import com.smartlife.security.CustomUserDetailsService;
 import com.smartlife.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageDeliveryException;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.messaging.simp.stomp.StompCommand;
@@ -26,6 +28,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
 
+    @Value("${app.frontend-origin:https://ilyas8888.github.io}")
+    private String frontendOrigin;
+
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         config.enableSimpleBroker("/topic", "/queue");
@@ -35,7 +40,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws").setAllowedOriginPatterns("*");
+        registry.addEndpoint("/ws").setAllowedOrigins(frontendOrigin);
     }
 
     @Override
@@ -57,6 +62,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                                         userDetails, null, userDetails.getAuthorities()));
                             }
                         } catch (Exception ignored) {}
+                    }
+                    if (accessor.getUser() == null) {
+                        throw new MessageDeliveryException("Unauthenticated WebSocket CONNECT");
                     }
                 }
                 return message;
