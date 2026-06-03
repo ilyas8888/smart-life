@@ -33,11 +33,12 @@ public class AuthController {
     @Value("${KEYCLOAK_CLIENT_ID:smartlife-backend}")
     private String keycloakClientId;
 
+    @Value("${app.public-backend-url:https://ilyas8888-smartlife-backend.hf.space}")
+    private String publicBackendUrl;
+
     @GetMapping("/keycloak-register")
-    public void keycloakRegister(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        String scheme = request.getHeader("X-Forwarded-Proto") != null ? request.getHeader("X-Forwarded-Proto") : request.getScheme();
-        String host = request.getHeader("X-Forwarded-Host") != null ? request.getHeader("X-Forwarded-Host") : request.getServerName();
-        String redirectUri = scheme + "://" + host + "/login/oauth2/code/keycloak";
+    public void keycloakRegister(HttpServletResponse response) throws IOException {
+        String redirectUri = publicBackendUrl.replaceAll("/+$", "") + "/login/oauth2/code/keycloak";
         String issuerBase = kcHostname.startsWith("localhost") ? "http://" + kcHostname : "https://" + kcHostname;
         String url = issuerBase + "/realms/smartlife/protocol/openid-connect/registrations"
                 + "?response_type=code"
