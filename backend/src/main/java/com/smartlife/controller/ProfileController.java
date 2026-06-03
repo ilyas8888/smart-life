@@ -118,7 +118,7 @@ public class ProfileController {
             @AuthenticationPrincipal User user) {
 
         String avatarData = trimOrNull(body.get("avatarData"));
-        if (avatarData == null || !avatarData.startsWith("data:image/")) {
+        if (avatarData == null || !avatarData.matches("^data:image/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$")) {
             return ResponseEntity.badRequest().body(Map.of("error", "INVALID_IMAGE"));
         }
         // Limit: ~500KB base64 ≈ ~375KB binary (plenty for a 200×200 JPEG)
