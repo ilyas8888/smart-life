@@ -40,3 +40,7 @@ monitoring/alloy-config.alloy
 monitoring/prometheus.yml
 
 mobile-android/app/google-services.json
+
+# Firebase CLI debug logs
+firebase-debug.log
+.firebase/
