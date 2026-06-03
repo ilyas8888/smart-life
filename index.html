@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="SmartLife" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" type="image/svg+xml" href="/smart-life/smartlife-icon.svg" />
+    <link rel="apple-touch-icon" href="/smart-life/smartlife-icon.svg" />
+    <link rel="manifest" href="/smart-life/manifest.webmanifest" />
+    <title>SmartLife - Gestionnaire Personnel Intelligent</title>
+    <script>
+      // Apply the saved theme before React paints to avoid a dark/light flash.
+      (function() {
+        var raw = localStorage.getItem('smartlife-theme');
+        var preference = 'system';
+        try {
+          var parsed = raw ? JSON.parse(raw) : null;
+          if (parsed && parsed.state) {
+            preference = parsed.state.preference ||
+              (typeof parsed.state.isDark === 'boolean' ? (parsed.state.isDark ? 'dark' : 'light') : preference);
+          }
+        } catch (_) {}
+        var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var isDark = preference === 'dark' || (preference === 'system' && systemDark);
+        document.documentElement.classList.toggle('dark', isDark);
+        document.documentElement.dataset.theme = isDark ? 'dark' : 'light';
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', isDark ? '#0f172a' : '#f8fafc');
+      })();
+
+      // Restore path saved by 404.html SPA redirect
+      (function() {
+        var redirect = sessionStorage.getItem('spa_redirect');
+        if (redirect) {
+          sessionStorage.removeItem('spa_redirect');
+          window.history.replaceState(null, '', '/smart-life' + redirect);
+        }
+      })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="/smart-life/assets/index-Dy7Xh94m.js"></script>
+    <link rel="stylesheet" crossorigin href="/smart-life/assets/index-BCWuLFhu.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
