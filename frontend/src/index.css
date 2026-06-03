@@ -49,6 +49,21 @@
     min-width: 0;
   }
 
+  select {
+    color-scheme: light;
+    background-color: var(--surface-muted);
+    color: var(--text-primary);
+  }
+
+  :root.dark select {
+    color-scheme: dark;
+  }
+
+  select option {
+    background-color: var(--surface-elevated);
+    color: var(--text-primary);
+  }
+
   /* Compatibility bridge while legacy panels migrate to semantic tokens. */
   :root:not(.dark) [class~="text-white"] { color: var(--text-primary) !important; }
   :root:not(.dark) [class~="btn-primary"][class~="text-white"],
@@ -75,6 +90,17 @@
   :root:not(.dark) [class~="bg-[#070B14]"],
   :root:not(.dark) [class~="bg-[#0D1117]"],
   :root:not(.dark) [class~="bg-[#0D1117]/90"] { background-color: var(--surface-elevated) !important; }
+  :root:not(.dark) [class~="bg-black/50"],
+  :root:not(.dark) [class~="bg-black/55"],
+  :root:not(.dark) [class~="bg-black/60"] { background-color: rgba(15, 23, 42, 0.34) !important; }
+  :root:not(.dark) div[class*="fixed"][class*="inset-0"] > div[class*="absolute"][class*="inset-0"][class*="bg-black/60"] {
+    background-color: rgba(15, 23, 42, 0.34) !important;
+  }
+  div[class*="fixed"][class*="inset-0"] > div[class*="relative"][class~="bg-white/5"] {
+    background: var(--surface-elevated) !important;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+  }
 
   .app-header { background: color-mix(in srgb, var(--surface) 88%, transparent); }
   .surface-muted { background: var(--surface-muted); }

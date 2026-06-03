@@ -257,7 +257,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen min-h-dvh flex bg-[#070B14] text-white">
+    <div className="min-h-screen min-h-dvh flex bg-[var(--app-bg)] text-primary">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -580,7 +580,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/[0.06] bg-[#0D1117]/90 backdrop-blur-xl px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-subtle app-header backdrop-blur-xl px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 md:hidden">
         <div className="flex gap-1 overflow-x-auto">
           {navItems.map(({ id, label, icon: Icon }) => (
             <button

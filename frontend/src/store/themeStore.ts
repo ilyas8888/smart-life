@@ -32,7 +32,7 @@ export const useThemeStore = create<ThemeStore>()(
   persist(
     (set, get) => ({
       preference: 'system',
-      isDark: systemPrefersDark(),
+      isDark: applyTheme('system'),
       toggle: () => {
         const preference = get().isDark ? 'light' : 'dark'
         set({ preference, isDark: applyTheme(preference) })
