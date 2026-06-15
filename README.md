@@ -1,6 +1,6 @@
 # SmartLife — Plateforme de gestion personnelle intelligente
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=smart-life&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=smart-life)
+https://ilyas8888.github.io/smart-life/
 
 Application web full-stack permettant de gérer sa vie quotidienne via un prompt en langage naturel analysé par Claude (Anthropic). 8 modules intégrés : tâches, rappels, notes, contacts, alimentation, agenda, journal personnel et sport.
 
