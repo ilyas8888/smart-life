@@ -25,9 +25,15 @@ public class PromptController {
             @Valid @RequestBody PromptRequest request,
             @AuthenticationPrincipal User user,
             HttpServletRequest http) {
-        entitlementService.checkAccess(user);
-        PromptResponse result = aiService.processPrompt(request.getPrompt(), user, http.getRemoteAddr());
-        entitlementService.consume(user);
+        entitlementService.checkAccess(user);   // reset mensuel + validation (échec rapide, sans incrément)
+        entitlementService.reserve(user);        // réservation atomique du crédit (sûr en concurrence)
+        PromptResponse result;
+        try {
+            result = aiService.processPrompt(request.getPrompt(), user, http.getRemoteAddr());
+        } catch (RuntimeException e) {
+            entitlementService.refund(user);     // l'IA a échoué -> on rend le crédit
+            throw e;
+        }
         return ResponseEntity.ok(result);
     }
 }

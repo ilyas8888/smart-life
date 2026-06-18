@@ -107,8 +107,49 @@ public class AiEntitlementService {
     }
 
     /**
+     * Réserve atomiquement une unité de quota AVANT l'appel IA. Sûr en
+     * concurrence (UPDATE conditionnel en base). Lève si le quota est épuisé.
+     * En cas d'échec de l'appel IA ensuite, appeler {@link #refund(User)}.
+     */
+    @Transactional
+    public void reserve(User user) {
+        var entitlement = getOrCreate(user);
+        String status = normalizeStatus(entitlement.getStatus());
+
+        if (BLOCKED.equals(status)) {
+            denyAiAccess(entitlement);
+        }
+        if (ADMIN.equals(status)) {
+            return;
+        }
+
+        int updated = FREE.equals(status)
+                ? entitlementRepository.tryConsumeTrial(entitlement.getId())
+                : entitlementRepository.tryConsumeMonthly(entitlement.getId());
+
+        if (updated == 0) {
+            denyAiAccess(entitlement);
+        }
+    }
+
+    /** Rembourse une unité de quota si l'appel IA a échoué après {@link #reserve(User)}. */
+    @Transactional
+    public void refund(User user) {
+        var entitlement = getOrCreate(user);
+        String status = normalizeStatus(entitlement.getStatus());
+        if (ADMIN.equals(status)) {
+            return;
+        }
+        if (FREE.equals(status)) {
+            entitlementRepository.refundTrial(entitlement.getId());
+        } else {
+            entitlementRepository.refundMonthly(entitlement.getId());
+        }
+    }
+
+    /**
      * @deprecated consomme le crédit même si l'appel IA échoue ensuite.
-     * Préférer {@link #checkAccess(User)} avant et {@link #consume(User)} après succès.
+     * Préférer {@link #reserve(User)} avant et {@link #refund(User)} si échec.
      */
     @Deprecated
     @Transactional

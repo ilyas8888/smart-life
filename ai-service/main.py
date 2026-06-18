@@ -33,10 +33,12 @@ logger = logging.getLogger("smartlife.ai")
 
 
 def extract_json(raw: str):
-    """Extrait un objet/array JSON d'une réponse Claude de façon robuste.
+    """Extrait le premier objet/array JSON d'une réponse Claude, de façon robuste.
 
     Gère : fences markdown (```json ... ```), texte parasite avant/après,
-    et réponses sans fence. Lève json.JSONDecodeError si rien d'exploitable.
+    et réponses sans fence. Utilise raw_decode pour s'arrêter exactement à la fin
+    du premier objet JSON valide (pas de capture trop large).
+    Lève json.JSONDecodeError si rien d'exploitable.
     """
     if raw is None:
         raise json.JSONDecodeError("empty AI response", "", 0)
@@ -47,11 +49,13 @@ def extract_json(raw: str):
     if fence:
         text = fence.group(1).strip()
 
-    # 2) Premier objet {...} ou tableau [...] complet
-    block = re.search(r"[\{\[].*[\}\]]", text, re.DOTALL)
-    candidate = block.group(0) if block else text
-
-    return json.loads(candidate.strip())
+    # 2) Premier '{' ou '[' puis décodage d'UN seul objet (ignore le texte après)
+    candidates = [i for i in (text.find("{"), text.find("[")) if i != -1]
+    if not candidates:
+        raise json.JSONDecodeError("no JSON object found in AI response", text, 0)
+    start = min(candidates)
+    obj, _ = json.JSONDecoder().raw_decode(text[start:])
+    return obj
 
 
 @contextmanager
