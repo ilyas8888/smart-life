@@ -45,6 +45,7 @@ public class AuthService {
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
                 .emailVerified(false)
+                .localLoginAllowed(true)
                 .build();
         userRepository.save(user);
         auditLogService.log(user.getId(), "REGISTER", "USER", user.getId(), ip);

@@ -88,8 +88,10 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(
-            @CookieValue(name = "refreshToken", required = false) String refreshToken,
+            @CookieValue(name = "refreshToken", required = false) String cookieToken,
+            @RequestBody(required = false) Map<String, String> body,
             HttpServletResponse response) {
+        String refreshToken = cookieToken != null ? cookieToken : (body != null ? body.get("refreshToken") : null);
         Map<String, String> result = authService.refresh(refreshToken);
         setRefreshCookie(response, result.get("refreshToken"));
         return ResponseEntity.ok(Map.of("accessToken", result.get("accessToken")));
