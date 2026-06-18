@@ -396,7 +396,7 @@ export default function DiaryPanel() {
           preview={
             <div className="card border-l-4 border-l-blue-400">
               <div className="flex items-start gap-3 mb-3">
-                <div className="text-2xl">??</div>
+                <div className="text-2xl">😊</div>
                 <div className="flex-1">
                   <p className="font-semibold text-white">Lundi 25 mai 2026</p>
                   <p className="text-xs text-gray-400">Bonne humeur · 124 mots</p>

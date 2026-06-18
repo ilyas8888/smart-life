@@ -33,10 +33,10 @@ const SPORT_PRESETS = [
   { label: 'Natation', emoji: '', rate: 9 },
   { label: 'Yoga', emoji: '', rate: 3 },
   { label: 'Marche', emoji: '', rate: 4 },
-  { label: 'Football', emoji: '?', rate: 8 },
+  { label: 'Football', emoji: '', rate: 8 },
   { label: 'Tennis', emoji: '', rate: 7 },
   { label: 'Boxe', emoji: '', rate: 9 },
-  { label: 'CrossFit', emoji: '?', rate: 11 },
+  { label: 'CrossFit', emoji: '', rate: 11 },
 ]
 
 const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
@@ -1320,7 +1320,7 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
 
             {!isLastExercise && exercises[currentExIdx + 1] && (
               <div className="bg-white/[0.03] rounded-xl p-3 flex items-center gap-3 border border-white/10">
-                <span className="text-xl">?</span>
+                <span className="text-xl">⏭️</span>
                 <div>
                   <p className="text-xs text-gray-500">Prochain exercice</p>
                   <p className="text-sm font-medium">{exercises[currentExIdx + 1].exercise.name}</p>
@@ -1839,10 +1839,10 @@ function ProgramCard({ plan, onClick, onDelete }: {
           <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white shadow-lg" />
         )}
         {plan.status === 'PAUSED' && (
-          <span className="absolute top-3 right-3 text-[10px] bg-yellow-400 text-yellow-900 font-bold px-2 py-0.5 rounded-full">?</span>
+          <span className="absolute top-3 right-3 text-[10px] bg-yellow-400 text-yellow-900 font-bold px-2 py-0.5 rounded-full">⏸</span>
         )}
         {plan.status === 'COMPLETED' && (
-          <span className="absolute top-3 right-3 text-[10px] bg-blue-400 text-white font-bold px-2 py-0.5 rounded-full">?</span>
+          <span className="absolute top-3 right-3 text-[10px] bg-blue-400 text-white font-bold px-2 py-0.5 rounded-full">✓</span>
         )}
       </div>
 
@@ -1965,7 +1965,7 @@ function TodaySessionBanner({ plans, onStartSession, onViewProgram }: {
   if (isRest) {
     return (
       <div className="card mb-5 text-center py-6">
-        <span className="text-3xl block mb-2">??</span>
+        <span className="text-3xl block mb-2">😴</span>
         <p className="font-semibold text-gray-300">Jour de repos</p>
         <p className="text-sm text-gray-400 mt-1">{activePlan.name} · Profite de la récupération</p>
       </div>
@@ -2025,11 +2025,11 @@ function PRSection({ sessions }: { sessions: WorkoutSession[] }) {
 
   return (
     <div className="card">
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">?? Records personnels</p>
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">🏆 Records personnels</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {prs.map(([name, pr]) => (
           <div key={name} className="flex items-center gap-3 rounded-xl bg-amber-50 dark:bg-amber-900/15 px-3 py-3 border border-amber-100 dark:border-amber-800/30">
-            <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-base shrink-0">??</div>
+            <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-base shrink-0">🏆</div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-black text-white truncate">{name}</p>
               <p className="text-xs text-gray-500">{format(new Date(`${pr.date}T00:00:00`), 'd MMM yyyy', { locale: fr })}</p>
@@ -2357,7 +2357,7 @@ export default function WorkoutPanel() {
             preview={
               <div className="card">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-xl">??</div>
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-xl">💪</div>
                   <div>
                     <p className="font-semibold text-white">Programme Prise de masse</p>
                     <p className="text-xs text-gray-400">12 semaines · 4 jours/sem · Intermédiaire</p>

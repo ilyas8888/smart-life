@@ -652,7 +652,7 @@ export default function TasksPanel() {
               className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${
                 sortBy === key ? 'bg-white/10 text-white' : 'bg-white/[0.05] text-gray-400'
               }`}>
-              {label} {sortBy === key ? (sortAsc ? '?' : '?') : ''}
+              {label} {sortBy === key ? (sortAsc ? '↑' : '↓') : ''}
             </button>
           ))}
         </div>
@@ -684,7 +684,7 @@ export default function TasksPanel() {
               <div className="flex items-start gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">?? Haute</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">🔴 Haute</span>
                     <span className="text-[10px] font-semibold text-yellow-600 dark:text-yellow-400">En cours</span>
                   </div>
                   <p className="font-semibold text-white">Finaliser le rapport de stage</p>

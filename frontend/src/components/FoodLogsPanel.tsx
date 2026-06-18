@@ -1168,7 +1168,7 @@ export default function FoodLogsPanel() {
           preview={
             <div className="card">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-base">??</span>
+                <span className="text-base">🍽️</span>
                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Déjeuner</span>
                 <span className="ml-auto text-xs text-gray-400">500 kcal</span>
               </div>
