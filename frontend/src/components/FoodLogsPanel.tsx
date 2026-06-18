@@ -941,7 +941,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                         })()}
                         {!item.hasNutrition && (
                           <p className="text-xs text-amber-500 dark:text-amber-400 mt-0.5">
-                            ? Valeurs estimées par l'IA
+                            ⚠️ Valeurs estimées par l'IA
                           </p>
                         )}
                         {item.quantity && (

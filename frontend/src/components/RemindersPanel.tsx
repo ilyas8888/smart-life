@@ -245,7 +245,7 @@ export default function RemindersPanel() {
               </span>
               {isOverdue && (
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
-                  ? En retard
+                  ⏰ En retard
                 </span>
               )}
             </div>

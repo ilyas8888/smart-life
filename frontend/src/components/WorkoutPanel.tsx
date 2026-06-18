@@ -534,7 +534,7 @@ function SessionCard({
                 <p className="font-black text-white truncate">{session.title}</p>
                 {hasPR && (
                   <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-amber-900/30 text-amber-400 border border-amber-700 shrink-0" style={{ boxShadow: '0 0 10px rgba(245,158,11,0.3)' }}>
-                    ?? PR
+                    🏆 PR
                   </span>
                 )}
               </div>
@@ -572,7 +572,7 @@ function SessionCard({
             )}
             {totalVolume > 0 && (
               <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 px-2 py-1 rounded-full">
-                ?? {totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}t` : `${Math.round(totalVolume)}kg`}
+                💪 {totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}t` : `${Math.round(totalVolume)}kg`}
               </span>
             )}
             {groups.length > 0 && (
@@ -1426,27 +1426,27 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange, onEdi
                   {localStatus === 'ACTIVE' && <>
                     <button type="button" onClick={() => changeStatus('PAUSED')}
                       className="text-xs font-medium px-3 py-1.5 rounded-xl bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 hover:bg-yellow-900/50 transition-colors">
-                      ? Mettre en pause
+                      ⏸ Mettre en pause
                     </button>
                     <button type="button" onClick={() => changeStatus('COMPLETED')}
                       className="text-xs font-medium px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-900/50 transition-colors">
-                      ? Marquer terminé
+                      ✓ Marquer terminé
                     </button>
                   </>}
                   {localStatus === 'PAUSED' && <>
                     <button type="button" onClick={() => changeStatus('ACTIVE')}
                       className="text-xs font-medium px-3 py-1.5 rounded-xl bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-900/50 transition-colors">
-                      ? Réactiver
+                      ▶ Réactiver
                     </button>
                     <button type="button" onClick={() => changeStatus('COMPLETED')}
                       className="text-xs font-medium px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-900/50 transition-colors">
-                      ? Marquer terminé
+                      ✓ Marquer terminé
                     </button>
                   </>}
                   {localStatus === 'COMPLETED' && (
                     <button type="button" onClick={() => changeStatus('ACTIVE')}
                       className="text-xs font-medium px-3 py-1.5 rounded-xl bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-900/50 transition-colors">
-                      ? Relancer le programme
+                      🔄 Relancer le programme
                     </button>
                   )}
                 </div>
