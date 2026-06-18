@@ -217,7 +217,7 @@ export default function SocialPostCard({ post, onDeleted, onAuthorClick }: Props
           {/* Input */}
           {replyTo && (
             <div className="flex items-center gap-2 text-xs text-sky-600 dark:text-sky-400">
-              <span>? Réponse à {replyTo.name}</span>
+              <span>↩ Réponse à {replyTo.name}</span>
               <button onClick={() => setReplyTo(null)} className="underline">Annuler</button>
             </div>
           )}

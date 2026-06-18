@@ -543,12 +543,12 @@ export default function SocialPanel() {
           <div className="flex gap-1.5 overflow-x-auto pb-1">
             {[
               { value: '', label: 'Tout' },
-              { value: 'WORKOUT_PLAN', label: '?? Sport' },
-              { value: 'FOOD_LOG', label: '?? Food' },
-              { value: 'NOTE', label: '?? Notes' },
-              { value: 'JOURNAL', label: '?? Journal' },
-              { value: 'SLEEP_LOG', label: '?? Sommeil' },
-              { value: 'STUDY_SESSION', label: '?? Étude' },
+              { value: 'WORKOUT_PLAN', label: '💪 Sport' },
+              { value: 'FOOD_LOG', label: '🍽️ Food' },
+              { value: 'NOTE', label: '📝 Notes' },
+              { value: 'JOURNAL', label: '📔 Journal' },
+              { value: 'SLEEP_LOG', label: '🌙 Sommeil' },
+              { value: 'STUDY_SESSION', label: '📚 Étude' },
             ].map(f => (
               <button
                 key={f.value}

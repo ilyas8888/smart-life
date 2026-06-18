@@ -405,7 +405,7 @@ export default function DiaryPanel() {
               <p className="text-sm text-gray-400 line-clamp-2 italic">"Bonne journée aujourd'hui. J'ai terminé le rapport de stage et préparé la soutenance. Je me sens prêt..."</p>
             </div>
           }
-          primaryLabel="?? Écrire ma première entrée"
+          primaryLabel="✍️ Écrire ma première entrée"
           onPrimary={() => { textareaRef.current?.scrollIntoView({ behavior: 'smooth' }); textareaRef.current?.focus() }}
         />
       ) : (

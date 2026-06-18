@@ -822,7 +822,7 @@ function AddWorkoutModal({
               {!prefillTitle && (
                 <button type="button" onClick={() => setMode(null)}
                   className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4 flex items-center gap-1">
-                  ? Retour
+                  ← Retour
                 </button>
               )}
               <div className="mb-4">
@@ -965,7 +965,7 @@ function AddWorkoutModal({
             <div>
               <button type="button" onClick={() => setMode(null)}
                 className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4 flex items-center gap-1">
-                ? Retour
+                ← Retour
               </button>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Décrivez votre séance</label>
               <textarea className="input resize-none mb-4" rows={5} value={promptText}
@@ -980,7 +980,7 @@ function AddWorkoutModal({
               <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                 <button type="button" onClick={onClose} disabled={isLoading} className="btn-secondary w-full sm:w-auto">Annuler</button>
                 <button type="button" onClick={() => promptMutation.mutate()} disabled={!promptText.trim() || isLoading}
-                  className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">? Analyser et sauvegarder</button>
+                  className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">✨ Analyser et sauvegarder</button>
               </div>
             </div>
           )}
@@ -1182,7 +1182,7 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
                   i === currentExIdx ? 'bg-amber-500 text-black' :
                   'bg-white/5 text-gray-500'
                 }`}>
-                  {i < currentExIdx ? '? ' : ''}{ep.exercise.name.split(' ').slice(0, 2).join(' ')}
+                  {i < currentExIdx ? '✓ ' : ''}{ep.exercise.name.split(' ').slice(0, 2).join(' ')}
                 </div>
               ))}
             </div>
@@ -1541,7 +1541,7 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange, onEdi
                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${cfg.badge}`}>Aujourd'hui</span>
                       )}
                       {completed && !isToday && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">? Complété</span>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">✓ Complété</span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500">
@@ -1638,7 +1638,7 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
     mutationFn: () => api.put(`/workout-plans/${editingPlan!.id}`, planBody()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workout-plans'] })
-      toast.success('Programme modifié ?')
+      toast.success('Programme modifié !')
       onSuccess()
     },
     onError: () => toast.error('Erreur lors de la modification'),
@@ -1717,7 +1717,7 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
                 ))}
               </div>
               <div className="flex justify-end">
-                <button type="button" onClick={() => setStep(2)} disabled={!name.trim()} className="btn-primary">Suivant ?</button>
+                <button type="button" onClick={() => setStep(2)} disabled={!name.trim()} className="btn-primary">Suivant →</button>
               </div>
             </div>
           )}
@@ -1725,7 +1725,7 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
           {step === 2 && (
             <div>
               <button type="button" onClick={() => setStep(1)}
-                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4">? Retour</button>
+                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4">← Retour</button>
               <h4 className="font-semibold text-white mb-4">Planning semainier</h4>
               <div className="space-y-2 mb-4">
                 {dayConfigs.map(day => (
@@ -1747,7 +1747,7 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
               </div>
               <p className="text-sm text-gray-400 mb-4">{activeDays.length} jours d'entraînement / semaine</p>
               <div className="flex justify-end">
-                <button type="button" onClick={() => { setCurrentDayIndex(0); setStep(3) }} disabled={activeDays.length === 0} className="btn-primary">Suivant ?</button>
+                <button type="button" onClick={() => { setCurrentDayIndex(0); setStep(3) }} disabled={activeDays.length === 0} className="btn-primary">Suivant →</button>
               </div>
             </div>
           )}
@@ -1755,7 +1755,7 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
           {step === 3 && currentDay && (
             <div>
               <button type="button" onClick={() => setStep(2)}
-                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4">? Retour</button>
+                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4">← Retour</button>
               <h4 className="font-semibold text-white mb-4">Exercices par jour</h4>
               <div className="overflow-x-auto flex gap-2 mb-4">
                 {activeDays.map((day, index) => (
