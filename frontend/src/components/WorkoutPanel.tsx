@@ -109,28 +109,28 @@ const GOAL_CONFIG: Record<GoalType, {
   label: string; emoji: string; gradient: string; accentText: string; borderLeft: string; badge: string
 }> = {
   MUSCLE_GAIN: {
-    label: 'Prise de masse', emoji: '???',
+    label: 'Prise de masse', emoji: '💪',
     gradient: 'from-amber-500/10 to-orange-500/5',
     accentText: 'text-amber-600 dark:text-amber-400',
     borderLeft: 'border-l-amber-500',
     badge: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
   },
   FAT_LOSS: {
-    label: 'Perte de poids', emoji: '??',
+    label: 'Perte de poids', emoji: '🔥',
     gradient: 'from-red-500/10 to-rose-500/5',
     accentText: 'text-red-600 dark:text-red-400',
     borderLeft: 'border-l-red-500',
     badge: 'bg-red-500/10 text-red-400 border border-red-500/20',
   },
   ENDURANCE: {
-    label: 'Endurance', emoji: '??',
+    label: 'Endurance', emoji: '🏃',
     gradient: 'from-green-500/10 to-emerald-500/5',
     accentText: 'text-green-600 dark:text-green-400',
     borderLeft: 'border-l-green-500',
     badge: 'bg-green-500/10 text-green-400 border border-green-500/20',
   },
   GENERAL: {
-    label: 'Général', emoji: '?',
+    label: 'Général', emoji: '⭐',
     gradient: 'from-blue-500/10 to-indigo-500/5',
     accentText: 'text-blue-600 dark:text-blue-400',
     borderLeft: 'border-l-blue-500',
@@ -221,19 +221,19 @@ const EXERCISE_LIBRARY: Record<string, PlanExercise[]> = {
 }
 
 const SPORT_BADGE_MAP: [RegExp, string][] = [
-  [/muscu|gym|musculation|bench|squat|deadlift/i, '???'],
-  [/course|running|run|jogging/i, '??'],
-  [/vélo|velo|cycling|bike/i, '??'],
-  [/natation|swimming|swim|piscine/i, '??'],
-  [/yoga|pilates/i, '??'],
-  [/marche|walk/i, '??'],
-  [/football|foot|soccer/i, '?'],
-  [/tennis/i, '??'],
-  [/boxe|boxing|mma/i, '??'],
-  [/crossfit|cross.?fit/i, '??'],
-  [/hiit/i, '?'],
-  [/escalade|climbing/i, '??'],
-  [/basket|basketball/i, '??'],
+  [/muscu|gym|musculation|bench|squat|deadlift/i, '💪'],
+  [/course|running|run|jogging/i, '🏃'],
+  [/vélo|velo|cycling|bike/i, '🚴'],
+  [/natation|swimming|swim|piscine/i, '🏊'],
+  [/yoga|pilates/i, '🧘'],
+  [/marche|walk/i, '🚶'],
+  [/football|foot|soccer/i, '⚽'],
+  [/tennis/i, '🎾'],
+  [/boxe|boxing|mma/i, '🥊'],
+  [/crossfit|cross.?fit/i, '🏋️'],
+  [/hiit/i, '⚡'],
+  [/escalade|climbing/i, '🧗'],
+  [/basket|basketball/i, '🏀'],
 ]
 
 function sportBadge(title: string): string | null {
@@ -347,10 +347,10 @@ function GlobalStats({ sessions }: { sessions: WorkoutSession[] }) {
   const totalHours = Math.floor(totalMinutes / 60)
 
   const stats = [
-    { label: 'S&#xe9;ances', value: String(sessions.length), icon: <Flame size={16} />, gradient: 'from-amber-500 to-orange-500', glow: 'rgba(245,158,11,0.3)', text: 'text-amber-400' },
-    { label: 'kcal br&#xfb;l&#xe9;es', value: totalCalories > 0 ? totalCalories.toLocaleString('fr') : '—', icon: <Flame size={16} />, gradient: 'from-red-500 to-rose-500', glow: 'rgba(239,68,68,0.3)', text: 'text-red-400' },
+    { label: 'Séances', value: String(sessions.length), icon: <Flame size={16} />, gradient: 'from-amber-500 to-orange-500', glow: 'rgba(245,158,11,0.3)', text: 'text-amber-400' },
+    { label: 'kcal brûlées', value: totalCalories > 0 ? totalCalories.toLocaleString('fr') : '—', icon: <Flame size={16} />, gradient: 'from-red-500 to-rose-500', glow: 'rgba(239,68,68,0.3)', text: 'text-red-400' },
     { label: 'heures totales', value: totalHours > 0 ? `${totalHours}h` : '—', icon: <Clock size={16} />, gradient: 'from-blue-500 to-indigo-500', glow: 'rgba(59,130,246,0.3)', text: 'text-blue-400' },
-    { label: 'kg soulev&#xe9;s', value: totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}t` : totalVolume > 0 ? `${Math.round(totalVolume)}kg` : '—', icon: <Dumbbell size={16} />, gradient: 'from-green-500 to-emerald-500', glow: 'rgba(16,185,129,0.3)', text: 'text-green-400' },
+    { label: 'kg soulevés', value: totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}t` : totalVolume > 0 ? `${Math.round(totalVolume)}kg` : '—', icon: <Dumbbell size={16} />, gradient: 'from-green-500 to-emerald-500', glow: 'rgba(16,185,129,0.3)', text: 'text-green-400' },
   ]
 
   return (

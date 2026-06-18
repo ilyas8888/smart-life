@@ -13,10 +13,10 @@ const TASK_CATEGORIES = {
   WORK: { label: 'Travail', emoji: '', color: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' },
   SCHOOL: { label: 'École', emoji: '', color: 'bg-violet-500/10 text-violet-400 border border-violet-500/20' },
   FREELANCE: { label: 'Freelance', emoji: '', color: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' },
-  HEALTH: { label: 'Santé', emoji: '??', color: 'bg-red-500/10 text-red-400 border border-red-500/20' },
+  HEALTH: { label: 'Santé', emoji: '❤️', color: 'bg-red-500/10 text-red-400 border border-red-500/20' },
   LEARNING: { label: 'Apprentissage', emoji: '', color: 'bg-green-500/10 text-green-400 border border-green-500/20' },
   SOCIAL: { label: 'Social', emoji: '', color: 'bg-pink-500/10 text-pink-400 border border-pink-500/20' },
-  PRODUCTIVITY: { label: 'Productivité', emoji: '?', color: 'bg-orange-500/10 text-orange-400 border border-orange-500/20' },
+  PRODUCTIVITY: { label: 'Productivité', emoji: '⚡', color: 'bg-orange-500/10 text-orange-400 border border-orange-500/20' },
 }
 
 interface Task {
@@ -335,7 +335,7 @@ function TaskDetailPanel({
         <div className="p-5 border-t border-white/10">
           <button type="button" onClick={() => onDelete(task.id)}
             className="w-full rounded-xl bg-red-900/30 text-red-300 px-4 py-2 text-sm font-semibold hover:bg-red-900/50 transition-colors border border-red-500/20">
-            Supprimer la t&#xe2;che
+            Supprimer la tâche
           </button>
         </div>
       </aside>

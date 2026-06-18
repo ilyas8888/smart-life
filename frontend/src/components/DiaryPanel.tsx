@@ -21,11 +21,11 @@ interface DiaryEntry {
 }
 
 const MOODS = [
-  { value: 'great', label: '?? Super', color: 'bg-green-500', border: 'border-l-4 border-green-400', dot: 'bg-green-400' },
-  { value: 'good', label: '?? Bien', color: 'bg-blue-500', border: 'border-l-4 border-blue-400', dot: 'bg-blue-400' },
-  { value: 'neutral', label: '?? Neutre', color: 'bg-gray-400', border: 'border-l-4 border-gray-300', dot: 'bg-gray-400' },
-  { value: 'bad', label: '?? Pas terrible', color: 'bg-orange-500', border: 'border-l-4 border-orange-400', dot: 'bg-orange-400' },
-  { value: 'awful', label: '?? Difficile', color: 'bg-red-500', border: 'border-l-4 border-red-400', dot: 'bg-red-400' },
+  { value: 'great', label: '😄 Super', color: 'bg-green-500', border: 'border-l-4 border-green-400', dot: 'bg-green-400' },
+  { value: 'good', label: '😊 Bien', color: 'bg-blue-500', border: 'border-l-4 border-blue-400', dot: 'bg-blue-400' },
+  { value: 'neutral', label: '😐 Neutre', color: 'bg-gray-400', border: 'border-l-4 border-gray-300', dot: 'bg-gray-400' },
+  { value: 'bad', label: '😕 Pas terrible', color: 'bg-orange-500', border: 'border-l-4 border-orange-400', dot: 'bg-orange-400' },
+  { value: 'awful', label: '😔 Difficile', color: 'bg-red-500', border: 'border-l-4 border-red-400', dot: 'bg-red-400' },
 ]
 
 function getMoodMeta(value: string | null) {
@@ -316,7 +316,7 @@ export default function DiaryPanel() {
             </p>
           </div>
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${selectedMood ? `${selectedMood.color} text-white` : 'bg-white/[0.05]'}`}>
-            {selectedMood ? selectedMood.label.split(' ')[0] : '??'}
+            {selectedMood ? selectedMood.label.split(' ')[0] : '😐'}
           </div>
         </div>
 
