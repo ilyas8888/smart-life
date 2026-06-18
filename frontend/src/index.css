@@ -14,23 +14,29 @@
 }
 
 @layer base {
+  /* ── Mode normal (défaut) : "Soirée Indigo" — fond violet profond ── */
   :root {
-    color-scheme: light;
-    --app-bg: #f8fafc;
-    --surface: #ffffff;
-    --surface-elevated: #ffffff;
-    --surface-muted: rgba(15, 23, 42, 0.05);
-    --surface-hover: rgba(15, 23, 42, 0.09);
-    --text-primary: #0f172a;
-    --text-secondary: #64748b;
-    --text-muted: #94a3b8;
-    --border-subtle: rgba(15, 23, 42, 0.12);
-    --shadow-card: 0 8px 30px rgba(15, 23, 42, 0.10);
+    color-scheme: dark;
+    --app-bg: #1e1a38;
+    --app-bg-gradient: radial-gradient(at 20% 0%, #2d2760 0%, #1e1a38 50%, #231e4a 100%);
+    --surface: #2a2550;
+    --surface-elevated: #342f6a;
+    --surface-muted: rgba(99, 102, 241, 0.12);
+    --surface-hover: rgba(99, 102, 241, 0.22);
+    --text-primary: #ede9ff;
+    --text-secondary: #a89fd4;
+    --text-muted: #6b639e;
+    --border-subtle: rgba(139, 92, 246, 0.35);
+    --shadow-card: 0 8px 32px rgba(99, 102, 241, 0.40), 0 2px 8px rgba(139, 92, 246, 0.20);
+    --shadow-elevated: 0 20px 60px rgba(99, 102, 241, 0.55), 0 4px 16px rgba(139, 92, 246, 0.30);
+    --ring-focus: rgba(139, 92, 246, 0.55);
   }
 
+  /* ── Dark mode : quasi-noir, aligné sur le langage glow indigo ── */
   :root.dark {
     color-scheme: dark;
     --app-bg: #070b14;
+    --app-bg-gradient: #070b14;
     --surface: #0d1117;
     --surface-elevated: #0f1117;
     --surface-muted: rgba(255, 255, 255, 0.05);
@@ -39,24 +45,23 @@
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
     --border-subtle: rgba(255, 255, 255, 0.10);
-    --shadow-card: 0 8px 40px rgba(0, 0, 0, 0.60);
+    --shadow-card: 0 8px 40px rgba(0, 0, 0, 0.55), 0 0 18px rgba(99, 102, 241, 0.12);
+    --shadow-elevated: 0 20px 60px rgba(0, 0, 0, 0.65), 0 0 24px rgba(99, 102, 241, 0.20);
+    --ring-focus: rgba(99, 102, 241, 0.45);
   }
 
   body {
-    background: var(--app-bg);
+    background: var(--app-bg-gradient);
+    background-attachment: fixed;
     color: var(--text-primary);
     @apply font-sans;
     min-width: 0;
   }
 
   select {
-    color-scheme: light;
+    color-scheme: dark;
     background-color: var(--surface-muted);
     color: var(--text-primary);
-  }
-
-  :root.dark select {
-    color-scheme: dark;
   }
 
   select option {
@@ -64,41 +69,25 @@
     color: var(--text-primary);
   }
 
-  /* Compatibility bridge while legacy panels migrate to semantic tokens. */
-  :root:not(.dark) [class~="text-white"] { color: var(--text-primary) !important; }
-  :root:not(.dark) [class~="btn-primary"][class~="text-white"],
-  :root:not(.dark) [class~="bg-indigo-600"][class~="text-white"],
-  :root:not(.dark) [class~="bg-emerald-600"][class~="text-white"],
-  :root:not(.dark) [class~="bg-primary-600"][class~="text-white"],
-  :root:not(.dark) [class~="bg-red-600"][class~="text-white"],
-  :root:not(.dark) [class~="bg-violet-600"][class~="text-white"] { color: #ffffff !important; }
-  :root:not(.dark) [class~="text-gray-300"],
-  :root:not(.dark) [class~="text-gray-400"] { color: var(--text-secondary) !important; }
-  :root:not(.dark) [class~="text-gray-500"],
-  :root:not(.dark) [class~="text-gray-600"],
-  :root:not(.dark) [class~="text-gray-700"] { color: var(--text-muted) !important; }
-  :root:not(.dark) [class~="bg-white/5"],
-  :root:not(.dark) [class~="bg-white/[0.02]"],
-  :root:not(.dark) [class~="bg-white/[0.03]"],
-  :root:not(.dark) [class~="bg-white/[0.04]"],
-  :root:not(.dark) [class~="bg-white/[0.05]"],
-  :root:not(.dark) [class~="bg-white/[0.06]"] { background-color: var(--surface-muted) !important; }
-  :root:not(.dark) [class~="border-white/10"],
-  :root:not(.dark) [class~="border-white/[0.06]"],
-  :root:not(.dark) [class~="border-white/[0.08]"] { border-color: var(--border-subtle) !important; }
-  :root:not(.dark) .bg-\[\#0f1117\] { background-color: var(--surface-elevated) !important; }
-  :root:not(.dark) [class~="bg-[#070B14]"],
-  :root:not(.dark) [class~="bg-[#0D1117]"],
-  :root:not(.dark) [class~="bg-[#0D1117]/90"] { background-color: var(--surface-elevated) !important; }
-  :root:not(.dark) [class~="bg-black/50"],
-  :root:not(.dark) [class~="bg-black/55"],
-  :root:not(.dark) [class~="bg-black/60"] { background-color: rgba(15, 23, 42, 0.34) !important; }
-  :root:not(.dark) div[class*="fixed"][class*="inset-0"] > div[class*="absolute"][class*="inset-0"][class*="bg-black/60"] {
-    background-color: rgba(15, 23, 42, 0.34) !important;
-  }
+  /* ───────────────────────────────────────────────────────────
+     Surface bridge — les deux modes sont sombres (Soirée Indigo
+     par défaut, quasi-noir en .dark). Les classes utilitaires
+     dark-first (text-white, bg-white/5, border-white/10…) rendent
+     correctement sur les deux : on ne remappe donc QUE les
+     surfaces near-black hardcodées vers les tokens sémantiques,
+     pour qu'elles prennent le violet en mode normal (et restent
+     near-black en dark).
+     ─────────────────────────────────────────────────────────── */
+  .bg-\[\#0f1117\],
+  [class~="bg-[#070B14]"],
+  [class~="bg-[#0D1117]"],
+  [class~="bg-[#0D1117]/90"] { background-color: var(--surface-elevated) !important; }
+
+  /* Conteneurs de modale construits sur bg-white/5 → surface élevée */
   div[class*="fixed"][class*="inset-0"] > div[class*="relative"][class~="bg-white/5"] {
     background: var(--surface-elevated) !important;
     border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-elevated);
     color: var(--text-primary);
   }
 
@@ -132,7 +121,7 @@
     background: var(--surface-hover);
     border-color: var(--border-subtle);
     transform: translateY(-2px);
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--shadow-elevated);
   }
 
   /* ─── Legacy card (updated for glass) ─────────────────── */
@@ -167,12 +156,16 @@
     background: var(--surface-muted);
     border: 1px solid var(--border-subtle);
     color: var(--text-primary);
-    @apply w-full rounded-xl px-3 py-2.5 text-sm placeholder-gray-500 focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200;
+    @apply w-full rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-indigo-500/60 focus:ring-2 focus:ring-indigo-500/20 transition-all duration-200;
+  }
+  .input::placeholder {
+    color: var(--text-muted);
   }
 
   /* ─── Stat number ──────────────────────────────────────── */
   .stat-value {
-    @apply text-3xl sm:text-4xl font-black text-white leading-none tracking-tight;
+    color: var(--text-primary);
+    @apply text-3xl sm:text-4xl font-black leading-none tracking-tight;
   }
 
   /* ─── Module accent glow ───────────────────────────────── */
@@ -184,6 +177,26 @@
   .module-glow-rose    { box-shadow: 0 0 40px rgba(244,63,94,0.2); }
   .module-glow-orange  { box-shadow: 0 0 40px rgba(249,115,22,0.2); }
   .module-glow-cyan    { box-shadow: 0 0 40px rgba(6,182,212,0.2); }
+
+  /* ─── Module accents (pills / badges / tags) ───────────── */
+  /* Mode normal (Soirée Indigo) : teintes lumineuses sur violet. Dark: override. */
+  .module-accent-indigo  { background: rgba(99,102,241,0.18);  color: #818cf8; }
+  .module-accent-violet  { background: rgba(139,92,246,0.18);  color: #a78bfa; }
+  .module-accent-sky     { background: rgba(14,165,233,0.18);  color: #38bdf8; }
+  .module-accent-emerald { background: rgba(16,185,129,0.18);  color: #34d399; }
+  .module-accent-amber   { background: rgba(245,158,11,0.18);  color: #fbbf24; }
+  .module-accent-rose    { background: rgba(244,63,94,0.18);   color: #fb7185; }
+  .module-accent-orange  { background: rgba(249,115,22,0.18);  color: #fb923c; }
+  .module-accent-cyan    { background: rgba(6,182,212,0.18);   color: #22d3ee; }
+
+  :root.dark .module-accent-indigo  { background: rgba(99,102,241,0.16);  color: #a5b4fc; }
+  :root.dark .module-accent-violet  { background: rgba(139,92,246,0.16);  color: #c4b5fd; }
+  :root.dark .module-accent-sky     { background: rgba(14,165,233,0.16);  color: #7dd3fc; }
+  :root.dark .module-accent-emerald { background: rgba(16,185,129,0.16);  color: #6ee7b7; }
+  :root.dark .module-accent-amber   { background: rgba(245,158,11,0.16);  color: #fcd34d; }
+  :root.dark .module-accent-rose    { background: rgba(244,63,94,0.16);   color: #fda4af; }
+  :root.dark .module-accent-orange  { background: rgba(249,115,22,0.16);  color: #fdba74; }
+  :root.dark .module-accent-cyan    { background: rgba(6,182,212,0.16);   color: #67e8f9; }
 }
 
 @media (max-width: 640px) {

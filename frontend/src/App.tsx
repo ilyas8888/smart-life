@@ -38,7 +38,7 @@ export default function App() {
   }, [])
 
   return (
-    <Suspense fallback={<div className="h-screen flex items-center justify-center bg-white dark:bg-gray-900"><div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" /></div>}>
+    <Suspense fallback={<div className="h-screen flex items-center justify-center" style={{ background: 'var(--app-bg)' }}><div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" /></div>}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
