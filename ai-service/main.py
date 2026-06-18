@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import re
 from contextlib import contextmanager
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, Header
@@ -25,9 +26,32 @@ app.add_middleware(
 
 client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 INTERNAL_SECRET = os.getenv("AI_INTERNAL_SECRET", "")
-ANTHROPIC_MODEL = "claude-sonnet-4-6"
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+ANTHROPIC_SLEEP_MODEL = os.getenv("ANTHROPIC_SLEEP_MODEL", "claude-haiku-4-5-20251001")
 tracer = trace.get_tracer("smartlife.ai")
 logger = logging.getLogger("smartlife.ai")
+
+
+def extract_json(raw: str):
+    """Extrait un objet/array JSON d'une réponse Claude de façon robuste.
+
+    Gère : fences markdown (```json ... ```), texte parasite avant/après,
+    et réponses sans fence. Lève json.JSONDecodeError si rien d'exploitable.
+    """
+    if raw is None:
+        raise json.JSONDecodeError("empty AI response", "", 0)
+    text = raw.strip()
+
+    # 1) Contenu d'un bloc de code ```...``` s'il y en a un
+    fence = re.search(r"```(?:json)?\s*(.*?)```", text, re.DOTALL)
+    if fence:
+        text = fence.group(1).strip()
+
+    # 2) Premier objet {...} ou tableau [...] complet
+    block = re.search(r"[\{\[].*[\}\]]", text, re.DOTALL)
+    candidate = block.group(0) if block else text
+
+    return json.loads(candidate.strip())
 
 
 @contextmanager
@@ -221,16 +245,7 @@ async def process_prompt(payload: PromptPayload, x_internal_key: str = Header(de
         logger.info("Anthropic prompt completed usage=%s", message.usage)
 
         raw_text = message.content[0].text.strip()
-
-        # Clean potential markdown fences
-        if raw_text.startswith("```"):
-            raw_text = raw_text.split("```")[1]
-            if raw_text.startswith("json"):
-                raw_text = raw_text[4:]
-        if raw_text.endswith("```"):
-            raw_text = raw_text[:-3]
-
-        return json.loads(raw_text.strip())
+        return extract_json(raw_text)
 
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
@@ -270,13 +285,7 @@ Règles:
 
 
 def _parse_ai_food_response(raw_text: str, meal_type: str | None = None) -> dict:
-    if raw_text.startswith("```"):
-        raw_text = raw_text.split("```")[1]
-        if raw_text.startswith("json"):
-            raw_text = raw_text[4:]
-    if raw_text.endswith("```"):
-        raw_text = raw_text[:-3]
-    result = json.loads(raw_text.strip())
+    result = extract_json(raw_text)
     if meal_type:
         for fl in result.get("food_logs", []):
             fl["meal_type"] = meal_type
@@ -350,13 +359,7 @@ async def decompose_foods(payload: FoodDecomposePayload, x_internal_key: str = H
             messages=[{"role": "user", "content": f"Aliments à analyser:\n{foods_text}"}],
         )
         raw = message.content[0].text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        if raw.endswith("```"):
-            raw = raw[:-3]
-        return json.loads(raw.strip())
+        return extract_json(raw)
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
     except anthropic.APIError as e:
@@ -465,13 +468,7 @@ async def extract_workout_from_prompt(payload: WorkoutPromptPayload, x_internal_
             messages=[{"role": "user", "content": f"Séance décrite : {payload.prompt}"}],
         )
         raw_text = message.content[0].text.strip()
-        if raw_text.startswith("```"):
-            raw_text = raw_text.split("```")[1]
-            if raw_text.startswith("json"):
-                raw_text = raw_text[4:]
-        if raw_text.endswith("```"):
-            raw_text = raw_text[:-3]
-        return json.loads(raw_text.strip())
+        return extract_json(raw_text)
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
     except anthropic.APIError as e:
@@ -522,7 +519,7 @@ async def sleep_analysis(payload: SleepAnalysisPayload, x_internal_key: str = He
 
     message = call_anthropic(
         "sleep_coach",
-        model="claude-haiku-4-5-20251001",
+        model=ANTHROPIC_SLEEP_MODEL,
         max_tokens=800,
         system=system,
         messages=[{"role": "user", "content": user_msg}],

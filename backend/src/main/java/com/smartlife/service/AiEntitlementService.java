@@ -49,8 +49,12 @@ public class AiEntitlementService {
                         .build()));
     }
 
+    /**
+     * Valide l'accès IA SANS consommer de crédit. Lève une exception si l'accès
+     * est refusé. À appeler AVANT l'appel au service IA.
+     */
     @Transactional
-    public void checkAndConsume(User user) {
+    public void checkAccess(User user) {
         var entitlement = getOrCreate(user);
         resetMonthlyIfNeeded(entitlement);
 
@@ -69,8 +73,6 @@ public class AiEntitlementService {
             if (trialUsed >= trialQuota) {
                 denyAiAccess(entitlement);
             }
-            entitlement.setTrialUsed(trialUsed + 1);
-            entitlementRepository.save(entitlement);
             return;
         }
 
@@ -79,8 +81,40 @@ public class AiEntitlementService {
         if (monthlyQuota != null && monthlyUsed >= monthlyQuota) {
             denyAiAccess(entitlement);
         }
-        entitlement.setMonthlyUsed(monthlyUsed + 1);
+    }
+
+    /**
+     * Consomme une unité de quota IA. À appeler UNIQUEMENT après un appel IA
+     * réussi, pour ne pas facturer l'utilisateur en cas d'échec du service IA.
+     */
+    @Transactional
+    public void consume(User user) {
+        var entitlement = getOrCreate(user);
+        String status = normalizeStatus(entitlement.getStatus());
+
+        if (ADMIN.equals(status)) {
+            return;
+        }
+
+        if (FREE.equals(status)) {
+            entitlement.setTrialUsed(valueOrZero(entitlement.getTrialUsed()) + 1);
+            entitlementRepository.save(entitlement);
+            return;
+        }
+
+        entitlement.setMonthlyUsed(valueOrZero(entitlement.getMonthlyUsed()) + 1);
         entitlementRepository.save(entitlement);
+    }
+
+    /**
+     * @deprecated consomme le crédit même si l'appel IA échoue ensuite.
+     * Préférer {@link #checkAccess(User)} avant et {@link #consume(User)} après succès.
+     */
+    @Deprecated
+    @Transactional
+    public void checkAndConsume(User user) {
+        checkAccess(user);
+        consume(user);
     }
 
     @Transactional

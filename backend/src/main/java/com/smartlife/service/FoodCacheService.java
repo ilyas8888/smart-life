@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,6 +33,15 @@ public class FoodCacheService {
                 cached -> {
                     cached.setHitCount(cached.getHitCount() + 1);
                     cached.setLastUsedAt(LocalDateTime.now());
+                    // Upgrade de fiabilité uniquement : on promeut la source si la
+                    // nouvelle est strictement plus fiable (ex. usda > ai), jamais
+                    // de downgrade. On ne réécrit PAS les macros : les FoodLog reçus
+                    // ici portent des valeurs déjà mises à l'échelle (par portion),
+                    // les écraser corromprait les valeurs de référence du cache.
+                    if (sourceRank(source) > sourceRank(cached.getSource())) {
+                        cached.setSource(source);
+                        cached.setVerified("usda".equals(source));
+                    }
                     repo.save(cached);
                 },
                 () -> {
@@ -112,8 +122,27 @@ public class FoodCacheService {
     }
 
     private String normalize(String name) {
-        String[] words = name.trim().toLowerCase().replaceAll("[^a-z0-9 ]", " ").trim().split("\\s+");
+        // NFD + suppression des diacritiques combinés (é -> e) puis on conserve
+        // toutes les lettres Unicode (français, arabe...) et chiffres, au lieu de
+        // restreindre à [a-z0-9] qui détruisait accents et caractères non latins.
+        String cleaned = Normalizer.normalize(name.trim().toLowerCase(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .replaceAll("[^\\p{L}\\p{N} ]", " ")
+                .trim();
+        if (cleaned.isEmpty()) return "";
+        String[] words = cleaned.split("\\s+");
         Arrays.sort(words);
         return String.join(" ", words);
+    }
+
+    /** Fiabilité relative d'une source nutritionnelle (plus haut = plus fiable). */
+    private static int sourceRank(String source) {
+        if (source == null) return 0;
+        return switch (source) {
+            case "usda" -> 3;
+            case "composite" -> 2;
+            case "ai" -> 1;
+            default -> 0;
+        };
     }
 }

@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:15
+    image: pgvector/pgvector:pg15
     container_name: smartlife-db
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -43,6 +43,7 @@ services:
       AI_SERVICE_URL: http://ai-service:8001
       JWT_SECRET: ${JWT_SECRET}
       AI_INTERNAL_SECRET: ${AI_INTERNAL_SECRET}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY:-}
       REDIS_URL: redis://redis:6379
     ports:
       - "8080:7860"
@@ -63,6 +64,8 @@ services:
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       AI_INTERNAL_SECRET: ${AI_INTERNAL_SECRET}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-6}
+      ANTHROPIC_SLEEP_MODEL: ${ANTHROPIC_SLEEP_MODEL:-claude-haiku-4-5-20251001}
     networks:
       - smartlife-network
 

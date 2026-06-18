@@ -25,7 +25,9 @@ public class PromptController {
             @Valid @RequestBody PromptRequest request,
             @AuthenticationPrincipal User user,
             HttpServletRequest http) {
-        entitlementService.checkAndConsume(user);
-        return ResponseEntity.ok(aiService.processPrompt(request.getPrompt(), user, http.getRemoteAddr()));
+        entitlementService.checkAccess(user);
+        PromptResponse result = aiService.processPrompt(request.getPrompt(), user, http.getRemoteAddr());
+        entitlementService.consume(user);
+        return ResponseEntity.ok(result);
     }
 }
