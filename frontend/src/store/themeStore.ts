@@ -24,7 +24,7 @@ function applyTheme(preference: ThemePreference) {
   document.documentElement.classList.toggle('dark', isDark)
   document.documentElement.dataset.theme = isDark ? 'dark' : 'light'
   document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
-    ?.setAttribute('content', isDark ? '#070b14' : '#1e1a38')
+    ?.setAttribute('content', isDark ? '#070b14' : '#f5f4fd')
   return isDark
 }
 

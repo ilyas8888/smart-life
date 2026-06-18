@@ -14,22 +14,22 @@
 }
 
 @layer base {
-  /* ── Mode normal (défaut) : "Soirée Indigo" — fond violet profond ── */
+  /* ── Mode normal (défaut) : "Lavande Douce" — fond clair, accents indigo ── */
   :root {
-    color-scheme: dark;
-    --app-bg: #1e1a38;
-    --app-bg-gradient: radial-gradient(at 20% 0%, #2d2760 0%, #1e1a38 50%, #231e4a 100%);
-    --surface: #2a2550;
-    --surface-elevated: #342f6a;
-    --surface-muted: rgba(99, 102, 241, 0.12);
-    --surface-hover: rgba(99, 102, 241, 0.22);
-    --text-primary: #ede9ff;
-    --text-secondary: #a89fd4;
-    --text-muted: #6b639e;
-    --border-subtle: rgba(139, 92, 246, 0.35);
-    --shadow-card: 0 8px 32px rgba(99, 102, 241, 0.40), 0 2px 8px rgba(139, 92, 246, 0.20);
-    --shadow-elevated: 0 20px 60px rgba(99, 102, 241, 0.55), 0 4px 16px rgba(139, 92, 246, 0.30);
-    --ring-focus: rgba(139, 92, 246, 0.55);
+    color-scheme: light;
+    --app-bg: #f5f4fd;
+    --app-bg-gradient: radial-gradient(circle at 18% 0%, #eef0ff 0%, #f5f4fd 34%, #f7f5fc 100%);
+    --surface: #ffffff;
+    --surface-elevated: #f0edfd;
+    --surface-muted: rgba(99, 102, 241, 0.06);
+    --surface-hover: rgba(99, 102, 241, 0.11);
+    --text-primary: #1c1a2e;
+    --text-secondary: #56526e;
+    --text-muted: #928da8;
+    --border-subtle: rgba(99, 102, 241, 0.15);
+    --shadow-card: 0 10px 30px -8px rgba(99, 102, 241, 0.22), 0 4px 12px -6px rgba(124, 58, 237, 0.18);
+    --shadow-elevated: 0 20px 48px -12px rgba(99, 102, 241, 0.30), 0 8px 24px -8px rgba(124, 58, 237, 0.22);
+    --ring-focus: rgba(99, 102, 241, 0.35);
   }
 
   /* ── Dark mode : quasi-noir, aligné sur le langage glow indigo ── */
@@ -69,14 +69,55 @@
     color: var(--text-primary);
   }
 
+  /* ── Light-mode overrides for hardcoded Tailwind dark-first utilities ── */
+
+  [data-theme="light"] select { color-scheme: light; }
+
+  /* text-white → texte sombre (les boutons colorés restaurent blanc ci-dessous) */
+  [data-theme="light"] .text-white { color: var(--text-primary) !important; }
+  [data-theme="light"] .btn-primary,
+  [data-theme="light"] .btn-primary * { color: #ffffff !important; }
+
+  /* text-gray-* et text-slate-* → contraste sur fond clair */
+  [data-theme="light"] .text-gray-400  { color: var(--text-secondary) !important; }
+  [data-theme="light"] .text-gray-500  { color: var(--text-muted) !important; }
+  [data-theme="light"] .text-slate-200,
+  [data-theme="light"] .text-slate-300 { color: var(--text-secondary) !important; }
+
+  /* bg-white/N → teinte indigo subtile au lieu de blanc transparent invisible */
+  [data-theme="light"] .bg-white\/5         { background-color: rgba(99,102,241,0.05) !important; }
+  [data-theme="light"] .bg-white\/\[0\.05\] { background-color: rgba(99,102,241,0.05) !important; }
+  [data-theme="light"] .bg-white\/\[0\.08\] { background-color: rgba(99,102,241,0.07) !important; }
+  [data-theme="light"] .bg-white\/10        { background-color: rgba(99,102,241,0.09) !important; }
+  [data-theme="light"] .bg-white\/15        { background-color: rgba(99,102,241,0.12) !important; }
+  [data-theme="light"] .bg-white\/20        { background-color: rgba(99,102,241,0.15) !important; }
+
+  /* border-white/N → bordure indigo subtile */
+  [data-theme="light"] .border-white\/5  { border-color: rgba(99,102,241,0.10) !important; }
+  [data-theme="light"] .border-white\/10 { border-color: rgba(99,102,241,0.15) !important; }
+  [data-theme="light"] .border-white\/20 { border-color: rgba(99,102,241,0.22) !important; }
+  [data-theme="light"] .border-white\/30 { border-color: rgba(99,102,241,0.28) !important; }
+
+  /* Fonds sombres hardcodés → surface tokens */
+  [data-theme="light"] .bg-slate-800\/50 { background-color: rgba(99,102,241,0.08) !important; }
+  [data-theme="light"] .bg-slate-900\/50 { background-color: rgba(99,102,241,0.06) !important; }
+  [data-theme="light"] .bg-black\/40,
+  [data-theme="light"] .bg-black\/60     { background-color: rgba(28,26,46,0.55) !important; }
+
+  /* Module accent pills — texte plus foncé pour lisibilité sur fond clair */
+  [data-theme="light"] .module-accent-indigo  { background: rgba(99,102,241,0.12);  color: #4338ca; }
+  [data-theme="light"] .module-accent-violet  { background: rgba(139,92,246,0.12);  color: #6d28d9; }
+  [data-theme="light"] .module-accent-sky     { background: rgba(14,165,233,0.12);  color: #0369a1; }
+  [data-theme="light"] .module-accent-emerald { background: rgba(16,185,129,0.12);  color: #047857; }
+  [data-theme="light"] .module-accent-amber   { background: rgba(245,158,11,0.12);  color: #92400e; }
+  [data-theme="light"] .module-accent-rose    { background: rgba(244,63,94,0.12);   color: #9f1239; }
+  [data-theme="light"] .module-accent-orange  { background: rgba(249,115,22,0.12);  color: #9a3412; }
+  [data-theme="light"] .module-accent-cyan    { background: rgba(6,182,212,0.12);   color: #0e7490; }
+
   /* ───────────────────────────────────────────────────────────
-     Surface bridge — les deux modes sont sombres (Soirée Indigo
-     par défaut, quasi-noir en .dark). Les classes utilitaires
-     dark-first (text-white, bg-white/5, border-white/10…) rendent
-     correctement sur les deux : on ne remappe donc QUE les
-     surfaces near-black hardcodées vers les tokens sémantiques,
-     pour qu'elles prennent le violet en mode normal (et restent
-     near-black en dark).
+     Surface bridge — remaps hardcoded near-black hex classes vers
+     les tokens sémantiques (surface-elevated prend la teinte du
+     mode en cours : blanc/lavande en light, quasi-noir en dark).
      ─────────────────────────────────────────────────────────── */
   .bg-\[\#0f1117\],
   [class~="bg-[#070B14]"],
