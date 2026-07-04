@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { useAuthStore } from './store/authStore'
 import { useThemeStore } from './store/themeStore'
+import MaintenanceBanner from './components/MaintenanceBanner'
 
 const LoginPage        = lazy(() => import('./pages/LoginPage'))
 const RegisterPage     = lazy(() => import('./pages/RegisterPage'))
@@ -38,6 +39,8 @@ export default function App() {
   }, [])
 
   return (
+    <>
+    <MaintenanceBanner />
     <Suspense fallback={<div className="h-screen flex items-center justify-center" style={{ background: 'var(--app-bg)' }}><div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin" /></div>}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
@@ -50,5 +53,6 @@ export default function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
+    </>
   )
 }
