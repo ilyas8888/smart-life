@@ -11,11 +11,15 @@ let refreshPromise: Promise<string> | null = null
 
 export function refreshAccessToken(): Promise<string> {
   if (!refreshPromise) {
-    const { email, firstName, lastName, setAuth } = useAuthStore.getState()
+    const { refreshToken, setToken, setRefreshToken } = useAuthStore.getState()
+    // Refresh token envoye dans le body (plus de cookie/credentials) : le proxy
+    // HuggingFace bloque les requetes credentialed cross-origin. Le backend fait
+    // tourner le token, on stocke donc celui renvoye pour le prochain refresh.
     refreshPromise = axios
-      .post(`${API_BASE}/api/auth/refresh`, {}, { withCredentials: true })
+      .post(`${API_BASE}/api/auth/refresh`, { refreshToken })
       .then(({ data }) => {
-        setAuth(data.accessToken, email ?? '', firstName, lastName)
+        setToken(data.accessToken)
+        if (data.refreshToken) setRefreshToken(data.refreshToken)
         return data.accessToken as string
       })
       .finally(() => { refreshPromise = null })
