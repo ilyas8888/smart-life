@@ -42,6 +42,7 @@ export default function RegisterPage() {
     try {
       const { data } = await api.post('/auth/verify-otp', { userId: otpUserId, code: otp })
       setAuth(data.token, data.email, data.firstName, data.lastName)
+      if (data.refreshToken) setRefreshToken(data.refreshToken)
       navigate('/')
     } catch {
       toast.error('Code OTP invalide ou expiré')

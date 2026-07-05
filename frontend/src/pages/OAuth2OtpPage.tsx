@@ -8,6 +8,7 @@ import { useAuthStore } from '../store/authStore'
 export default function OAuth2OtpPage() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
+  const setRefreshToken = useAuthStore((s) => s.setRefreshToken)
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -24,6 +25,7 @@ export default function OAuth2OtpPage() {
     try {
       const { data } = await api.post('/auth/verify-otp', { userId: Number(userId), code: otp })
       setAuth(data.token, data.email, data.firstName, data.lastName)
+      if (data.refreshToken) setRefreshToken(data.refreshToken)
       navigate('/', { replace: true })
     } catch {
       toast.error('Code OTP invalide ou expiré')
