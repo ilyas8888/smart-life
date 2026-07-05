@@ -17,6 +17,8 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -73,11 +75,15 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 .expiresAt(LocalDateTime.now().plusDays(7))
                 .build());
         otpService.sendOAuth2LoginNotification(user, clientIp(request));
-        String redirectUrl = frontendUrl + "/oauth2/callback?token=" + accessToken
-                + "&refreshToken=" + refreshToken
-                + "&email=" + email
-                + "&firstName=" + firstName
-                + "&lastName=" + lastName;
+        // Tokens dans le fragment d'URL (#) et non en query (?) : les fragments ne
+        // sont jamais envoyes au serveur, donc absents des logs d'acces nginx/HF et
+        // du header Referer. Valeurs URL-encodees (email/noms peuvent contenir
+        // espaces ou caracteres speciaux).
+        String redirectUrl = frontendUrl + "/oauth2/callback#token=" + enc(accessToken)
+                + "&refreshToken=" + enc(refreshToken)
+                + "&email=" + enc(email)
+                + "&firstName=" + enc(firstName)
+                + "&lastName=" + enc(lastName);
         invalidateSession(request);
         response.sendRedirect(redirectUrl);
     }
@@ -86,6 +92,10 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         SecurityContextHolder.clearContext();
         HttpSession session = request.getSession(false);
         if (session != null) session.invalidate();
+    }
+
+    private static String enc(String value) {
+        return URLEncoder.encode(value != null ? value : "", StandardCharsets.UTF_8);
     }
 
     private String clientIp(HttpServletRequest request) {
