@@ -94,7 +94,12 @@ public class AuthController {
         String refreshToken = cookieToken != null ? cookieToken : (body != null ? body.get("refreshToken") : null);
         Map<String, String> result = authService.refresh(refreshToken);
         setRefreshCookie(response, result.get("refreshToken"));
-        return ResponseEntity.ok(Map.of("accessToken", result.get("accessToken")));
+        // Le refresh token rotatif est aussi renvoye dans le body pour le flux
+        // sans cookie (cross-origin derriere le proxy HuggingFace).
+        return ResponseEntity.ok(Map.of(
+                "accessToken", result.get("accessToken"),
+                "refreshToken", result.get("refreshToken")
+        ));
     }
 
     @PostMapping("/logout")
@@ -134,6 +139,11 @@ public class AuthController {
     private Map<String, Object> toPublicAuth(AuthResponse auth) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("token", auth.getToken());
+        // Refresh token renvoye aussi dans le body : le cookie HttpOnly cross-origin
+        // ne fonctionne pas derriere le proxy HuggingFace (preflight sans
+        // Access-Control-Allow-Credentials). Le frontend le stocke et l'envoie
+        // dans le body de /refresh.
+        map.put("refreshToken", auth.getRefreshToken());
         map.put("email", auth.getEmail());
         map.put("firstName", auth.getFirstName());
         map.put("lastName", auth.getLastName());
