@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Brain, CheckSquare, Bell, FileText, Users, LogOut,
-  Send, Sparkles, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon, BookOpen, Dumbbell, Menu, X, Lock, ShieldCheck, ExternalLink, Globe
+  Send, Sparkles, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon, BookOpen, Dumbbell, Menu, X, Lock, ShieldCheck, ExternalLink, Globe, HeartPulse, GraduationCap
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
 import { useThemeStore } from '../store/themeStore'
@@ -27,6 +28,35 @@ const ProfilePanel   = lazy(() => import('../components/ProfilePanel'))
 type Panel = 'home' | 'agenda' | 'prompt' | 'tasks' | 'reminders' | 'notes' | 'contacts' | 'food' | 'diary' | 'workout' | 'sleep' | 'study' | 'social' | 'profile' | 'admin'
 
 const VALID_PANELS: Panel[] = ['home', 'agenda', 'prompt', 'tasks', 'reminders', 'notes', 'contacts', 'food', 'diary', 'workout', 'sleep', 'study', 'social', 'profile', 'admin']
+
+const PANEL_META: Record<Panel, { label: string; icon: LucideIcon }> = {
+  home:      { label: 'Accueil', icon: Sparkles },
+  agenda:    { label: 'Agenda', icon: CalendarDays },
+  prompt:    { label: 'Assistant IA', icon: Brain },
+  tasks:     { label: 'Tâches', icon: CheckSquare },
+  reminders: { label: 'Rappels', icon: Bell },
+  notes:     { label: 'Notes', icon: FileText },
+  contacts:  { label: 'Contacts', icon: Users },
+  food:      { label: 'Alimentation', icon: UtensilsCrossed },
+  diary:     { label: 'Journal', icon: BookOpen },
+  workout:   { label: 'Sport', icon: Dumbbell },
+  sleep:     { label: 'Sommeil', icon: Moon },
+  study:     { label: 'Apprentissage', icon: GraduationCap },
+  social:    { label: 'Together', icon: Globe },
+  profile:   { label: 'Mon Profil', icon: Users },
+  admin:     { label: 'Admin IA', icon: ShieldCheck },
+}
+
+type NavGroup = { id: string; label: string; icon: LucideIcon; panels: Panel[] }
+
+const NAV_GROUPS: NavGroup[] = [
+  { id: 'home',      label: 'Accueil',      icon: Sparkles,     panels: ['home'] },
+  { id: 'assistant', label: 'Assistant IA', icon: Brain,        panels: ['prompt'] },
+  { id: 'agenda',    label: 'Agenda',       icon: CalendarDays, panels: ['agenda', 'tasks', 'reminders', 'notes', 'contacts'] },
+  { id: 'wellbeing', label: 'Well being',   icon: HeartPulse,   panels: ['food', 'workout', 'sleep', 'diary', 'study'] },
+  { id: 'together',  label: 'Together',     icon: Globe,        panels: ['social'] },
+  { id: 'profile',   label: 'Mon Profil',   icon: Users,        panels: ['profile'] },
+]
 
 type AiAccessStatus = {
   status: 'FREE' | 'APPROVED' | 'PREMIUM' | 'ADMIN' | 'BLOCKED'
@@ -134,33 +164,13 @@ export default function DashboardPage() {
     },
   })
 
-  const { data: pendingAiRequests = [], refetch: refetchAiRequests } = useQuery<AdminAiRequest[]>({
+  const { data: pendingAiRequests = [] } = useQuery<AdminAiRequest[]>({
     queryKey: ['admin-ai-requests'],
     queryFn: () => api.get('/admin/ai/requests').then((r) => r.data),
     enabled: aiStatus?.status === 'ADMIN',
   })
 
-  const approveAiRequestMutation = useMutation({
-    mutationFn: (id: number) =>
-      api.put(`/admin/ai/requests/${id}/approve`, { status: 'APPROVED', monthlyQuota: 100 }),
-    onSuccess: () => {
-      toast.success('Acces approuve.')
-      refetchAiRequests()
-    },
-    onError: () => toast.error('Erreur lors de l\'approbation.'),
-  })
-
-  const rejectAiRequestMutation = useMutation({
-    mutationFn: (id: number) => api.put(`/admin/ai/requests/${id}/reject`),
-    onSuccess: () => {
-      toast.success('Demande rejetee.')
-      refetchAiRequests()
-    },
-    onError: () => toast.error('Erreur lors du rejet.'),
-  })
-
   const pendingAiRequestCount = pendingAiRequests.length
-  const isAdminAiActionPending = approveAiRequestMutation.isPending || rejectAiRequestMutation.isPending
 
   const displayName = firstName ? `${firstName} ${lastName ?? ''}`.trim() : (email ?? 'Utilisateur')
 
@@ -206,28 +216,18 @@ export default function DashboardPage() {
     admin:     'from-emerald-500 via-teal-500 to-cyan-500',
   }
 
-  const navItems = [
-    { id: 'home' as Panel, label: 'Accueil', icon: Sparkles },
-    { id: 'agenda' as Panel, label: 'Agenda', icon: CalendarDays },
-    { id: 'prompt' as Panel, label: 'Prompt IA', icon: Brain },
-    { id: 'tasks' as Panel, label: 'Tâches', icon: CheckSquare },
-    { id: 'reminders' as Panel, label: 'Rappels', icon: Bell },
-    { id: 'notes' as Panel, label: 'Notes', icon: FileText },
-    { id: 'contacts' as Panel, label: 'Contacts', icon: Users },
-    { id: 'food' as Panel, label: 'Alimentation', icon: UtensilsCrossed },
-    { id: 'diary' as Panel, label: 'Journal', icon: BookOpen },
-    { id: 'workout' as Panel, label: 'Sport', icon: Dumbbell },
-    { id: 'sleep' as Panel, label: 'Sommeil', icon: Moon },
-    { id: 'study' as Panel, label: 'Apprentissage', icon: BookOpen },
-    { id: 'social'   as Panel, label: 'Together', icon: Globe },
-    { id: 'profile'  as Panel, label: 'Mon Profil', icon: Users },
+  const navGroups: NavGroup[] = [
+    ...NAV_GROUPS,
     ...(aiStatus?.status === 'ADMIN' ? [{
-      id: 'admin' as Panel,
+      id: 'admin',
       label: pendingAiRequestCount > 0 ? `Admin IA (${pendingAiRequestCount})` : 'Admin IA',
       icon: ShieldCheck,
-      disabled: isAdminAiActionPending,
+      panels: ['admin'] as Panel[],
     }] : []),
   ]
+
+  const activeGroup = navGroups.find((g) => g.panels.includes(activePanel)) ?? navGroups[0]
+  const showSubTabs = activeGroup.panels.length > 1
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault()
@@ -254,6 +254,12 @@ export default function DashboardPage() {
     window.location.hash = id
     setActivePanel(id)
     setSidebarOpen(false)
+  }
+
+  const handleGroupClick = (group: NavGroup) => {
+    // Reste sur le panneau courant si deja dans ce pole, sinon ouvre le premier
+    const target = group.panels.includes(activePanel) ? activePanel : group.panels[0]
+    handleNavClick(target)
   }
 
   return (
@@ -299,24 +305,28 @@ export default function DashboardPage() {
         </div>
 
         <nav className={`flex-1 p-3 space-y-0.5 overflow-y-auto ${sidebarCollapsed ? 'md:px-2' : ''}`}>
-          {navItems.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => handleNavClick(id)}
-              title={sidebarCollapsed ? label : undefined}
-              className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${sidebarCollapsed ? 'md:justify-center md:px-0' : ''} ${
-                activePanel === id
-                  ? `bg-white/[0.08] ${MODULE_ACCENT[id]}`
-                  : 'text-gray-500 hover:text-gray-100 hover:bg-white/[0.05]'
-              }`}
-            >
-              {activePanel === id && !sidebarCollapsed && (
-                <span className="absolute left-0 inset-y-2 w-0.5 rounded-r-full bg-current" />
-              )}
-              <Icon size={19} className={activePanel === id ? MODULE_ACCENT[id] : ''} />
-              <span className={sidebarCollapsed ? 'md:hidden' : ''}>{label}</span>
-            </button>
-          ))}
+          {navGroups.map(({ id, label, icon: Icon, panels }) => {
+            const isActive = panels.includes(activePanel)
+            const accent = MODULE_ACCENT[panels[0]]
+            return (
+              <button
+                key={id}
+                onClick={() => id === 'admin' ? handleNavClick('admin') : handleGroupClick({ id, label, icon: Icon, panels })}
+                title={sidebarCollapsed ? label : undefined}
+                className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${sidebarCollapsed ? 'md:justify-center md:px-0' : ''} ${
+                  isActive
+                    ? `bg-white/[0.08] ${accent}`
+                    : 'text-gray-500 hover:text-gray-100 hover:bg-white/[0.05]'
+                }`}
+              >
+                {isActive && !sidebarCollapsed && (
+                  <span className="absolute left-0 inset-y-2 w-0.5 rounded-r-full bg-current" />
+                )}
+                <Icon size={19} className={isActive ? accent : ''} />
+                <span className={sidebarCollapsed ? 'md:hidden' : ''}>{label}</span>
+              </button>
+            )
+          })}
         </nav>
 
         <div className={`p-4 border-t border-white/[0.06] ${sidebarCollapsed ? 'md:px-2' : ''}`}>
@@ -357,11 +367,15 @@ export default function DashboardPage() {
               >
                 <Menu size={20} />
               </button>
-              <span className="text-gray-600">SmartLife</span>
-              <ChevronRight size={14} className="text-gray-700" />
-              <span className="text-white font-semibold">
-                {navItems.find((n) => n.id === activePanel)?.label}
-              </span>
+              <span className="text-gray-600">{activeGroup.label}</span>
+              {showSubTabs ? (
+                <>
+                  <ChevronRight size={14} className="text-gray-700" />
+                  <span className="text-white font-semibold">{PANEL_META[activePanel].label}</span>
+                </>
+              ) : (
+                <span className="sr-only">{PANEL_META[activePanel].label}</span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <NotificationBell />
@@ -383,6 +397,28 @@ export default function DashboardPage() {
         </header>
 
         <div className="flex-1 overflow-auto p-3 sm:p-4 md:p-6">
+          {showSubTabs && (
+            <div className="flex gap-1 mb-5 overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.04] p-1 w-fit max-w-full">
+              {activeGroup.panels.map((pid) => {
+                const meta = PANEL_META[pid]
+                const SubIcon = meta.icon
+                const active = activePanel === pid
+                return (
+                  <button
+                    key={pid}
+                    type="button"
+                    onClick={() => handleNavClick(pid)}
+                    className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors ${
+                      active ? `bg-white/10 ${MODULE_ACCENT[pid]}` : 'text-gray-500 hover:text-gray-200 hover:bg-white/[0.05]'
+                    }`}
+                  >
+                    <SubIcon size={16} className={active ? MODULE_ACCENT[pid] : ''} />
+                    {meta.label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
           <div key={activePanel} className="w-full min-h-full animate-panel">
             <div className={`h-px mb-8 bg-gradient-to-r ${MODULE_GRADIENT[activePanel]} opacity-60`} />
 
@@ -582,21 +618,25 @@ export default function DashboardPage() {
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-subtle app-header backdrop-blur-xl px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 md:hidden">
         <div className="flex gap-1 overflow-x-auto">
-          {navItems.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => handleNavClick(id)}
-              className={`flex min-w-[4.75rem] flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-semibold transition-all ${
-                activePanel === id
-                  ? `bg-white/10 ${MODULE_ACCENT[id]}`
-                  : 'text-gray-500 hover:text-gray-200 hover:bg-white/[0.05]'
-              }`}
-            >
-              <Icon size={19} className={activePanel === id ? MODULE_ACCENT[id] : ''} />
-              <span className="max-w-16 truncate">{label.replace(/\s*\(.+\)$/, '')}</span>
-            </button>
-          ))}
+          {navGroups.map(({ id, label, icon: Icon, panels }) => {
+            const isActive = panels.includes(activePanel)
+            const accent = MODULE_ACCENT[panels[0]]
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => id === 'admin' ? handleNavClick('admin') : handleGroupClick({ id, label, icon: Icon, panels })}
+                className={`flex min-w-[4.75rem] flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-semibold transition-all ${
+                  isActive
+                    ? `bg-white/10 ${accent}`
+                    : 'text-gray-500 hover:text-gray-200 hover:bg-white/[0.05]'
+                }`}
+              >
+                <Icon size={19} className={isActive ? accent : ''} />
+                <span className="max-w-16 truncate">{label.replace(/\s*\(.+\)$/, '')}</span>
+              </button>
+            )
+          })}
         </div>
       </nav>
 

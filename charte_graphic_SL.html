@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Charte Graphique SmartLife</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --brand-indigo: #6366f1;
+      --brand-violet: #7c3aed;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+
+      --light-bg: #f5f4fd;
+      --light-bg-soft: #eef0ff;
+      --light-surface: #ffffff;
+      --light-muted: rgba(99, 102, 241, 0.06);
+      --light-hover: rgba(99, 102, 241, 0.11);
+      --light-text: #1c1a2e;
+      --light-text-secondary: #56526e;
+      --light-text-muted: #928da8;
+      --light-border: rgba(99, 102, 241, 0.15);
+      --light-shadow: 0 10px 30px -8px rgba(99, 102, 241, 0.22), 0 4px 12px -6px rgba(124, 58, 237, 0.18);
+
+      --dark-bg: #070b14;
+      --dark-surface: #0d1117;
+      --dark-elevated: #0f1117;
+      --dark-muted: rgba(255, 255, 255, 0.05);
+      --dark-hover: rgba(255, 255, 255, 0.10);
+      --dark-text: #f1f5f9;
+      --dark-text-secondary: #94a3b8;
+      --dark-text-muted: #64748b;
+      --dark-border: rgba(255, 255, 255, 0.10);
+      --dark-shadow: 0 8px 40px rgba(0, 0, 0, 0.60);
+
+      --gradient-brand: linear-gradient(135deg, #6366f1 0%, #7c3aed 100%);
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background:
+        radial-gradient(circle at 18% 0%, #eef0ff 0, #f5f4fd 34%, #f7f5fc 72%),
+        var(--light-bg);
+      color: var(--light-text);
+      font-family: var(--font);
+      line-height: 1.55;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 56px;
+    }
+
+    .hero {
+      min-height: 78vh;
+      display: grid;
+      align-content: center;
+      gap: 28px;
+      padding: 44px 0 32px;
+    }
+
+    .hero-topline {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      color: var(--light-text-secondary);
+      font-size: 0.92rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: var(--gradient-brand);
+      box-shadow: 0 14px 32px -12px rgba(99, 102, 241, 0.70);
+      display: inline-grid;
+      place-items: center;
+      color: #ffffff;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 900px;
+      font-size: clamp(2.6rem, 7vw, 6.2rem);
+      line-height: 0.95;
+      letter-spacing: 0;
+      color: var(--light-text);
+    }
+
+    .hero-copy {
+      max-width: 760px;
+      margin: 0;
+      color: var(--light-text-secondary);
+      font-size: clamp(1.05rem, 2vw, 1.28rem);
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      text-decoration: none;
+      font-weight: 800;
+      transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease;
+    }
+
+    .button.primary {
+      background: var(--gradient-brand);
+      color: #ffffff;
+      box-shadow: 0 10px 26px -8px rgba(99, 102, 241, 0.58);
+    }
+
+    .button.secondary {
+      background: var(--light-muted);
+      border-color: var(--light-border);
+      color: var(--light-text-secondary);
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+    }
+
+    .toc {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+    }
+
+    .toc a {
+      border: 1px solid var(--light-border);
+      background: color-mix(in srgb, var(--light-surface) 82%, transparent);
+      box-shadow: var(--light-shadow);
+      border-radius: 16px;
+      padding: 14px;
+      color: var(--light-text-secondary);
+      text-decoration: none;
+      font-weight: 800;
+    }
+
+    section {
+      padding: 34px 0;
+    }
+
+    .section-head {
+      display: grid;
+      gap: 8px;
+      max-width: 820px;
+      margin-bottom: 18px;
+    }
+
+    h2 {
+      margin: 0;
+      color: var(--light-text);
+      font-size: clamp(1.8rem, 3vw, 2.5rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 12px;
+      font-size: 1.1rem;
+      color: var(--light-text);
+    }
+
+    p {
+      margin: 0;
+    }
+
+    .muted {
+      color: var(--light-text-secondary);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .panel {
+      background: var(--light-surface);
+      border: 1px solid var(--light-border);
+      border-radius: 16px;
+      box-shadow: var(--light-shadow);
+      padding: 18px;
+    }
+
+    .panel.dark {
+      background: var(--dark-surface);
+      border-color: var(--dark-border);
+      box-shadow: var(--dark-shadow);
+      color: var(--dark-text);
+    }
+
+    .panel.dark .muted,
+    .dark .token-role {
+      color: var(--dark-text-secondary);
+    }
+
+    .signature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .theme-preview {
+      min-height: 280px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .theme-preview.light {
+      background:
+        radial-gradient(circle at 15% 0%, #eef0ff, #f5f4fd 45%, #f7f5fc 100%);
+    }
+
+    .theme-preview.dark {
+      background:
+        radial-gradient(circle at 18% 0%, rgba(99, 102, 241, 0.32), transparent 40%),
+        #070b14;
+    }
+
+    .sample-card {
+      margin-top: 18px;
+      border-radius: 16px;
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .theme-preview.light .sample-card {
+      background: #ffffff;
+      border: 1px solid var(--light-border);
+      box-shadow: var(--light-shadow);
+    }
+
+    .theme-preview.dark .sample-card {
+      background: rgba(13, 17, 23, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: 0 18px 52px rgba(0, 0, 0, 0.60);
+      backdrop-filter: blur(24px);
+    }
+
+    .sample-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .progress {
+      height: 10px;
+      background: var(--light-muted);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .dark .progress {
+      background: var(--dark-muted);
+    }
+
+    .progress span {
+      display: block;
+      width: 72%;
+      height: 100%;
+      background: var(--gradient-brand);
+      border-radius: inherit;
+    }
+
+    .token-table,
+    .component-table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 16px;
+      background: var(--light-surface);
+      box-shadow: var(--light-shadow);
+      border: 1px solid var(--light-border);
+    }
+
+    .token-table th,
+    .token-table td,
+    .component-table th,
+    .component-table td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--light-border);
+      vertical-align: top;
+    }
+
+    .token-table th,
+    .component-table th {
+      background: var(--light-muted);
+      color: var(--light-text);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .token-table tr:last-child td,
+    .component-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    code {
+      display: inline-block;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.14);
+      border-radius: 8px;
+      padding: 2px 7px;
+      color: #4338ca;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.9em;
+    }
+
+    pre {
+      margin: 0;
+      padding: 16px;
+      overflow: auto;
+      border-radius: 16px;
+      background: #0d1117;
+      color: #e5e7eb;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      font-size: 0.86rem;
+      line-height: 1.55;
+    }
+
+    pre code {
+      display: block;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      color: inherit;
+    }
+
+    .swatches {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .swatch {
+      min-height: 128px;
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: end;
+      border: 1px solid rgba(28, 26, 46, 0.10);
+      box-shadow: 0 10px 24px -14px rgba(28, 26, 46, 0.55);
+      color: #ffffff;
+      font-weight: 850;
+    }
+
+    .swatch.light-label {
+      color: var(--light-text);
+    }
+
+    .swatch small {
+      display: block;
+      opacity: 0.82;
+      font-weight: 750;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .module-card {
+      border-radius: 16px;
+      padding: 14px;
+      background: #ffffff;
+      border: 1px solid var(--light-border);
+      box-shadow: 0 10px 24px -16px rgba(99, 102, 241, 0.48);
+    }
+
+    .module-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 0.78rem;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .pill.brand {
+      background: rgba(99, 102, 241, 0.10);
+      color: #4f46e5;
+    }
+
+    .components {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .component-demo {
+      display: grid;
+      gap: 12px;
+      min-height: 250px;
+    }
+
+    .input-demo {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--light-border);
+      background: var(--light-muted);
+      color: var(--light-text);
+      padding: 12px;
+      font: inherit;
+      outline: 0;
+    }
+
+    .input-demo:focus {
+      border-color: rgba(99, 102, 241, 0.60);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.20);
+    }
+
+    .dark .input-demo {
+      border-color: var(--dark-border);
+      background: var(--dark-muted);
+      color: var(--dark-text);
+    }
+
+    .modal-demo {
+      padding: 20px;
+      border-radius: 16px;
+      background: rgba(28, 26, 46, 0.35);
+    }
+
+    .modal-demo .panel {
+      box-shadow: 0 24px 60px -12px rgba(99, 102, 241, 0.30);
+    }
+
+    .rule-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .rule-list li {
+      border: 1px solid var(--light-border);
+      background: var(--light-surface);
+      box-shadow: 0 10px 24px -18px rgba(99, 102, 241, 0.50);
+      border-radius: 14px;
+      padding: 13px 14px;
+    }
+
+    .rule-list strong {
+      color: var(--light-text);
+    }
+
+    .footer {
+      padding-top: 28px;
+      color: var(--light-text-muted);
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100% - 20px, 1180px);
+        padding-top: 18px;
+      }
+
+      .hero {
+        min-height: auto;
+        padding-top: 28px;
+      }
+
+      .token-table,
+      .component-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        transition-duration: 0.001ms !important;
+        animation-duration: 0.001ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="hero-topline">
+        <span class="brand-mark">SL</span>
+        <span>Charte graphique</span>
+        <span>SmartLife</span>
+      </div>
+      <h1>Assistant personnel intelligent, calme et premium.</h1>
+      <p class="hero-copy">
+        Cette charte formalise l'identite visuelle de SmartLife autour de l'axe indigo vers violet.
+        Le dark mode conserve le glow neon existant, tandis que le light mode devient un canvas lavande
+        professionnel avec ombres teintees, jamais grises.
+      </p>
+      <nav class="hero-actions" aria-label="Navigation rapide">
+        <a class="button primary" href="#tokens">Tokens</a>
+        <a class="button secondary" href="#modules">Modules</a>
+        <a class="button secondary" href="#components">Composants</a>
+        <a class="button secondary" href="#migration">Migration</a>
+      </nav>
+      <div class="toc">
+        <a href="#signature">01. Signature</a>
+        <a href="#tokens">02. Couleurs</a>
+        <a href="#modules">03. Accents module</a>
+        <a href="#type">04. Typographie</a>
+        <a href="#components">05. Composants</a>
+        <a href="#motion">06. Mouvement</a>
+      </div>
+    </header>
+
+    <section id="signature">
+      <div class="section-head">
+        <h2>Signature De Marque</h2>
+        <p class="muted">
+          SmartLife doit paraitre fiable, intelligent et apaisant. La signature visuelle repose sur le gradient
+          <code>#6366F1</code> vers <code>#7C3AED</code>, present dans les appels a l'action, les focus states,
+          les indicateurs actifs et les accents de navigation.
+        </p>
+      </div>
+      <div class="signature-grid">
+        <article class="panel theme-preview light">
+          <h3>Light mode</h3>
+          <p class="muted">Canvas lavande clair, cartes blanches, ombres indigo/violet.</p>
+          <div class="sample-card">
+            <div class="sample-row">
+              <strong>Score du jour</strong>
+              <span class="pill brand">82%</span>
+            </div>
+            <div class="progress"><span></span></div>
+            <button class="button primary" type="button">Planifier</button>
+          </div>
+        </article>
+        <article class="panel dark theme-preview dark">
+          <h3>Dark mode</h3>
+          <p class="muted">Fond noir profond, glass blur, glow neon controle.</p>
+          <div class="sample-card">
+            <div class="sample-row">
+              <strong>Score du jour</strong>
+              <span class="pill" style="background: rgba(99,102,241,0.16); color: #a5b4fc;">82%</span>
+            </div>
+            <div class="progress"><span></span></div>
+            <button class="button primary" type="button">Planifier</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="tokens">
+      <div class="section-head">
+        <h2>Systeme De Couleurs</h2>
+        <p class="muted">
+          Les noms de tokens restent semantiques. Le light mode ne doit pas utiliser un blanc pur comme fond de page,
+          et ses ombres doivent toujours etre teintees par l'identite indigo/violet.
+        </p>
+      </div>
+
+      <div class="swatches" aria-label="Palette principale">
+        <div class="swatch" style="background: #6366f1;">Brand Indigo <small>#6366F1</small></div>
+        <div class="swatch" style="background: #7c3aed;">Brand Violet <small>#7C3AED</small></div>
+        <div class="swatch" style="background: #10b981;">Success <small>#10B981</small></div>
+        <div class="swatch light-label" style="background: #f59e0b;">Warning <small>#F59E0B</small></div>
+        <div class="swatch" style="background: #ef4444;">Danger <small>#EF4444</small></div>
+        <div class="swatch light-label" style="background: #f5f4fd;">Canvas Light <small>#F5F4FD</small></div>
+      </div>
+
+      <div style="height: 18px;"></div>
+
+      <div class="grid">
+        <article class="panel">
+          <h3>Light tokens</h3>
+          <table class="token-table">
+            <thead>
+              <tr><th>Token</th><th>Valeur</th><th>Role</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>--app-bg</code></td><td>#F5F4FD</td><td>Canvas lavande clair</td></tr>
+              <tr><td><code>--app-bg-gradient</code></td><td>#EEF0FF -> #F5F4FD -> #F7F5FC</td><td>Fond de page subtil</td></tr>
+              <tr><td><code>--surface</code></td><td>#FFFFFF</td><td>Cartes et surfaces</td></tr>
+              <tr><td><code>--surface-muted</code></td><td>rgba(99,102,241,0.06)</td><td>Inputs, zones douces</td></tr>
+              <tr><td><code>--surface-hover</code></td><td>rgba(99,102,241,0.11)</td><td>Survol</td></tr>
+              <tr><td><code>--text-primary</code></td><td>#1C1A2E</td><td>Charcoal violace chaud</td></tr>
+              <tr><td><code>--text-secondary</code></td><td>#56526E</td><td>Texte secondaire</td></tr>
+              <tr><td><code>--text-muted</code></td><td>#928DA8</td><td>Labels, placeholders</td></tr>
+              <tr><td><code>--border-subtle</code></td><td>rgba(99,102,241,0.15)</td><td>Bordures teintees</td></tr>
+              <tr><td><code>--ring-focus</code></td><td>rgba(99,102,241,0.35)</td><td>Focus accessible</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="panel dark">
+          <h3>Dark tokens</h3>
+          <table class="token-table">
+            <thead>
+              <tr><th>Token</th><th>Valeur</th><th>Role</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>--app-bg</code></td><td>#070B14</td><td>Base noire profonde</td></tr>
+              <tr><td><code>--surface</code></td><td>#0D1117</td><td>Carte glass</td></tr>
+              <tr><td><code>--surface-elevated</code></td><td>#0F1117</td><td>Modales, popovers</td></tr>
+              <tr><td><code>--surface-muted</code></td><td>rgba(255,255,255,0.05)</td><td>Inputs, zones douces</td></tr>
+              <tr><td><code>--surface-hover</code></td><td>rgba(255,255,255,0.10)</td><td>Survol</td></tr>
+              <tr><td><code>--text-primary</code></td><td>#F1F5F9</td><td>Texte principal</td></tr>
+              <tr><td><code>--text-secondary</code></td><td>#94A3B8</td><td>Texte secondaire</td></tr>
+              <tr><td><code>--text-muted</code></td><td>#64748B</td><td>Labels, placeholders</td></tr>
+              <tr><td><code>--border-subtle</code></td><td>rgba(255,255,255,0.10)</td><td>Bordures glass</td></tr>
+              <tr><td><code>--shadow-card</code></td><td>0 8px 40px rgba(0,0,0,0.60)</td><td>Profondeur dark</td></tr>
+            </tbody>
+          </table>
+        </article>
+      </div>
+    </section>
+
+    <section id="modules">
+      <div class="section-head">
+        <h2>Accents Par Module</h2>
+        <p class="muted">
+          Chaque module dispose d'une couleur d'identite. En light, elle pilote les pills et les ombres colorees.
+          En dark, elle pilote aussi le glow module.
+        </p>
+      </div>
+      <div class="module-grid">
+        <article class="module-card"><div class="module-line"><strong>Tasks</strong><span class="pill" style="background: rgba(99,102,241,0.10); color: #4f46e5;">Indigo</span></div><p class="muted">Dark text: #A5B4FC</p></article>
+        <article class="module-card"><div class="module-line"><strong>Agenda</strong><span class="pill" style="background: rgba(139,92,246,0.10); color: #7c3aed;">Violet</span></div><p class="muted">Dark text: #C4B5FD</p></article>
+        <article class="module-card"><div class="module-line"><strong>Notes</strong><span class="pill" style="background: rgba(14,165,233,0.10); color: #0284c7;">Sky</span></div><p class="muted">Dark text: #7DD3FC</p></article>
+        <article class="module-card"><div class="module-line"><strong>Food</strong><span class="pill" style="background: rgba(16,185,129,0.10); color: #059669;">Emerald</span></div><p class="muted">Dark text: #6EE7B7</p></article>
+        <article class="module-card"><div class="module-line"><strong>Reminders</strong><span class="pill" style="background: rgba(245,158,11,0.12); color: #b45309;">Amber</span></div><p class="muted">Dark text: #FCD34D</p></article>
+        <article class="module-card"><div class="module-line"><strong>Sleep</strong><span class="pill" style="background: rgba(244,63,94,0.10); color: #e11d48;">Rose</span></div><p class="muted">Dark text: #FDA4AF</p></article>
+        <article class="module-card"><div class="module-line"><strong>Social</strong><span class="pill" style="background: rgba(249,115,22,0.10); color: #ea580c;">Orange</span></div><p class="muted">Dark text: #FDBA74</p></article>
+        <article class="module-card"><div class="module-line"><strong>Study</strong><span class="pill" style="background: rgba(6,182,212,0.10); color: #0e7490;">Cyan</span></div><p class="muted">Dark text: #67E8F9</p></article>
+      </div>
+    </section>
+
+    <section id="type">
+      <div class="section-head">
+        <h2>Typographie Et Densite</h2>
+        <p class="muted">
+          L'interface est operationnelle et dense. Les titres doivent rester lisibles sans devenir decoratifs.
+          La fonte systeme Inter-like conserve une sensation SaaS moderne.
+        </p>
+      </div>
+      <table class="component-table">
+        <thead>
+          <tr><th>Niveau</th><th>Usage</th><th>Regle</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Hero / page</td><td>Grand titre d'entree</td><td>Clamp responsive, line-height serre, pas de letter-spacing negatif</td></tr>
+          <tr><td>Titre panneau</td><td>Cards dashboard, modales</td><td>Text-lg a text-2xl, font-bold ou font-extrabold</td></tr>
+          <tr><td>Corps</td><td>Information principale</td><td>text-sm ou text-base, <code>--text-primary</code></td></tr>
+          <tr><td>Secondaire</td><td>Aides, metadonnees</td><td>text-sm, <code>--text-secondary</code></td></tr>
+          <tr><td>Caption</td><td>Labels, badges, dates</td><td>text-xs, font-semibold, <code>--text-muted</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="components">
+      <div class="section-head">
+        <h2>Composants De Reference</h2>
+        <p class="muted">
+          Les composants doivent exister cote light et dark avec le meme ADN: gradient marque, surfaces semantiques,
+          focus visible et feedback hover court.
+        </p>
+      </div>
+      <div class="components">
+        <article class="panel component-demo">
+          <h3>Carte light</h3>
+          <p class="muted">Background #FFFFFF, border indigo 15%, shadow card teintee.</p>
+          <div class="sample-row">
+            <span class="pill brand">Food</span>
+            <strong>1 840 kcal</strong>
+          </div>
+          <div class="progress"><span></span></div>
+          <button class="button primary" type="button">Ajouter</button>
+        </article>
+        <article class="panel dark component-demo">
+          <h3>Carte dark</h3>
+          <p class="muted">Glass blur 24px, bordure blanche 10%, glow controle.</p>
+          <div class="sample-row">
+            <span class="pill" style="background: rgba(16,185,129,0.16); color: #6ee7b7;">Food</span>
+            <strong>1 840 kcal</strong>
+          </div>
+          <div class="progress"><span></span></div>
+          <button class="button primary" type="button">Ajouter</button>
+        </article>
+        <article class="panel component-demo">
+          <h3>Inputs</h3>
+          <input class="input-demo" value="100g chicken breast" aria-label="Exemple input light">
+          <p class="muted">Placeholder et texte via tokens, jamais <code>placeholder-gray-500</code> hardcode.</p>
+          <button class="button secondary" type="button">Secondaire</button>
+        </article>
+        <article class="panel component-demo">
+          <h3>Modale</h3>
+          <div class="modal-demo">
+            <div class="panel">
+              <strong>Demander l'acces IA</strong>
+              <p class="muted">Overlay light violace, panneau eleve, rayon 16px.</p>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <div style="height: 18px;"></div>
+
+      <table class="component-table">
+        <thead>
+          <tr><th>Composant</th><th>Light</th><th>Dark</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>.glass-card</td><td>#FFFFFF, border <code>--border-subtle</code>, shadow teintee, rayon 16px</td><td>Glass blur 24px, surface #0D1117, shadow noire</td></tr>
+          <tr><td>.btn-primary</td><td>Gradient #6366F1 -> #7C3AED, texte blanc, hover shadow indigo</td><td>Meme gradient, glow neon conserve</td></tr>
+          <tr><td>.btn-secondary</td><td><code>--surface-muted</code>, texte secondaire, hover primary</td><td><code>--surface-muted</code>, hover blanc 10%</td></tr>
+          <tr><td>.input</td><td>Fond indigo 6%, focus ring indigo 35%</td><td>Fond blanc 5%, focus identique</td></tr>
+          <tr><td>.app-header</td><td>Surface 88% + backdrop blur, bordure basse subtile</td><td>Meme logique avec surface dark</td></tr>
+          <tr><td>Navigation active</td><td>Fond accent module + indicateur gradient marque</td><td>Fond accent dark + glow module</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="motion">
+      <div class="section-head">
+        <h2>Mouvement</h2>
+        <p class="muted">
+          Le mouvement est fonctionnel: il confirme l'interaction sans ralentir l'utilisateur.
+          Duree maximale recommandee: 300ms.
+        </p>
+      </div>
+      <ul class="rule-list">
+        <li><strong>Apparition panneau:</strong> <code>fadeSlideIn 0.22s ease-out</code> pour cartes et panneaux.</li>
+        <li><strong>Hover:</strong> 200ms, <code>translateY(-2px)</code> et ombre renforcee.</li>
+        <li><strong>Glow pulse:</strong> reserve au dark mode et aux etats importants.</li>
+        <li><strong>Accessibilite:</strong> desactiver translate/glow via <code>prefers-reduced-motion</code>.</li>
+      </ul>
+    </section>
+
+    <section id="accessibility">
+      <div class="section-head">
+        <h2>Accessibilite</h2>
+        <p class="muted">
+          La charte impose un contraste solide et des focus states visibles sur tous les elements interactifs.
+        </p>
+      </div>
+      <ul class="rule-list">
+        <li><strong>Contraste texte principal:</strong> viser au minimum 4.5:1. <code>#1C1A2E</code> sur <code>#FFFFFF</code> est tres confortable.</li>
+        <li><strong>Accents module:</strong> les textes light sont assombris pour rester lisibles sur fonds pastel.</li>
+        <li><strong>Focus:</strong> utiliser <code>--ring-focus</code> sur boutons, inputs, liens et menus.</li>
+        <li><strong>Color scheme:</strong> declarer light/dark pour les controles natifs.</li>
+      </ul>
+    </section>
+
+    <section id="migration">
+      <div class="section-head">
+        <h2>Plan De Migration CSS</h2>
+        <p class="muted">
+          Ordre conseille pour appliquer cette charte dans l'application sans casser les panneaux historiques.
+        </p>
+      </div>
+      <div class="grid">
+        <article class="panel">
+          <h3>Etapes</h3>
+          <ol class="muted">
+            <li>Remplacer le bloc <code>:root</code> light de <code>frontend/src/index.css</code> par les nouveaux tokens.</li>
+            <li>Ajouter <code>--app-bg-gradient</code> et l'appliquer sur <code>body</code>.</li>
+            <li>Corriger <code>.stat-value</code>: retirer <code>text-white</code> au profit de <code>var(--text-primary)</code>.</li>
+            <li>Corriger les placeholders d'input vers <code>--text-muted</code>.</li>
+            <li>Creer des utilitaires <code>module-accent-*</code> pour fonds et textes de module.</li>
+            <li>Remplacer progressivement le compatibility bridge par des tokens semantiques, module par module.</li>
+          </ol>
+        </article>
+        <article class="panel">
+          <h3>Bloc CSS cible</h3>
+          <pre><code>:root {
+  color-scheme: light;
+  --app-bg: #F5F4FD;
+  --app-bg-gradient:
+    radial-gradient(at 20% 0%, #EEF0FF 0%, #F5F4FD 40%, #F7F5FC 100%);
+  --surface: #FFFFFF;
+  --surface-elevated: #FFFFFF;
+  --surface-muted: rgba(99,102,241,0.06);
+  --surface-hover: rgba(99,102,241,0.11);
+  --text-primary: #1C1A2E;
+  --text-secondary: #56526E;
+  --text-muted: #928DA8;
+  --border-subtle: rgba(99,102,241,0.15);
+  --shadow-card:
+    0 10px 30px -8px rgba(99,102,241,0.22),
+    0 4px 12px -6px rgba(124,58,237,0.18);
+  --ring-focus: rgba(99,102,241,0.35);
+}</code></pre>
+        </article>
+      </div>
+    </section>
+
+    <footer class="footer">
+      Document genere depuis <code>analyzes/chf.md</code>. Reference vivante pour SmartLife web, PWA et declinaisons futures.
+    </footer>
+  </main>
+</body>
+</html>

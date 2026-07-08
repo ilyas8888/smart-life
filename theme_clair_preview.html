@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SmartLife — Mode Clair Preview</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #F8FAFC;
+      --surface:     #FFFFFF;
+      --primary:     #0284C7;
+      --primary-hover: #0369a1;
+      --primary-soft:  rgba(2, 132, 199, 0.10);
+      --primary-glow:  rgba(2, 132, 199, 0.22);
+      --success:     #10B981;
+      --success-soft:  rgba(16, 185, 129, 0.10);
+      --text:        #1E293B;
+      --text-sec:    #64748B;
+      --text-muted:  #94A3B8;
+      --border:      #E2E8F0;
+      --border-hover:#CBD5E1;
+      --shadow-sm:   0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md:   0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05);
+      --shadow-lg:   0 10px 36px rgba(2,132,199,0.12), 0 4px 12px rgba(0,0,0,0.06);
+      --radius:      14px;
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ─── LAYOUT ─── */
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 14px;
+      gap: 4px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 6px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+    .logo-icon {
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary), #0369a1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 12px var(--primary-glow);
+    }
+    .logo-name { font-size: 15px; font-weight: 800; color: var(--text); }
+    .logo-sub  { font-size: 10px; color: var(--text-muted); }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 10px;
+      color: var(--text-sec);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      text-decoration: none;
+    }
+    .nav-item:hover { background: var(--primary-soft); color: var(--primary); }
+    .nav-item.active {
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+    .nav-section {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 12px 10px 4px;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .user-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .user-row:hover { background: var(--primary-soft); }
+    .avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--success));
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 13px; font-weight: 700;
+    }
+    .user-name { font-size: 12px; font-weight: 600; color: var(--text); }
+    .user-role { font-size: 10px; color: var(--text-muted); }
+
+    /* ─── MAIN ─── */
+    .main {
+      flex: 1;
+      padding: 28px 32px;
+      overflow-y: auto;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .page-title { font-size: 22px; font-weight: 800; color: var(--text); }
+    .page-sub   { font-size: 13px; color: var(--text-sec); margin-top: 2px; }
+
+    /* ─── BUTTONS ─── */
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 0 16px var(--primary-glow);
+      transition: background .15s, box-shadow .15s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary:hover { background: var(--primary-hover); box-shadow: 0 0 24px var(--primary-glow); }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text-sec);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+
+    /* ─── STAT CARDS ─── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow .2s, border-color .2s;
+    }
+    .stat-card:hover { box-shadow: var(--shadow-md); border-color: var(--border-hover); }
+    .stat-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .stat-label { font-size: 12px; font-weight: 600; color: var(--text-sec); text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-icon  {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; font-size: 15px;
+    }
+    .stat-icon.blue   { background: var(--primary-soft); }
+    .stat-icon.green  { background: var(--success-soft); }
+    .stat-icon.amber  { background: rgba(245,158,11,0.10); }
+    .stat-icon.rose   { background: rgba(244,63,94,0.10); }
+    .stat-value { font-size: 26px; font-weight: 900; color: var(--text); letter-spacing: -1px; }
+    .stat-change {
+      font-size: 11px; font-weight: 600; margin-top: 4px;
+      display: flex; align-items: center; gap: 3px;
+    }
+    .stat-change.up   { color: var(--success); }
+    .stat-change.down { color: #ef4444; }
+
+    /* ─── TWO COLUMN ─── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .three-col { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+
+    /* ─── CARDS ─── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .card-head {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .card-title { font-size: 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .card-title-icon {
+      width: 26px; height: 26px; border-radius: 7px;
+      display: flex; align-items: center; justify-content: center; font-size: 13px;
+    }
+    .card-body { padding: 16px 20px; }
+    .card-link { font-size: 12px; color: var(--primary); font-weight: 500; cursor: pointer; }
+    .card-link:hover { text-decoration: underline; }
+
+    /* ─── ACTIVITY LIST ─── */
+    .activity-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .activity-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .activity-dot {
+      width: 36px; height: 36px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center; font-size: 16px;
+      flex-shrink: 0;
+    }
+    .activity-text { flex: 1; }
+    .activity-name   { font-size: 13px; font-weight: 600; color: var(--text); }
+    .activity-detail { font-size: 11px; color: var(--text-sec); margin-top: 1px; }
+    .activity-meta   { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+    /* ─── BADGE / PILLS ─── */
+    .pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 99px;
+      font-size: 11px; font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .pill-blue    { background: var(--primary-soft); color: var(--primary); border-color: rgba(2,132,199,0.2); }
+    .pill-green   { background: var(--success-soft); color: var(--success); border-color: rgba(16,185,129,0.2); }
+    .pill-amber   { background: rgba(245,158,11,0.10); color: #d97706; border-color: rgba(245,158,11,0.2); }
+    .pill-rose    { background: rgba(244,63,94,0.10); color: #e11d48; border-color: rgba(244,63,94,0.2); }
+    .pill-slate   { background: #f1f5f9; color: var(--text-sec); border-color: var(--border); }
+
+    /* ─── PROGRESS BAR ─── */
+    .progress-wrap { margin: 8px 0; }
+    .progress-head { display: flex; justify-content: space-between; margin-bottom: 6px; }
+    .progress-label { font-size: 12px; color: var(--text-sec); }
+    .progress-val   { font-size: 12px; font-weight: 700; color: var(--text); }
+    .progress-track { height: 6px; background: var(--bg); border-radius: 99px; overflow: hidden; }
+    .progress-fill  { height: 100%; border-radius: 99px; }
+    .fill-blue   { background: var(--primary); }
+    .fill-green  { background: var(--success); }
+    .fill-amber  { background: #f59e0b; }
+
+    /* ─── FOOD LOG ─── */
+    .macro-row { display: flex; gap: 8px; margin: 12px 0; }
+    .macro-box {
+      flex: 1; text-align: center;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 8px;
+    }
+    .macro-num { font-size: 18px; font-weight: 900; color: var(--text); }
+    .macro-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+    /* ─── MOOD CHIPS ─── */
+    .mood-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .mood-chip {
+      width: 40px; height: 40px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; cursor: pointer;
+      background: var(--bg); border: 2px solid var(--border);
+      transition: border-color .15s, background .15s;
+    }
+    .mood-chip.selected { border-color: var(--primary); background: var(--primary-soft); }
+    .mood-chip:hover    { border-color: var(--border-hover); }
+
+    /* ─── MINI CHART BARS ─── */
+    .mini-chart { display: flex; align-items: flex-end; gap: 5px; height: 60px; margin: 12px 0; }
+    .bar {
+      flex: 1; border-radius: 4px 4px 0 0;
+      background: var(--primary-soft);
+      border: 1px solid rgba(2,132,199,0.15);
+      transition: background .15s;
+    }
+    .bar.active { background: var(--primary); border-color: var(--primary); }
+    .bar:hover  { background: var(--primary); opacity: .8; }
+
+    /* ─── INPUT DEMO ─── */
+    .input-demo {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 13px;
+      color: var(--text);
+      width: 100%;
+      margin-bottom: 8px;
+    }
+    .input-demo:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+
+    /* ─── TOGGLE ─── */
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
+    .toggle-label { font-size: 13px; font-weight: 500; color: var(--text); }
+    .toggle-track {
+      width: 38px; height: 22px; border-radius: 99px;
+      background: var(--primary); position: relative; cursor: pointer;
+      box-shadow: 0 0 8px var(--primary-glow);
+    }
+    .toggle-track.off { background: var(--border); box-shadow: none; }
+    .toggle-thumb {
+      width: 16px; height: 16px; border-radius: 50%; background: #fff;
+      position: absolute; top: 3px; right: 3px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .toggle-track.off .toggle-thumb { right: auto; left: 3px; }
+
+    /* ─── TOPBAR ─── */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .search-box {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 14px;
+      color: var(--text-muted); font-size: 13px; min-width: 200px;
+    }
+    .topbar-actions { display: flex; gap: 8px; align-items: center; }
+    .icon-btn {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; cursor: pointer; transition: border-color .15s;
+    }
+    .icon-btn:hover { border-color: var(--primary); }
+    .notif-dot {
+      position: relative;
+    }
+    .notif-dot::after {
+      content: '';
+      position: absolute;
+      top: 6px; right: 6px;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #ef4444;
+      border: 1.5px solid var(--surface);
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <div>
+        <div class="logo-name">SmartLife</div>
+        <div class="logo-sub">Tableau de bord</div>
+      </div>
+    </div>
+
+    <div class="nav-section">Principal</div>
+    <a class="nav-item active"><span class="nav-icon">🏠</span> Accueil</a>
+    <a class="nav-item"><span class="nav-icon">🍽️</span> Alimentation</a>
+    <a class="nav-item"><span class="nav-icon">🏋️</span> Entraînement</a>
+    <a class="nav-item"><span class="nav-icon">🌙</span> Sommeil</a>
+
+    <div class="nav-section">Bien-être</div>
+    <a class="nav-item"><span class="nav-icon">📓</span> Journal</a>
+    <a class="nav-item"><span class="nav-icon">✅</span> Tâches</a>
+    <a class="nav-item"><span class="nav-icon">🔔</span> Rappels</a>
+    <a class="nav-item"><span class="nav-icon">👥</span> Social</a>
+
+    <div class="nav-section">Outils</div>
+    <a class="nav-item"><span class="nav-icon">📊</span> Statistiques</a>
+    <a class="nav-item"><span class="nav-icon">⚙️</span> Paramètres</a>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="avatar">I</div>
+        <div>
+          <div class="user-name">Ilyas</div>
+          <div class="user-role">Plan Premium</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div>
+        <div class="page-title">Bonjour Ilyas 👋</div>
+        <div class="page-sub">Jeudi 19 juin 2026 · Tout se passe bien aujourd'hui !</div>
+      </div>
+      <div class="topbar-actions">
+        <div class="search-box">🔍 Rechercher...</div>
+        <div class="icon-btn notif-dot">🔔</div>
+        <div class="icon-btn">🌙</div>
+        <button class="btn-primary">✨ IA Nutrition</button>
+      </div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <span class="stat-label">Calories</span>
+          <div class="stat-icon blue">🔥</div>
+        </div>
+        <div class="stat-value">1 847</div>
+        <div class="stat-change up">↑ +12% vs hier</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <span class="stat-label">Entraînement</span>
+          <div class="stat-icon green">💪</div>
+        </div>
+        <div class="stat-value">3 / 5</div>
+        <div class="stat-change up">↑ séances cette semaine</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <span class="stat-label">Sommeil</span>
+          <div class="stat-icon amber">🌙</div>
+        </div>
+        <div class="stat-value">7h 20</div>
+        <div class="stat-change down">↓ −30min vs objectif</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <span class="stat-label">Humeur</span>
+          <div class="stat-icon rose">😊</div>
+        </div>
+        <div class="stat-value">8 / 10</div>
+        <div class="stat-change up">↑ Bonne journée</div>
+      </div>
+    </div>
+
+    <!-- TWO COL ROW -->
+    <div class="three-col">
+
+      <!-- ALIMENTATION -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">
+            <div class="card-title-icon" style="background:rgba(16,185,129,0.12)">🍽️</div>
+            Alimentation du jour
+          </div>
+          <span class="card-link">+ Ajouter</span>
+        </div>
+        <div class="card-body">
+          <div class="macro-row">
+            <div class="macro-box">
+              <div class="macro-num" style="color:var(--primary)">1847</div>
+              <div class="macro-lbl">kcal</div>
+            </div>
+            <div class="macro-box">
+              <div class="macro-num" style="color:var(--success)">128g</div>
+              <div class="macro-lbl">protéines</div>
+            </div>
+            <div class="macro-box">
+              <div class="macro-num" style="color:#f59e0b">210g</div>
+              <div class="macro-lbl">glucides</div>
+            </div>
+            <div class="macro-box">
+              <div class="macro-num" style="color:#8b5cf6">64g</div>
+              <div class="macro-lbl">lipides</div>
+            </div>
+          </div>
+
+          <div class="progress-wrap">
+            <div class="progress-head">
+              <span class="progress-label">Objectif calorique</span>
+              <span class="progress-val">1847 / 2200 kcal</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill fill-blue" style="width:84%"></div></div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-head">
+              <span class="progress-label">Protéines</span>
+              <span class="progress-val">128 / 150g</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill fill-green" style="width:85%"></div></div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-head">
+              <span class="progress-label">Glucides</span>
+              <span class="progress-val">210 / 250g</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill fill-amber" style="width:84%"></div></div>
+          </div>
+
+          <div style="margin-top:16px">
+            <div class="activity-item">
+              <div class="activity-dot" style="background:rgba(2,132,199,0.10)">☕</div>
+              <div class="activity-text">
+                <div class="activity-name">Petit-déjeuner</div>
+                <div class="activity-detail">Avoine · Œufs · Café</div>
+              </div>
+              <span class="pill pill-blue">520 kcal</span>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot" style="background:rgba(16,185,129,0.10)">🥗</div>
+              <div class="activity-text">
+                <div class="activity-name">Déjeuner</div>
+                <div class="activity-detail">Poulet · Riz · Légumes</div>
+              </div>
+              <span class="pill pill-green">780 kcal</span>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot" style="background:rgba(245,158,11,0.10)">🍎</div>
+              <div class="activity-text">
+                <div class="activity-name">Collation</div>
+                <div class="activity-detail">Pomme · Amandes</div>
+              </div>
+              <span class="pill pill-amber">210 kcal</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+
+        <!-- ENTRAÎNEMENT -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">
+              <div class="card-title-icon" style="background:var(--primary-soft)">🏋️</div>
+              Séance du jour
+            </div>
+            <span class="pill pill-green">✓ Complété</span>
+          </div>
+          <div class="card-body">
+            <div class="activity-item" style="padding-top:0">
+              <div class="activity-dot" style="background:var(--primary-soft)">💪</div>
+              <div class="activity-text">
+                <div class="activity-name">Push Day — Pectoraux</div>
+                <div class="activity-detail">45min · 320 kcal · 4 800 kg</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+              <span class="pill pill-blue">Développé couché</span>
+              <span class="pill pill-slate">Pompes</span>
+              <span class="pill pill-slate">Dips</span>
+            </div>
+            <div style="margin-top:14px">
+              <button class="btn-primary" style="width:100%;justify-content:center">▶ Démarrer la séance</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- HUMEUR -->
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">
+              <div class="card-title-icon" style="background:rgba(244,63,94,0.10)">😊</div>
+              Humeur du jour
+            </div>
+          </div>
+          <div class="card-body">
+            <p style="font-size:12px;color:var(--text-sec);margin-bottom:6px">Comment te sens-tu ?</p>
+            <div class="mood-row">
+              <div class="mood-chip">😔</div>
+              <div class="mood-chip">😕</div>
+              <div class="mood-chip">😐</div>
+              <div class="mood-chip selected">😊</div>
+              <div class="mood-chip">😄</div>
+            </div>
+            <div class="toggle-row" style="margin-top:12px">
+              <span class="toggle-label">Notifications du soir</span>
+              <div class="toggle-track">
+                <div class="toggle-thumb"></div>
+              </div>
+            </div>
+            <div class="toggle-row">
+              <span class="toggle-label">Mode focus</span>
+              <div class="toggle-track off">
+                <div class="toggle-thumb"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- BOTTOM ROW -->
+    <div class="two-col" style="margin-top:16px">
+
+      <!-- ACTIVITÉ SEMAINE -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">
+            <div class="card-title-icon" style="background:var(--primary-soft)">📊</div>
+            Activité hebdomadaire
+          </div>
+          <div style="display:flex;gap:6px">
+            <span class="pill pill-blue">Calories</span>
+            <span class="pill pill-slate">Durée</span>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="mini-chart">
+            <div class="bar" style="height:35%"></div>
+            <div class="bar" style="height:60%"></div>
+            <div class="bar" style="height:45%"></div>
+            <div class="bar active" style="height:80%"></div>
+            <div class="bar" style="height:70%"></div>
+            <div class="bar" style="height:25%"></div>
+            <div class="bar" style="height:55%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px">
+            <span style="font-size:10px;color:var(--text-muted)">Lun</span>
+            <span style="font-size:10px;color:var(--text-muted)">Mar</span>
+            <span style="font-size:10px;color:var(--text-muted)">Mer</span>
+            <span style="font-size:10px;color:var(--text-muted);font-weight:700;color:var(--primary)">Jeu</span>
+            <span style="font-size:10px;color:var(--text-muted)">Ven</span>
+            <span style="font-size:10px;color:var(--text-muted)">Sam</span>
+            <span style="font-size:10px;color:var(--text-muted)">Dim</span>
+          </div>
+          <div style="display:flex;gap:16px;margin-top:14px">
+            <div>
+              <div style="font-size:11px;color:var(--text-sec)">Total semaine</div>
+              <div style="font-size:18px;font-weight:800;color:var(--text)">2 847 kcal</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-sec)">Séances</div>
+              <div style="font-size:18px;font-weight:800;color:var(--primary)">3 / 5</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text-sec)">Volume</div>
+              <div style="font-size:18px;font-weight:800;color:var(--success)">12 400 kg</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TÂCHES / RAPPELS -->
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">
+            <div class="card-title-icon" style="background:rgba(245,158,11,0.10)">✅</div>
+            Tâches du jour
+          </div>
+          <span class="card-link">Tout voir</span>
+        </div>
+        <div class="card-body">
+          <div class="activity-item" style="padding-top:0">
+            <span style="font-size:18px">✅</span>
+            <div class="activity-text">
+              <div class="activity-name" style="text-decoration:line-through;color:var(--text-muted)">Boire 2L d'eau</div>
+              <div class="activity-detail">Santé · Complété</div>
+            </div>
+            <span class="pill pill-green">✓</span>
+          </div>
+          <div class="activity-item">
+            <span style="font-size:18px">⏰</span>
+            <div class="activity-text">
+              <div class="activity-name">Séance de sport</div>
+              <div class="activity-detail">Productivité · 18h00</div>
+            </div>
+            <span class="pill pill-blue">En cours</span>
+          </div>
+          <div class="activity-item">
+            <span style="font-size:18px">📖</span>
+            <div class="activity-text">
+              <div class="activity-name">Lire 30 minutes</div>
+              <div class="activity-detail">Personnel · Ce soir</div>
+            </div>
+            <span class="pill pill-amber">⏰ En retard</span>
+          </div>
+          <div class="activity-item">
+            <span style="font-size:18px">🧘</span>
+            <div class="activity-text">
+              <div class="activity-name">Méditation</div>
+              <div class="activity-detail">Bien-être · 21h00</div>
+            </div>
+            <span class="pill pill-slate">À faire</span>
+          </div>
+          <div style="margin-top:12px">
+            <input class="input-demo" placeholder="+ Nouvelle tâche..." />
+            <button class="btn-primary" style="width:100%;justify-content:center;margin-top:4px">Ajouter</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+</body>
+</html>

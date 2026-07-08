@@ -9,7 +9,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
-import { DayMuscleSummary, ExerciseInfoButton, ExercisePicker, getExerciseMedia } from './ExerciseGuide'
+import { ExerciseInfoButton, ExercisePicker, getExerciseMedia } from './ExerciseGuide'
 
 interface PlanExercise { name: string; sets: number | null; reps: number | null; weightKg: number | null; notes: string }
 interface PlanDay { id: number; dayNumber: number; label: string; exercises: PlanExercise[] }
@@ -1607,10 +1607,25 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
       ? Object.fromEntries(editingPlan.days.map(d => [d.dayNumber, (d.exercises ?? []) as PlanExercise[]]))
       : {}
   )
-  const [currentDayIndex, setCurrentDayIndex] = useState(0)
   const [customExercise, setCustomExercise] = useState({ name: '', sets: '', reps: '', weightKg: '' })
+  const [lastConfig, setLastConfig] = useState<{ sets: number | null; reps: number | null; weightKg: number | null }>({ sets: null, reps: null, weightKg: null })
+  const [perDayMode, setPerDayMode] = useState<Record<string, boolean>>({})
   const activeDays = dayConfigs.filter(d => d.active)
-  const currentDay = activeDays[currentDayIndex] ?? activeDays[0]
+
+  // Vue « par exercice » derivee de dayExercises (source de verite inchangee)
+  const exerciseBlocks = useMemo(() => {
+    const order: string[] = []
+    const map = new Map<string, { name: string; days: number[]; configs: Record<number, PlanExercise> }>()
+    for (const day of activeDays) {
+      for (const ex of dayExercises[day.dayNumber] ?? []) {
+        if (!map.has(ex.name)) { map.set(ex.name, { name: ex.name, days: [], configs: {} }); order.push(ex.name) }
+        const blk = map.get(ex.name)!
+        blk.days.push(day.dayNumber)
+        blk.configs[day.dayNumber] = ex
+      }
+    }
+    return order.map(name => map.get(name)!)
+  }, [dayExercises, activeDays])
 
   const planBody = () => ({
     name, goal, weeks,
@@ -1658,21 +1673,50 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
       ...patch,
       label: patch.active === false ? 'Repos' : patch.label ?? day.label,
     } : day))
-  const addExerciseToDay = (dayNumber: number, exercise: PlanExercise) =>
-    setDayExercises(prev => ({ ...prev, [dayNumber]: [...(prev[dayNumber] ?? []), { ...exercise }] }))
-  const removeExerciseFromDay = (dayNumber: number, index: number) =>
-    setDayExercises(prev => ({ ...prev, [dayNumber]: (prev[dayNumber] ?? []).filter((_, i) => i !== index) }))
-  const updateDayExercise = (dayNumber: number, index: number, field: keyof PlanExercise, value: string) =>
-    setDayExercises(prev => ({
-      ...prev,
-      [dayNumber]: (prev[dayNumber] ?? []).map((ex, i) => i === index ? {
-        ...ex,
-        [field]: field === 'name' || field === 'notes' ? value : value ? Number(value) : null,
-      } : ex),
-    }))
+  // Ajoute un exercice a TOUS les jours actifs (l'utilisateur deselectionne ensuite)
+  const addExerciseAllDays = (ex: { name: string; sets?: number | null; reps?: number | null; weightKg?: number | null; notes?: string }) => {
+    const cfg = { sets: ex.sets ?? null, reps: ex.reps ?? null, weightKg: ex.weightKg ?? null }
+    setLastConfig(cfg)
+    setDayExercises(prev => {
+      const next = { ...prev }
+      for (const day of activeDays) {
+        const list = next[day.dayNumber] ?? []
+        if (!list.some(e => e.name === ex.name)) {
+          next[day.dayNumber] = [...list, { name: ex.name, sets: cfg.sets, reps: cfg.reps, weightKg: cfg.weightKg, notes: ex.notes ?? '' }]
+        }
+      }
+      return next
+    })
+  }
+  const removeExerciseAll = (name: string) =>
+    setDayExercises(prev => {
+      const next: Record<number, PlanExercise[]> = {}
+      for (const [key, list] of Object.entries(prev)) next[Number(key)] = list.filter(e => e.name !== name)
+      return next
+    })
+  // Coche/decoche un jour pour un exercice ; a l'ajout, herite de la derniere config saisie
+  const toggleExerciseDay = (name: string, dayNumber: number) =>
+    setDayExercises(prev => {
+      const list = prev[dayNumber] ?? []
+      if (list.some(e => e.name === name)) {
+        return { ...prev, [dayNumber]: list.filter(e => e.name !== name) }
+      }
+      return { ...prev, [dayNumber]: [...list, { name, sets: lastConfig.sets, reps: lastConfig.reps, weightKg: lastConfig.weightKg, notes: '' }] }
+    })
+  const setBlockConfig = (name: string, dayNumbers: number[], field: 'sets' | 'reps' | 'weightKg', value: string) => {
+    const num = value === '' ? null : Number(value)
+    setLastConfig(prev => ({ ...prev, [field]: num }))
+    setDayExercises(prev => {
+      const next = { ...prev }
+      for (const d of dayNumbers) {
+        next[d] = (next[d] ?? []).map(e => e.name === name ? { ...e, [field]: num } : e)
+      }
+      return next
+    })
+  }
   const addCustomExercise = () => {
-    if (!currentDay || !customExercise.name.trim()) return
-    addExerciseToDay(currentDay.dayNumber, {
+    if (!customExercise.name.trim()) return
+    addExerciseAllDays({
       name: customExercise.name.trim(),
       sets: customExercise.sets ? Number(customExercise.sets) : null,
       reps: customExercise.reps ? Number(customExercise.reps) : null,
@@ -1747,54 +1791,110 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
               </div>
               <p className="text-sm text-gray-400 mb-4">{activeDays.length} jours d'entraînement / semaine</p>
               <div className="flex justify-end">
-                <button type="button" onClick={() => { setCurrentDayIndex(0); setStep(3) }} disabled={activeDays.length === 0} className="btn-primary">Suivant →</button>
+                <button type="button" onClick={() => setStep(3)} disabled={activeDays.length === 0} className="btn-primary">Suivant →</button>
               </div>
             </div>
           )}
 
-          {step === 3 && currentDay && (
+          {step === 3 && (
             <div>
               <button type="button" onClick={() => setStep(2)}
                 className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4">← Retour</button>
-              <h4 className="font-semibold text-white mb-4">Exercices par jour</h4>
-              <div className="overflow-x-auto flex gap-2 mb-4">
-                {activeDays.map((day, index) => (
-                  <button key={day.dayNumber} type="button" onClick={() => setCurrentDayIndex(index)}
-                    className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap ${currentDayIndex === index ? 'bg-slate-800 text-white' : 'bg-white/[0.05] text-gray-400'}`}>
-                    {DAY_SHORT[day.dayNumber - 1]} · {day.label}
-                  </button>
-                ))}
-              </div>
+              <h4 className="font-semibold text-white mb-1">Exercices du programme</h4>
+              <p className="text-xs text-gray-400 mb-4">
+                Ajoute un exercice, coche les jours où tu le fais, règle la config. Un nouveau jour reprend automatiquement la dernière config saisie.
+              </p>
               <ExercisePicker
-                onAdd={exercise => addExerciseToDay(currentDay.dayNumber, exercise)}
-                alreadyAdded={(dayExercises[currentDay.dayNumber] ?? []).map(exercise => exercise.name)}
+                onAdd={addExerciseAllDays}
+                alreadyAdded={exerciseBlocks.map(b => b.name)}
               />
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-5">
                 <input className="input col-span-2 sm:col-span-1" value={customExercise.name} onChange={e => setCustomExercise(prev => ({ ...prev, name: e.target.value }))} placeholder="Exercice" />
                 <input className="input" type="number" value={customExercise.sets} onChange={e => setCustomExercise(prev => ({ ...prev, sets: e.target.value }))} placeholder="Séries" />
                 <input className="input" type="number" value={customExercise.reps} onChange={e => setCustomExercise(prev => ({ ...prev, reps: e.target.value }))} placeholder="Reps" />
                 <input className="input" type="number" value={customExercise.weightKg} onChange={e => setCustomExercise(prev => ({ ...prev, weightKg: e.target.value }))} placeholder="Poids" />
                 <button type="button" onClick={addCustomExercise} className="btn-secondary flex items-center justify-center gap-1"><Plus size={14} /></button>
               </div>
-              <div className="space-y-2 mb-5">
-                {(dayExercises[currentDay.dayNumber] ?? []).map((ex, index) => (
-                  <div key={`${ex.name}-${index}`} className="rounded-xl border border-white/10 border-white/10 p-3">
-                    <div className="flex gap-2 mb-2">
-                      <input className="input flex-1" value={ex.name} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'name', e.target.value)} />
-                      <ExerciseInfoButton exerciseName={ex.name} sets={ex.sets} reps={ex.reps} weightKg={planExerciseWeight(ex)} />
-                      <button type="button" onClick={() => removeExerciseFromDay(currentDay.dayNumber, index)}
-                        className="p-2 text-gray-300 hover:text-red-400"><X size={14} /></button>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <input className="input" type="number" value={ex.sets ?? ''} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'sets', e.target.value)} placeholder="Séries" />
-                      <input className="input" type="number" value={ex.reps ?? ''} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'reps', e.target.value)} placeholder="Reps" />
-                      <input className="input" type="number" value={planExerciseWeight(ex) ?? ''} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'weightKg', e.target.value)} placeholder="Poids" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <DayMuscleSummary exercises={dayExercises[currentDay.dayNumber] ?? []} />
-              <div className="flex justify-end">
+
+              {exerciseBlocks.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-6">Aucun exercice. Ajoute-en depuis la bibliothèque ci-dessus.</p>
+              ) : (
+                <div className="space-y-3 mb-5">
+                  {exerciseBlocks.map(block => {
+                    const selected = block.days
+                    const ref = block.configs[selected[0]]
+                    const uniform = selected.every(d => {
+                      const c = block.configs[d]
+                      return c?.sets === ref?.sets && c?.reps === ref?.reps && planExerciseWeight(c) === planExerciseWeight(ref)
+                    })
+                    const perDay = perDayMode[block.name] ?? false
+                    return (
+                      <div key={block.name} className="rounded-xl border border-white/10 p-3">
+                        <div className="flex items-center justify-between mb-2.5">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-semibold text-white text-sm truncate">{block.name}</span>
+                            <ExerciseInfoButton exerciseName={block.name} sets={ref?.sets ?? null} reps={ref?.reps ?? null} weightKg={planExerciseWeight(ref)} />
+                          </div>
+                          <button type="button" onClick={() => removeExerciseAll(block.name)}
+                            className="p-1.5 text-gray-400 hover:text-red-400 shrink-0"><X size={15} /></button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {activeDays.map(day => {
+                            const on = selected.includes(day.dayNumber)
+                            return (
+                              <button key={day.dayNumber} type="button" onClick={() => toggleExerciseDay(block.name, day.dayNumber)}
+                                title={day.label}
+                                className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${on ? 'bg-amber-500 text-black' : 'bg-white/[0.05] text-gray-400 hover:bg-white/10'}`}>
+                                {DAY_SHORT[day.dayNumber - 1]}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        {selected.length === 0 ? (
+                          <p className="text-xs text-amber-400">Sélectionne au moins un jour.</p>
+                        ) : !perDay ? (
+                          <div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <input className="input" type="number" value={ref?.sets ?? ''} onChange={e => setBlockConfig(block.name, selected, 'sets', e.target.value)} placeholder="Séries" />
+                              <input className="input" type="number" value={ref?.reps ?? ''} onChange={e => setBlockConfig(block.name, selected, 'reps', e.target.value)} placeholder="Reps" />
+                              <input className="input" type="number" value={planExerciseWeight(ref) ?? ''} onChange={e => setBlockConfig(block.name, selected, 'weightKg', e.target.value)} placeholder="Poids" />
+                            </div>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-[11px] text-gray-500">{selected.length > 1 ? `Même config · ${selected.length} jours` : '1 jour'}</span>
+                              {selected.length > 1 && (
+                                <button type="button" onClick={() => setPerDayMode(p => ({ ...p, [block.name]: true }))}
+                                  className="text-xs font-medium text-amber-400 hover:text-amber-300">⚙ Ajuster par jour</button>
+                              )}
+                            </div>
+                            {!uniform && (
+                              <p className="text-[11px] text-amber-400 mt-1">Les jours n'ont pas la même config — ouvre « Ajuster par jour » pour les voir.</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {selected.map(d => {
+                              const c = block.configs[d]
+                              return (
+                                <div key={d} className="flex items-center gap-2">
+                                  <span className="w-24 shrink-0 text-xs text-gray-300">{DAY_SHORT[d - 1]} · {dayConfigs[d - 1].label}</span>
+                                  <input className="input" type="number" value={c?.sets ?? ''} onChange={e => setBlockConfig(block.name, [d], 'sets', e.target.value)} placeholder="Séries" />
+                                  <input className="input" type="number" value={c?.reps ?? ''} onChange={e => setBlockConfig(block.name, [d], 'reps', e.target.value)} placeholder="Reps" />
+                                  <input className="input" type="number" value={planExerciseWeight(c) ?? ''} onChange={e => setBlockConfig(block.name, [d], 'weightKg', e.target.value)} placeholder="Poids" />
+                                </div>
+                              )
+                            })}
+                            <button type="button" onClick={() => setPerDayMode(p => ({ ...p, [block.name]: false }))}
+                              className="text-xs font-medium text-gray-400 hover:text-gray-200">↩ Config commune</button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-gray-400">{exerciseBlocks.length} exercice(s) · {activeDays.length} jour(s)</span>
                 <button type="button" onClick={handleSave} disabled={!name.trim() || activeDays.length === 0 || isPending}
                   className="btn-primary flex items-center gap-2">
                   <Check size={16} /> {isEdit ? 'Modifier le programme' : 'Créer le programme'}
