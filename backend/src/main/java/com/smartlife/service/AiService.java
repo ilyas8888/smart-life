@@ -41,6 +41,19 @@ public class AiService {
     @Value("${ai.internal.secret}")
     private String aiInternalSecret;
 
+    /**
+     * Plafond anti-flooding : nombre max d'entités créées par catégorie et par
+     * requête IA. Défense côté serveur — non contournable par un prompt injecté.
+     */
+    private static final int MAX_ITEMS_PER_CATEGORY = 20;
+
+    private <T> List<T> capItems(List<T> items) {
+        if (items == null) return List.of();
+        return items.size() > MAX_ITEMS_PER_CATEGORY
+                ? items.subList(0, MAX_ITEMS_PER_CATEGORY)
+                : items;
+    }
+
     @Observed(name = "smartlife.ai.prompt.process")
     @SuppressWarnings("unchecked")
     public PromptResponse processPrompt(String rawPrompt, User user, String ip) {
@@ -69,7 +82,7 @@ public class AiService {
         List<Map<String, Object>> workoutsCreated = new ArrayList<>();
 
         // Persist tasks
-        var tasks = (List<Map<String, Object>>) aiResult.getOrDefault("tasks", List.of());
+        var tasks = capItems((List<Map<String, Object>>) aiResult.getOrDefault("tasks", List.of()));
         for (var t : tasks) {
             var task = Task.builder()
                     .user(user)
@@ -83,7 +96,7 @@ public class AiService {
         }
 
         // Persist reminders
-        var reminders = (List<Map<String, Object>>) aiResult.getOrDefault("reminders", List.of());
+        var reminders = capItems((List<Map<String, Object>>) aiResult.getOrDefault("reminders", List.of()));
         for (var r : reminders) {
             var reminder = Reminder.builder()
                     .user(user)
@@ -96,7 +109,7 @@ public class AiService {
         }
 
         // Persist notes
-        var notes = (List<Map<String, Object>>) aiResult.getOrDefault("notes", List.of());
+        var notes = capItems((List<Map<String, Object>>) aiResult.getOrDefault("notes", List.of()));
         for (var n : notes) {
             var note = Note.builder()
                     .user(user)
@@ -108,7 +121,7 @@ public class AiService {
         }
 
         // Persist contacts
-        var contacts = (List<Map<String, Object>>) aiResult.getOrDefault("contacts", List.of());
+        var contacts = capItems((List<Map<String, Object>>) aiResult.getOrDefault("contacts", List.of()));
         for (var c : contacts) {
             var contact = Contact.builder()
                     .user(user)
@@ -123,7 +136,7 @@ public class AiService {
         }
 
         // Persist food logs
-        var foodLogs = (List<Map<String, Object>>) aiResult.getOrDefault("food_logs", List.of());
+        var foodLogs = capItems((List<Map<String, Object>>) aiResult.getOrDefault("food_logs", List.of()));
         for (var f : foodLogs) {
             var foodLog = FoodLog.builder()
                     .user(user)
@@ -145,7 +158,7 @@ public class AiService {
         }
 
         // Persist diary entries
-        var diaryEntries = (List<Map<String, Object>>) aiResult.getOrDefault("diary", List.of());
+        var diaryEntries = capItems((List<Map<String, Object>>) aiResult.getOrDefault("diary", List.of()));
         for (var d : diaryEntries) {
             var content = (String) d.get("content");
             if (content == null || content.isBlank()) continue;
@@ -161,7 +174,7 @@ public class AiService {
         }
 
         // Persist workouts
-        var workouts = (List<Map<String, Object>>) aiResult.getOrDefault("workouts", List.of());
+        var workouts = capItems((List<Map<String, Object>>) aiResult.getOrDefault("workouts", List.of()));
         for (var w : workouts) {
             var title = (String) w.get("title");
             if (title == null || title.isBlank()) continue;
