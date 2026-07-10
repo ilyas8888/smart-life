@@ -2,7 +2,7 @@
 
 https://ilyas8888.github.io/smart-life/
 
-Application web full-stack permettant de gérer sa vie quotidienne via un prompt en langage naturel analysé par Claude (Anthropic). 8 modules intégrés : tâches, rappels, notes, contacts, alimentation, agenda, journal personnel et sport.
+Application web full-stack permettant de gérer sa vie quotidienne via un prompt en langage naturel analysé par OpenAI (GPT-4o mini). 8 modules intégrés : tâches, rappels, notes, contacts, alimentation, agenda, journal personnel et sport.
 
 **Live demo** : [https://ilyas8888.github.io/smart-life/](https://ilyas8888.github.io/smart-life/)
 
@@ -31,7 +31,7 @@ Application web full-stack permettant de gérer sa vie quotidienne via un prompt
 |---|---|
 | Frontend | React 18 + TypeScript + Vite + TailwindCSS + TanStack Query |
 | Backend | Java 17 / Spring Boot 3.2.5 + Spring Security + JPA + Flyway |
-| IA | Python 3.13 / FastAPI + SDK Anthropic (Claude Sonnet 4.6) |
+| IA | Python 3.13 / FastAPI + SDK OpenAI (GPT-4o mini) |
 | Base de données | PostgreSQL 15 (Neon en production) |
 | Auth | JWT custom + OTP email + OAuth2 Keycloak |
 
@@ -98,7 +98,7 @@ uvicorn main:app --port 8001
 ```
 
 Variables d'environnement requises (backend) : `MAIL_USERNAME`, `MAIL_PASSWORD`, `JWT_SECRET`, `AI_INTERNAL_SECRET`.  
-Variable requise (AI service) : `ANTHROPIC_API_KEY`.
+Variable requise (AI service) : `OPENAI_API_KEY`.
 
 ---
 

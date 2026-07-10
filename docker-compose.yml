@@ -61,7 +61,7 @@ services:
     build: ./ai-service
     container_name: smartlife-ai
     environment:
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
       AI_INTERNAL_SECRET: ${AI_INTERNAL_SECRET}
     networks:
       - smartlife-network

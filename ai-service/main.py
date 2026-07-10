@@ -6,13 +6,13 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import anthropic
+from openai import OpenAI, APIError
 import secrets
 from dotenv import load_dotenv
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 
-load_dotenv()
+load_dotenv(override=True)
 
 app = FastAPI(title="SmartLife AI Service")
 
@@ -23,21 +23,21 @@ app.add_middleware(
     allow_headers=["Content-Type", "X-Internal-Key"],
 )
 
-client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 INTERNAL_SECRET = os.getenv("AI_INTERNAL_SECRET", "")
-ANTHROPIC_MODEL = "claude-sonnet-4-6"
+OPENAI_MODEL = "gpt-4o-mini"
 tracer = trace.get_tracer("smartlife.ai")
 logger = logging.getLogger("smartlife.ai")
 
 
 @contextmanager
-def record_anthropic_call(operation: str):
+def record_openai_call(operation: str, model: str):
     """Record provider telemetry without attaching user content or secrets."""
     with tracer.start_as_current_span(
-        f"anthropic.{operation}",
+        f"openai.{operation}",
         attributes={
-            "gen_ai.system": "anthropic",
-            "gen_ai.request.model": ANTHROPIC_MODEL,
+            "gen_ai.system": "openai",
+            "gen_ai.request.model": model,
             "smartlife.ai.operation": operation,
         },
     ) as span:
@@ -48,7 +48,7 @@ def record_anthropic_call(operation: str):
             span.record_exception(exc)
             span.set_status(Status(StatusCode.ERROR))
             raise
-        except anthropic.APIError as exc:
+        except APIError as exc:
             span.set_attribute("smartlife.ai.result", "provider_error")
             span.record_exception(exc)
             span.set_status(Status(StatusCode.ERROR))
@@ -60,22 +60,57 @@ def record_anthropic_call(operation: str):
             raise
 
 
-def record_anthropic_success(span, message) -> None:
+def record_openai_success(span, response) -> None:
     span.set_attribute("smartlife.ai.result", "success")
-    usage = getattr(message, "usage", None)
-    input_tokens = getattr(usage, "input_tokens", None)
-    output_tokens = getattr(usage, "output_tokens", None)
+    usage = getattr(response, "usage", None)
+    input_tokens = getattr(usage, "prompt_tokens", None)
+    output_tokens = getattr(usage, "completion_tokens", None)
     if input_tokens is not None:
         span.set_attribute("gen_ai.usage.input_tokens", input_tokens)
     if output_tokens is not None:
         span.set_attribute("gen_ai.usage.output_tokens", output_tokens)
 
 
-def call_anthropic(operation: str, **kwargs):
-    with record_anthropic_call(operation) as span:
-        message = client.messages.create(**kwargs)
-        record_anthropic_success(span, message)
-        return message
+def call_openai(
+    operation: str,
+    *,
+    system: str,
+    user: str,
+    max_tokens: int,
+    model: str = OPENAI_MODEL,
+    json_mode: bool = True,
+):
+    """Call OpenAI chat completions and return (text, usage).
+
+    With json_mode the model is forced to emit a valid JSON object, which
+    removes the parsing failures we used to see with free-form output.
+    """
+    with record_openai_call(operation, model) as span:
+        kwargs = {
+            "model": model,
+            "max_tokens": max_tokens,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+        }
+        if json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
+        response = client.chat.completions.create(**kwargs)
+        record_openai_success(span, response)
+        text = response.choices[0].message.content or ""
+        return text, response.usage
+
+
+def _strip_json_fences(raw_text: str) -> str:
+    raw_text = raw_text.strip()
+    if raw_text.startswith("```"):
+        raw_text = raw_text.split("```")[1]
+        if raw_text.startswith("json"):
+            raw_text = raw_text[4:]
+    if raw_text.endswith("```"):
+        raw_text = raw_text[:-3]
+    return raw_text.strip()
 
 
 class PromptPayload(BaseModel):
@@ -206,36 +241,19 @@ async def process_prompt(payload: PromptPayload, x_internal_key: str = Header(de
     user_message = f"[Date actuelle: {now}]\n\nTexte de l'utilisateur:\n{user_content}"
 
     try:
-        message = call_anthropic(
+        raw_text, usage = call_openai(
             "prompt_process",
-            model=ANTHROPIC_MODEL,
+            system=SYSTEM_PROMPT,
+            user=user_message,
             max_tokens=4096,
-            system=[{
-                "type": "text",
-                "text": SYSTEM_PROMPT,
-                "cache_control": {"type": "ephemeral"},
-            }],
-            messages=[{"role": "user", "content": user_message}],
-            extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"},
         )
-        logger.info("Anthropic prompt completed usage=%s", message.usage)
-
-        raw_text = message.content[0].text.strip()
-
-        # Clean potential markdown fences
-        if raw_text.startswith("```"):
-            raw_text = raw_text.split("```")[1]
-            if raw_text.startswith("json"):
-                raw_text = raw_text[4:]
-        if raw_text.endswith("```"):
-            raw_text = raw_text[:-3]
-
-        return json.loads(raw_text.strip())
+        logger.info("OpenAI prompt completed usage=%s", usage)
+        return json.loads(_strip_json_fences(raw_text))
 
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
-    except anthropic.APIError as e:
-        raise HTTPException(status_code=502, detail=f"Claude API error: {e}")
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=f"OpenAI API error: {e}")
 
 
 FOOD_NUTRIENT_SYSTEM_PROMPT = """Tu es un expert en nutrition. Pour chaque aliment listé, retourne ses valeurs nutritionnelles précises.
@@ -270,13 +288,7 @@ Règles:
 
 
 def _parse_ai_food_response(raw_text: str, meal_type: str | None = None) -> dict:
-    if raw_text.startswith("```"):
-        raw_text = raw_text.split("```")[1]
-        if raw_text.startswith("json"):
-            raw_text = raw_text[4:]
-    if raw_text.endswith("```"):
-        raw_text = raw_text[:-3]
-    result = json.loads(raw_text.strip())
+    result = json.loads(_strip_json_fences(raw_text))
     if meal_type:
         for fl in result.get("food_logs", []):
             fl["meal_type"] = meal_type
@@ -342,25 +354,17 @@ async def decompose_foods(payload: FoodDecomposePayload, x_internal_key: str = H
         for f in payload.foods
     )
     try:
-        message = call_anthropic(
+        raw, _ = call_openai(
             "food_decompose",
-            model=ANTHROPIC_MODEL,
-            max_tokens=1024,
             system=FOOD_DECOMPOSE_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": f"Aliments à analyser:\n{foods_text}"}],
+            user=f"Aliments à analyser:\n{foods_text}",
+            max_tokens=1024,
         )
-        raw = message.content[0].text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        if raw.endswith("```"):
-            raw = raw[:-3]
-        return json.loads(raw.strip())
+        return json.loads(_strip_json_fences(raw))
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
-    except anthropic.APIError as e:
-        raise HTTPException(status_code=502, detail=f"Claude API error: {e}")
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=f"OpenAI API error: {e}")
 
 
 @app.post("/extract-food")
@@ -385,18 +389,17 @@ async def extract_food(payload: FoodExtractPayload, x_internal_key: str = Header
         )
 
     try:
-        message = call_anthropic(
+        raw, _ = call_openai(
             "food_extract",
-            model=ANTHROPIC_MODEL,
-            max_tokens=1024,
             system=FOOD_NUTRIENT_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_content}],
+            user=user_content,
+            max_tokens=1024,
         )
-        return _parse_ai_food_response(message.content[0].text.strip(), payload.meal_type)
+        return _parse_ai_food_response(raw, payload.meal_type)
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
-    except anthropic.APIError as e:
-        raise HTTPException(status_code=502, detail=f"Claude API error: {e}")
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=f"OpenAI API error: {e}")
 
 
 @app.post("/extract-food-from-prompt")
@@ -418,18 +421,17 @@ async def extract_food_from_prompt(payload: FoodPromptPayload, x_internal_key: s
         )
 
     try:
-        message = call_anthropic(
+        raw, _ = call_openai(
             "food_extract",
-            model=ANTHROPIC_MODEL,
-            max_tokens=1024,
             system=FOOD_NUTRIENT_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_content}],
+            user=user_content,
+            max_tokens=1024,
         )
-        return _parse_ai_food_response(message.content[0].text.strip(), payload.meal_type)
+        return _parse_ai_food_response(raw, payload.meal_type)
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
-    except anthropic.APIError as e:
-        raise HTTPException(status_code=502, detail=f"Claude API error: {e}")
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=f"OpenAI API error: {e}")
 
 
 WORKOUT_SYSTEM_PROMPT = """Tu es un coach sportif expert. Analyse la description d'une séance de sport et retourne les données structurées.
@@ -457,25 +459,17 @@ async def extract_workout_from_prompt(payload: WorkoutPromptPayload, x_internal_
     if not INTERNAL_SECRET or not secrets.compare_digest(x_internal_key, INTERNAL_SECRET):
         raise HTTPException(status_code=403, detail="Forbidden")
     try:
-        message = call_anthropic(
+        raw_text, _ = call_openai(
             "workout_extract",
-            model=ANTHROPIC_MODEL,
-            max_tokens=1024,
             system=WORKOUT_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": f"Séance décrite : {payload.prompt}"}],
+            user=f"Séance décrite : {payload.prompt}",
+            max_tokens=1024,
         )
-        raw_text = message.content[0].text.strip()
-        if raw_text.startswith("```"):
-            raw_text = raw_text.split("```")[1]
-            if raw_text.startswith("json"):
-                raw_text = raw_text[4:]
-        if raw_text.endswith("```"):
-            raw_text = raw_text[:-3]
-        return json.loads(raw_text.strip())
+        return json.loads(_strip_json_fences(raw_text))
     except json.JSONDecodeError as e:
         raise HTTPException(status_code=500, detail=f"AI returned invalid JSON: {e}")
-    except anthropic.APIError as e:
-        raise HTTPException(status_code=502, detail=f"Claude API error: {e}")
+    except APIError as e:
+        raise HTTPException(status_code=502, detail=f"OpenAI API error: {e}")
 
 
 @app.post("/sleep-analysis")
@@ -520,14 +514,13 @@ async def sleep_analysis(payload: SleepAnalysisPayload, x_internal_key: str = He
         )
         user_msg = f"Create a 7-day program based on my sleep data:\n{context}"
 
-    message = call_anthropic(
+    raw_text, _ = call_openai(
         "sleep_coach",
-        model="claude-haiku-4-5-20251001",
-        max_tokens=800,
         system=system,
-        messages=[{"role": "user", "content": user_msg}],
+        user=user_msg,
+        max_tokens=800,
+        json_mode=False,
     )
-    raw_text = message.content[0].text if message.content else ""
     paragraphs = [paragraph.strip() for paragraph in raw_text.split("\n\n") if paragraph.strip()]
 
     return {
@@ -540,4 +533,4 @@ async def sleep_analysis(payload: SleepAnalysisPayload, x_internal_key: str = He
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": ANTHROPIC_MODEL}
+    return {"status": "ok", "model": OPENAI_MODEL}
