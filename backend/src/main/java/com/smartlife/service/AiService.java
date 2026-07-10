@@ -54,6 +54,35 @@ public class AiService {
                 : items;
     }
 
+    /**
+     * Garde-fou anti-fuite du system prompt (OWASP LLM07).
+     * Un résumé légitime = une phrase courte. On bloque s'il est anormalement
+     * long ou s'il contient des fragments du schéma/consignes internes.
+     */
+    private static final int MAX_SUMMARY_LENGTH = 500;
+    private static final List<String> LEAK_MARKERS = List.of(
+            "low|medium|high",
+            "yyyy-mm-ddthh",
+            "breakfast|lunch|dinner",
+            "great|good|neutral",
+            "assistant intelligent de gestion personnelle",
+            "retourne uniquement",
+            "nutrition_details"
+    );
+
+    private String sanitizeSummary(String summary, User user, String ip) {
+        if (summary == null || summary.isBlank()) return "";
+        String lower = summary.toLowerCase();
+        boolean leaked = summary.length() > MAX_SUMMARY_LENGTH
+                || LEAK_MARKERS.stream().anyMatch(lower::contains);
+        if (leaked) {
+            log.warn("Fuite probable du system prompt bloquée (user={})", user.getId());
+            auditLogService.log(user.getId(), "PROMPT_LEAK_BLOCKED", "PROMPT", null, ip);
+            return "Demande traitée.";
+        }
+        return summary;
+    }
+
     @Observed(name = "smartlife.ai.prompt.process")
     @SuppressWarnings("unchecked")
     public PromptResponse processPrompt(String rawPrompt, User user, String ip) {
@@ -70,7 +99,7 @@ public class AiService {
         }
 
         PromptResponse response = new PromptResponse();
-        response.setSummary((String) aiResult.getOrDefault("summary", ""));
+        response.setSummary(sanitizeSummary((String) aiResult.getOrDefault("summary", ""), user, ip));
         response.setRawAiResponse(aiResult.toString());
 
         List<Map<String, Object>> tasksCreated = new ArrayList<>();
