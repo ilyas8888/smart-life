@@ -129,7 +129,7 @@ public class AiService {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("prompt", rawPrompt);
         requestBody.put("user_id", user.getId());
-        requestBody.put("cached_foods", foodCacheService.getTopCachedFoods());
+        requestBody.put("cached_foods", foodCacheService.getUserFoodContext(user));
 
         // Call Python AI service
         Map<String, Object> aiResult = callAiService("/process", requestBody);
@@ -538,7 +538,7 @@ public class AiService {
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("foods", toAsk);
             requestBody.put("meal_type", mealType);
-            requestBody.put("cached_foods", foodCacheService.getTopCachedFoods());
+            requestBody.put("cached_foods", foodCacheService.getUserFoodContext(user));
 
             Map<String, Object> aiResult = callAiService("/extract-food", requestBody);
 
@@ -559,7 +559,7 @@ public class AiService {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("prompt", prompt);
         if (mealType != null) requestBody.put("meal_type", mealType);
-        requestBody.put("cached_foods", foodCacheService.getTopCachedFoods());
+        requestBody.put("cached_foods", foodCacheService.getUserFoodContext(user));
 
         Map<String, Object> aiResult = callAiService("/extract-food-from-prompt", requestBody);
 

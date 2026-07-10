@@ -2,14 +2,18 @@ package com.smartlife.service;
 
 import com.smartlife.model.FoodCache;
 import com.smartlife.model.FoodLog;
+import com.smartlife.model.User;
 import com.smartlife.repository.FoodCacheRepository;
+import com.smartlife.repository.FoodLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,6 +23,7 @@ import java.util.Optional;
 public class FoodCacheService {
 
     private final FoodCacheRepository repo;
+    private final FoodLogRepository foodLogRepository;
     private final EmbeddingService embeddingService;
 
     public void upsert(FoodLog log) {
@@ -100,6 +105,38 @@ public class FoodCacheService {
                 .toList();
     }
 
+    public List<Map<String, Object>> getUserFoodContext(User user) {
+        if (user == null || user.getId() == null) return List.of();
+
+        Map<String, UserFoodAggregate> foodsByName = new LinkedHashMap<>();
+        foodLogRepository.findByUserIdOrderByLogDateDescLoggedAtDesc(user.getId()).forEach(log -> {
+            if (log.getFoodItem() == null || log.getFoodItem().isBlank()) return;
+            String key = normalize(log.getFoodItem());
+            foodsByName.compute(key, (ignored, aggregate) -> {
+                if (aggregate == null) return new UserFoodAggregate(log);
+                aggregate.increment();
+                return aggregate;
+            });
+        });
+
+        return foodsByName.values().stream()
+                .sorted(Comparator.comparingInt(UserFoodAggregate::count).reversed()
+                        .thenComparing(UserFoodAggregate::lastUsedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(20)
+                .map(aggregate -> {
+                    FoodLog log = aggregate.representative();
+                    return Map.<String, Object>of(
+                            "name", log.getFoodItem(),
+                            "calories", log.getCalories() != null ? log.getCalories() : 0,
+                            "protein_g", log.getProteinG() != null ? log.getProteinG() : 0,
+                            "carbs_g", log.getCarbsG() != null ? log.getCarbsG() : 0,
+                            "fat_g", log.getFatG() != null ? log.getFatG() : 0,
+                            "fiber_g", log.getFiberG() != null ? log.getFiberG() : 0
+                    );
+                })
+                .toList();
+    }
+
     public Optional<FoodCache> findByName(String name) {
         if (name == null) return Optional.empty();
         String normalized = normalize(name);
@@ -115,5 +152,31 @@ public class FoodCacheService {
         String[] words = name.trim().toLowerCase().replaceAll("[^a-z0-9 ]", " ").trim().split("\\s+");
         Arrays.sort(words);
         return String.join(" ", words);
+    }
+
+    private static class UserFoodAggregate {
+        private final FoodLog representative;
+        private int count;
+
+        private UserFoodAggregate(FoodLog representative) {
+            this.representative = representative;
+            this.count = 1;
+        }
+
+        private void increment() {
+            count++;
+        }
+
+        private FoodLog representative() {
+            return representative;
+        }
+
+        private int count() {
+            return count;
+        }
+
+        private LocalDateTime lastUsedAt() {
+            return representative.getLoggedAt();
+        }
     }
 }
