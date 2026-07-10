@@ -55,11 +55,22 @@ public class AiService {
     }
 
     /**
-     * Garde-fou anti-fuite du system prompt (OWASP LLM07).
-     * Un résumé légitime = une phrase courte. On bloque s'il est anormalement
-     * long ou s'il contient des fragments du schéma/consignes internes.
+     * Assainissement de TOUT texte libre produit par l'IA (OWASP LLM02 — Insecure
+     * Output Handling). La sortie du modèle est traitée comme NON fiable : le
+     * jailbreak / l'injection ne sont que le déclencheur, le vrai défaut serait de
+     * stocker/afficher cette sortie telle quelle. On neutralise donc, côté serveur :
+     *  - les URL (vecteur de phishing / lien cliquable),
+     *  - les fuites de system prompt (LLM07),
+     *  - les messages d'ingénierie sociale (fausses alertes "officielles").
+     * Non contournable par un prompt injecté.
      */
     private static final int MAX_SUMMARY_LENGTH = 500;
+    private static final int MAX_FREE_TEXT_LENGTH = 2000;
+
+    private static final java.util.regex.Pattern URL_PATTERN =
+            java.util.regex.Pattern.compile("(?i)\\b(?:https?://|www\\.)\\S+");
+
+    // Fragments du schéma / des consignes internes = fuite du system prompt.
     private static final List<String> LEAK_MARKERS = List.of(
             "low|medium|high",
             "yyyy-mm-ddthh",
@@ -70,17 +81,46 @@ public class AiService {
             "nutrition_details"
     );
 
-    private String sanitizeSummary(String summary, User user, String ip) {
-        if (summary == null || summary.isBlank()) return "";
-        String lower = summary.toLowerCase();
-        boolean leaked = summary.length() > MAX_SUMMARY_LENGTH
-                || LEAK_MARKERS.stream().anyMatch(lower::contains);
-        if (leaked) {
-            log.warn("Fuite probable du system prompt bloquée (user={})", user.getId());
-            auditLogService.log(user.getId(), "PROMPT_LEAK_BLOCKED", "PROMPT", null, ip);
-            return "Demande traitée.";
+    // Vocabulaire d'ingénierie sociale : compte / identifiants / urgence / usurpation.
+    private static final List<String> PHISHING_MARKERS = List.of(
+            "mot de passe", "identifiant", "vérifiez votre compte", "verifiez votre compte",
+            "confirmez votre", "réinitialis", "reinitialis", "expire", "suspend", "résilia",
+            "resilia", "cliquez", "officiel", "alerte sécurité", "alerte securite",
+            "sécurité requise", "securite requise", "avant minuit"
+    );
+
+    private boolean looksMalicious(String text, boolean hasUrl) {
+        String lower = text.toLowerCase();
+        if (LEAK_MARKERS.stream().anyMatch(lower::contains)) return true;
+        // Un lien + du vocabulaire d'alerte/compte = phishing quasi certain.
+        return hasUrl && PHISHING_MARKERS.stream().anyMatch(lower::contains);
+    }
+
+    /**
+     * Nettoie un champ texte libre issu de l'IA. Renvoie le texte si sain (URL
+     * isolée neutralisée au passage), ou un remplacement neutre si malveillant.
+     */
+    private String sanitizeText(String text, String safeReplacement, int maxLen, User user, String ip) {
+        if (text == null || text.isBlank()) return text;
+        boolean hasUrl = URL_PATTERN.matcher(text).find();
+        boolean tooLong = text.length() > maxLen;
+        if (tooLong || looksMalicious(text, hasUrl)) {
+            log.warn("Sortie IA non fiable neutralisée (user={}, url={}, tooLong={})", user.getId(), hasUrl, tooLong);
+            auditLogService.log(user.getId(), "AI_OUTPUT_BLOCKED", "PROMPT", null, ip);
+            return safeReplacement;
         }
-        return summary;
+        // Contenu jugé sain : on défang tout de même une éventuelle URL isolée.
+        return hasUrl ? URL_PATTERN.matcher(text).replaceAll("[lien retiré]") : text;
+    }
+
+    private String sanitizeSummary(String summary, User user, String ip) {
+        String cleaned = sanitizeText(summary, "Demande traitée.", MAX_SUMMARY_LENGTH, user, ip);
+        return cleaned == null ? "" : cleaned;
+    }
+
+    /** Nettoie un champ texte libre (titre, description, contenu de note/journal...). */
+    private String clean(String text, User user, String ip) {
+        return sanitizeText(text, "Contenu filtré.", MAX_FREE_TEXT_LENGTH, user, ip);
     }
 
     @Observed(name = "smartlife.ai.prompt.process")
@@ -115,8 +155,8 @@ public class AiService {
         for (var t : tasks) {
             var task = Task.builder()
                     .user(user)
-                    .title((String) t.get("title"))
-                    .description((String) t.getOrDefault("description", ""))
+                    .title(clean((String) t.get("title"), user, ip))
+                    .description(clean((String) t.getOrDefault("description", ""), user, ip))
                     .priority(parsePriority((String) t.getOrDefault("priority", "MEDIUM")))
                     .status(Task.TaskStatus.TODO)
                     .build();
@@ -129,8 +169,8 @@ public class AiService {
         for (var r : reminders) {
             var reminder = Reminder.builder()
                     .user(user)
-                    .title((String) r.get("title"))
-                    .description((String) r.getOrDefault("description", ""))
+                    .title(clean((String) r.get("title"), user, ip))
+                    .description(clean((String) r.getOrDefault("description", ""), user, ip))
                     .remindAt(parseDateTime((String) r.getOrDefault("remind_at", null)))
                     .build();
             reminderRepository.save(reminder);
@@ -142,8 +182,8 @@ public class AiService {
         for (var n : notes) {
             var note = Note.builder()
                     .user(user)
-                    .title((String) n.getOrDefault("title", "Note"))
-                    .content((String) n.get("content"))
+                    .title(clean((String) n.getOrDefault("title", "Note"), user, ip))
+                    .content(clean((String) n.get("content"), user, ip))
                     .build();
             noteRepository.save(note);
             notesCreated.add(Map.of("id", note.getId(), "title", note.getTitle()));
@@ -158,7 +198,7 @@ public class AiService {
                     .phone((String) c.getOrDefault("phone", null))
                     .email((String) c.getOrDefault("email", null))
                     .address((String) c.getOrDefault("address", null))
-                    .notes((String) c.getOrDefault("notes", null))
+                    .notes(clean((String) c.getOrDefault("notes", null), user, ip))
                     .build();
             contactRepository.save(contact);
             contactsCreated.add(Map.of("id", contact.getId(), "name", contact.getName()));
@@ -179,7 +219,7 @@ public class AiService {
                     .fiberG(parseBigDecimal(f.get("fiber_g")))
                     .quantity((String) f.getOrDefault("quantity", null))
                     .nutritionDetails((Map<String, Object>) f.getOrDefault("nutrition_details", null))
-                    .notes((String) f.getOrDefault("notes", null))
+                    .notes(clean((String) f.getOrDefault("notes", null), user, ip))
                     .build();
             foodLogRepository.save(foodLog);
             foodCacheService.upsert(foodLog);
@@ -193,7 +233,7 @@ public class AiService {
             if (content == null || content.isBlank()) continue;
             var diaryEntry = DiaryEntry.builder()
                     .user(user)
-                    .content(content)
+                    .content(clean(content, user, ip))
                     .mood(normalizeMood((String) d.getOrDefault("mood", null)))
                     .tags(parseStringArray(d.get("tags")))
                     .entryDate(LocalDate.now())
@@ -209,10 +249,10 @@ public class AiService {
             if (title == null || title.isBlank()) continue;
             var session = WorkoutSession.builder()
                     .user(user)
-                    .title(title)
+                    .title(clean(title, user, ip))
                     .durationMinutes(parseInteger(w.get("duration_minutes")))
                     .caloriesBurned(parseInteger(w.get("calories_burned")))
-                    .notes((String) w.getOrDefault("notes", null))
+                    .notes(clean((String) w.getOrDefault("notes", null), user, ip))
                     .build();
             var exercises = (List<Map<String, Object>>) w.getOrDefault("exercises", List.of());
             for (var ex : exercises) {
