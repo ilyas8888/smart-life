@@ -279,6 +279,18 @@ public class AiService {
         response.setDiaryEntriesCreated(diaryEntriesCreated);
         response.setWorkoutsCreated(workoutsCreated);
 
+        // Anti-hallucination : le message affiché est ancré sur l'état réel, pas sur
+        // le texte libre du LLM. Cet endpoint ne sait QUE créer ; si rien n'a été créé
+        // (ex : l'utilisateur demande une suppression), le modèle ne doit pas prétendre
+        // qu'une action a eu lieu (OWASP LLM09 - Overreliance).
+        int totalCreated = tasksCreated.size() + remindersCreated.size() + notesCreated.size()
+                + contactsCreated.size() + foodLogsCreated.size() + diaryEntriesCreated.size()
+                + workoutsCreated.size();
+        if (totalCreated == 0) {
+            response.setSummary("Aucun élément n'a été créé. Cet assistant ajoute des éléments "
+                    + "à partir de ta description (tâches, repas, notes...) ; il ne peut pas en supprimer ni en modifier.");
+        }
+
         // Save prompt history
         var history = PromptHistory.builder()
                 .user(user)
