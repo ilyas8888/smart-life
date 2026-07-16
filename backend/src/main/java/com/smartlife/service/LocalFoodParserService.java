@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 @Service
@@ -42,46 +43,58 @@ public class LocalFoodParserService {
             return List.of();
         }
 
+        // On résout d'abord tous les items en mémoire SANS rien persister.
+        // Si un seul item n'est pas résolu (ni cache ni USDA), on abandonne
+        // entièrement le parsing local et on laisse l'IA traiter tout le prompt,
+        // au lieu de créer des FoodLog sans valeurs nutritionnelles.
         List<FoodLog> logs = new ArrayList<>();
+        List<Runnable> cacheUpdates = new ArrayList<>();
+
         for (ParsedItem item : parseItems(prompt)) {
-            foodCacheService.findByName(item.name()).ifPresentOrElse(cache -> {
+            Optional<FoodCache> cached = foodCacheService.findByName(item.name());
+            if (cached.isPresent()) {
+                FoodCache cache = cached.get();
                 double scale = computeLocalScale(item.quantity(), item.unit(), cache);
                 FoodLog log = buildLog(
-                        user,
-                        mealType,
-                        cache.getFoodName(),
-                        quantityLabel(item),
+                        user, mealType, cache.getFoodName(), quantityLabel(item),
                         scaleInt(cache.getCalories(), scale),
                         scaleBD(cache.getProteinG(), scale),
                         scaleBD(cache.getCarbsG(), scale),
                         scaleBD(cache.getFatG(), scale),
                         scaleBD(cache.getFiberG(), scale)
                 );
-                foodLogRepository.save(log);
-                foodCacheService.upsert(log);
                 logs.add(log);
-            }, () -> nutritionApiService.lookup(item.name()).ifPresentOrElse(apiResult -> {
+                cacheUpdates.add(() -> foodCacheService.upsert(log));
+                continue;
+            }
+
+            var api = nutritionApiService.lookup(item.name());
+            if (api.isPresent()) {
+                var apiResult = api.get();
                 double scale = computeLocalScale(item.quantity(), item.unit(), apiResult.portions());
                 FoodLog log = buildLog(
-                        user,
-                        mealType,
-                        apiResult.foodName(),
-                        quantityLabel(item),
+                        user, mealType, apiResult.foodName(), quantityLabel(item),
                         scaleInt(apiResult.calories(), scale),
                         scaleBD(apiResult.proteinG(), scale),
                         scaleBD(apiResult.carbsG(), scale),
                         scaleBD(apiResult.fatG(), scale),
                         scaleBD(apiResult.fiberG(), scale)
                 );
-                foodLogRepository.save(log);
-                foodCacheService.upsert(log, "usda", apiResult.portions(), apiResult.richPortions());
                 logs.add(log);
-            }, () -> {
-                FoodLog log = buildLog(user, mealType, item.name(), quantityLabel(item), null, null, null, null, null);
-                foodLogRepository.save(log);
-                logs.add(log);
-            }));
+                cacheUpdates.add(() -> foodCacheService.upsert(log, "usda", apiResult.portions(), apiResult.richPortions()));
+                continue;
+            }
+
+            // Item non résolu localement -> on délègue tout le prompt à l'IA.
+            return List.of();
         }
+
+        if (logs.isEmpty()) {
+            return List.of();
+        }
+
+        logs.forEach(foodLogRepository::save);
+        cacheUpdates.forEach(Runnable::run);
         return logs;
     }
 

@@ -1,9 +1,13 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/authStore'
+import { refreshAccessToken } from './refreshToken'
 
+// Pas de withCredentials : toute l'auth passe par le header Bearer et le refresh
+// token voyage dans le body. Le proxy edge de HuggingFace repond aux preflight
+// CORS sans 'Access-Control-Allow-Credentials', donc aucune requete credentialed
+// cross-origin ne passerait.
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL ?? ''}/api`,
-  withCredentials: true,
 })
 
 api.interceptors.request.use((config) => {
@@ -12,32 +16,18 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Single shared promise to prevent concurrent refresh races (token rotation)
-let refreshPromise: Promise<string> | null = null
-
 api.interceptors.response.use(
   (r) => r,
   async (error) => {
     const originalRequest = error.config
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true
-      const { email, firstName, lastName, setAuth, logout } = useAuthStore.getState()
-
       try {
-        if (!refreshPromise) {
-          refreshPromise = axios
-            .post(`${import.meta.env.VITE_API_URL ?? ''}/api/auth/refresh`, {}, { withCredentials: true })
-            .then(({ data }) => {
-              setAuth(data.accessToken, email ?? '', firstName, lastName)
-              return data.accessToken as string
-            })
-            .finally(() => { refreshPromise = null })
-        }
-        const newToken = await refreshPromise
+        const newToken = await refreshAccessToken()
         originalRequest.headers.Authorization = `Bearer ${newToken}`
         return api(originalRequest)
       } catch {
-        logout()
+        useAuthStore.getState().logout()
         window.location.href = import.meta.env.BASE_URL + 'login'
       }
     }

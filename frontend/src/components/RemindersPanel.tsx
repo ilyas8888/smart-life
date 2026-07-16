@@ -245,7 +245,7 @@ export default function RemindersPanel() {
               </span>
               {isOverdue && (
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
-                  ? En retard
+                  ⏰ En retard
                 </span>
               )}
             </div>
@@ -373,7 +373,7 @@ export default function RemindersPanel() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <p className="font-semibold text-white">Appeler le médecin</p>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">?? Haute</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">🔴 Haute</span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
                     <Calendar size={12} /><span>Demain 09:00</span>

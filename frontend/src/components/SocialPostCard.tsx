@@ -9,19 +9,19 @@ import api from '../api/axios'
 const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
 const RESOURCE_LABELS: Record<string, { label: string; icon: string; color: string }> = {
-  FOOD_LOG:      { label: 'Food Diary',      icon: '??', color: 'bg-green-500/10 text-green-400 border border-green-500/20' },
-  WORKOUT_PLAN:  { label: 'Programme Sport', icon: '??', color: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' },
-  SLEEP_LOG:     { label: 'Sommeil',         icon: '??', color: 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' },
-  STUDY_SESSION: { label: 'Étude',           icon: '??', color: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' },
-  NOTE:          { label: 'Note',            icon: '??', color: 'bg-violet-500/10 text-violet-400 border border-violet-500/20' },
-  JOURNAL:       { label: 'Journal',         icon: '??', color: 'bg-rose-500/10 text-rose-400 border border-rose-500/20' },
+  FOOD_LOG:      { label: 'Food Diary',      icon: '🍽️', color: 'bg-green-500/10 text-green-400 border border-green-500/20' },
+  WORKOUT_PLAN:  { label: 'Programme Sport', icon: '💪', color: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' },
+  SLEEP_LOG:     { label: 'Sommeil',         icon: '🌙', color: 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' },
+  STUDY_SESSION: { label: 'Étude',           icon: '📚', color: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' },
+  NOTE:          { label: 'Note',            icon: '📝', color: 'bg-violet-500/10 text-violet-400 border border-violet-500/20' },
+  JOURNAL:       { label: 'Journal',         icon: '📔', color: 'bg-rose-500/10 text-rose-400 border border-rose-500/20' },
 }
 
 const REACTIONS = [
-  { type: 'INSPIRED', emoji: '??', label: 'Inspiré' },
-  { type: 'TRYING',   emoji: '??', label: 'Je teste' },
-  { type: 'BRAVO',    emoji: '??', label: 'Bravo' },
-  { type: 'HOW',      emoji: '?', label: 'Comment ?' },
+  { type: 'INSPIRED', emoji: '✨', label: 'Inspiré' },
+  { type: 'TRYING',   emoji: '💪', label: 'Je teste' },
+  { type: 'BRAVO',    emoji: '👏', label: 'Bravo' },
+  { type: 'HOW',      emoji: '🤔', label: 'Comment ?' },
 ]
 
 interface Post {
@@ -63,7 +63,7 @@ export default function SocialPostCard({ post, onDeleted, onAuthorClick }: Props
   const [commentText, setCommentText] = useState('')
   const [replyTo, setReplyTo] = useState<{ id: number; name: string } | null>(null)
 
-  const rt = RESOURCE_LABELS[post.resourceType] ?? { label: post.resourceType, icon: '??', color: 'bg-white/[0.05] text-gray-400 border border-white/10' }
+  const rt = RESOURCE_LABELS[post.resourceType] ?? { label: post.resourceType, icon: '📌', color: 'bg-white/[0.05] text-gray-400 border border-white/10' }
 
   const reactMutation = useMutation({
     mutationFn: (type: string) => api.post(`/social/posts/${post.id}/react`, { type }).then(r => r.data),
@@ -217,7 +217,7 @@ export default function SocialPostCard({ post, onDeleted, onAuthorClick }: Props
           {/* Input */}
           {replyTo && (
             <div className="flex items-center gap-2 text-xs text-sky-600 dark:text-sky-400">
-              <span>? Réponse à {replyTo.name}</span>
+              <span>↩ Réponse à {replyTo.name}</span>
               <button onClick={() => setReplyTo(null)} className="underline">Annuler</button>
             </div>
           )}

@@ -58,12 +58,12 @@ interface ReceivedLink {
 }
 
 const RESOURCE_TYPES = [
-  { value: 'FOOD_LOG',       label: 'Food Diary',       icon: '??', bg: 'bg-green-100 dark:bg-green-900/30',   text: 'text-green-700 dark:text-green-400' },
-  { value: 'WORKOUT_PLAN',   label: 'Programme Sport',  icon: '??', bg: 'bg-amber-100 dark:bg-amber-900/30',   text: 'text-amber-700 dark:text-amber-400' },
-  { value: 'SLEEP_LOG',      label: 'Sommeil',          icon: '??', bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-700 dark:text-indigo-400' },
-  { value: 'STUDY_SESSION',  label: 'Session Étude',    icon: '??', bg: 'bg-cyan-100 dark:bg-cyan-900/30',    text: 'text-cyan-700 dark:text-cyan-400' },
-  { value: 'NOTE',           label: 'Note',             icon: '??', bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-700 dark:text-violet-400' },
-  { value: 'JOURNAL',        label: 'Journal',          icon: '??', bg: 'bg-rose-100 dark:bg-rose-900/30',    text: 'text-rose-700 dark:text-rose-400' },
+  { value: 'FOOD_LOG',       label: 'Food Diary',       icon: '🍽️', bg: 'bg-green-100 dark:bg-green-900/30',   text: 'text-green-700 dark:text-green-400' },
+  { value: 'WORKOUT_PLAN',   label: 'Programme Sport',  icon: '💪', bg: 'bg-amber-100 dark:bg-amber-900/30',   text: 'text-amber-700 dark:text-amber-400' },
+  { value: 'SLEEP_LOG',      label: 'Sommeil',          icon: '🌙', bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-700 dark:text-indigo-400' },
+  { value: 'STUDY_SESSION',  label: 'Session Étude',    icon: '📚', bg: 'bg-cyan-100 dark:bg-cyan-900/30',    text: 'text-cyan-700 dark:text-cyan-400' },
+  { value: 'NOTE',           label: 'Note',             icon: '📝', bg: 'bg-violet-100 dark:bg-violet-900/30', text: 'text-violet-700 dark:text-violet-400' },
+  { value: 'JOURNAL',        label: 'Journal',          icon: '📔', bg: 'bg-rose-100 dark:bg-rose-900/30',    text: 'text-rose-700 dark:text-rose-400' },
 ]
 
 const EXPIRY_OPTIONS = [
@@ -543,12 +543,12 @@ export default function SocialPanel() {
           <div className="flex gap-1.5 overflow-x-auto pb-1">
             {[
               { value: '', label: 'Tout' },
-              { value: 'WORKOUT_PLAN', label: '?? Sport' },
-              { value: 'FOOD_LOG', label: '?? Food' },
-              { value: 'NOTE', label: '?? Notes' },
-              { value: 'JOURNAL', label: '?? Journal' },
-              { value: 'SLEEP_LOG', label: '?? Sommeil' },
-              { value: 'STUDY_SESSION', label: '?? Étude' },
+              { value: 'WORKOUT_PLAN', label: '💪 Sport' },
+              { value: 'FOOD_LOG', label: '🍽️ Food' },
+              { value: 'NOTE', label: '📝 Notes' },
+              { value: 'JOURNAL', label: '📔 Journal' },
+              { value: 'SLEEP_LOG', label: '🌙 Sommeil' },
+              { value: 'STUDY_SESSION', label: '📚 Étude' },
             ].map(f => (
               <button
                 key={f.value}

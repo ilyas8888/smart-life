@@ -9,7 +9,7 @@ import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import api from '../api/axios'
-import { DayMuscleSummary, ExerciseInfoButton, ExercisePicker, getExerciseMedia } from './ExerciseGuide'
+import { ExerciseInfoButton, ExercisePicker, getExerciseMedia } from './ExerciseGuide'
 
 interface PlanExercise { name: string; sets: number | null; reps: number | null; weightKg: number | null; notes: string }
 interface PlanDay { id: number; dayNumber: number; label: string; exercises: PlanExercise[] }
@@ -33,10 +33,10 @@ const SPORT_PRESETS = [
   { label: 'Natation', emoji: '', rate: 9 },
   { label: 'Yoga', emoji: '', rate: 3 },
   { label: 'Marche', emoji: '', rate: 4 },
-  { label: 'Football', emoji: '?', rate: 8 },
+  { label: 'Football', emoji: '', rate: 8 },
   { label: 'Tennis', emoji: '', rate: 7 },
   { label: 'Boxe', emoji: '', rate: 9 },
-  { label: 'CrossFit', emoji: '?', rate: 11 },
+  { label: 'CrossFit', emoji: '', rate: 11 },
 ]
 
 const DAY_LABELS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
@@ -109,28 +109,28 @@ const GOAL_CONFIG: Record<GoalType, {
   label: string; emoji: string; gradient: string; accentText: string; borderLeft: string; badge: string
 }> = {
   MUSCLE_GAIN: {
-    label: 'Prise de masse', emoji: '???',
+    label: 'Prise de masse', emoji: '💪',
     gradient: 'from-amber-500/10 to-orange-500/5',
     accentText: 'text-amber-600 dark:text-amber-400',
     borderLeft: 'border-l-amber-500',
     badge: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
   },
   FAT_LOSS: {
-    label: 'Perte de poids', emoji: '??',
+    label: 'Perte de poids', emoji: '🔥',
     gradient: 'from-red-500/10 to-rose-500/5',
     accentText: 'text-red-600 dark:text-red-400',
     borderLeft: 'border-l-red-500',
     badge: 'bg-red-500/10 text-red-400 border border-red-500/20',
   },
   ENDURANCE: {
-    label: 'Endurance', emoji: '??',
+    label: 'Endurance', emoji: '🏃',
     gradient: 'from-green-500/10 to-emerald-500/5',
     accentText: 'text-green-600 dark:text-green-400',
     borderLeft: 'border-l-green-500',
     badge: 'bg-green-500/10 text-green-400 border border-green-500/20',
   },
   GENERAL: {
-    label: 'Général', emoji: '?',
+    label: 'Général', emoji: '⭐',
     gradient: 'from-blue-500/10 to-indigo-500/5',
     accentText: 'text-blue-600 dark:text-blue-400',
     borderLeft: 'border-l-blue-500',
@@ -221,19 +221,19 @@ const EXERCISE_LIBRARY: Record<string, PlanExercise[]> = {
 }
 
 const SPORT_BADGE_MAP: [RegExp, string][] = [
-  [/muscu|gym|musculation|bench|squat|deadlift/i, '???'],
-  [/course|running|run|jogging/i, '??'],
-  [/vélo|velo|cycling|bike/i, '??'],
-  [/natation|swimming|swim|piscine/i, '??'],
-  [/yoga|pilates/i, '??'],
-  [/marche|walk/i, '??'],
-  [/football|foot|soccer/i, '?'],
-  [/tennis/i, '??'],
-  [/boxe|boxing|mma/i, '??'],
-  [/crossfit|cross.?fit/i, '??'],
-  [/hiit/i, '?'],
-  [/escalade|climbing/i, '??'],
-  [/basket|basketball/i, '??'],
+  [/muscu|gym|musculation|bench|squat|deadlift/i, '💪'],
+  [/course|running|run|jogging/i, '🏃'],
+  [/vélo|velo|cycling|bike/i, '🚴'],
+  [/natation|swimming|swim|piscine/i, '🏊'],
+  [/yoga|pilates/i, '🧘'],
+  [/marche|walk/i, '🚶'],
+  [/football|foot|soccer/i, '⚽'],
+  [/tennis/i, '🎾'],
+  [/boxe|boxing|mma/i, '🥊'],
+  [/crossfit|cross.?fit/i, '🏋️'],
+  [/hiit/i, '⚡'],
+  [/escalade|climbing/i, '🧗'],
+  [/basket|basketball/i, '🏀'],
 ]
 
 function sportBadge(title: string): string | null {
@@ -347,10 +347,10 @@ function GlobalStats({ sessions }: { sessions: WorkoutSession[] }) {
   const totalHours = Math.floor(totalMinutes / 60)
 
   const stats = [
-    { label: 'S&#xe9;ances', value: String(sessions.length), icon: <Flame size={16} />, gradient: 'from-amber-500 to-orange-500', glow: 'rgba(245,158,11,0.3)', text: 'text-amber-400' },
-    { label: 'kcal br&#xfb;l&#xe9;es', value: totalCalories > 0 ? totalCalories.toLocaleString('fr') : '—', icon: <Flame size={16} />, gradient: 'from-red-500 to-rose-500', glow: 'rgba(239,68,68,0.3)', text: 'text-red-400' },
+    { label: 'Séances', value: String(sessions.length), icon: <Flame size={16} />, gradient: 'from-amber-500 to-orange-500', glow: 'rgba(245,158,11,0.3)', text: 'text-amber-400' },
+    { label: 'kcal brûlées', value: totalCalories > 0 ? totalCalories.toLocaleString('fr') : '—', icon: <Flame size={16} />, gradient: 'from-red-500 to-rose-500', glow: 'rgba(239,68,68,0.3)', text: 'text-red-400' },
     { label: 'heures totales', value: totalHours > 0 ? `${totalHours}h` : '—', icon: <Clock size={16} />, gradient: 'from-blue-500 to-indigo-500', glow: 'rgba(59,130,246,0.3)', text: 'text-blue-400' },
-    { label: 'kg soulev&#xe9;s', value: totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}t` : totalVolume > 0 ? `${Math.round(totalVolume)}kg` : '—', icon: <Dumbbell size={16} />, gradient: 'from-green-500 to-emerald-500', glow: 'rgba(16,185,129,0.3)', text: 'text-green-400' },
+    { label: 'kg soulevés', value: totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}t` : totalVolume > 0 ? `${Math.round(totalVolume)}kg` : '—', icon: <Dumbbell size={16} />, gradient: 'from-green-500 to-emerald-500', glow: 'rgba(16,185,129,0.3)', text: 'text-green-400' },
   ]
 
   return (
@@ -534,7 +534,7 @@ function SessionCard({
                 <p className="font-black text-white truncate">{session.title}</p>
                 {hasPR && (
                   <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-amber-900/30 text-amber-400 border border-amber-700 shrink-0" style={{ boxShadow: '0 0 10px rgba(245,158,11,0.3)' }}>
-                    ?? PR
+                    🏆 PR
                   </span>
                 )}
               </div>
@@ -572,7 +572,7 @@ function SessionCard({
             )}
             {totalVolume > 0 && (
               <span className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 px-2 py-1 rounded-full">
-                ?? {totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}t` : `${Math.round(totalVolume)}kg`}
+                💪 {totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}t` : `${Math.round(totalVolume)}kg`}
               </span>
             )}
             {groups.length > 0 && (
@@ -822,7 +822,7 @@ function AddWorkoutModal({
               {!prefillTitle && (
                 <button type="button" onClick={() => setMode(null)}
                   className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4 flex items-center gap-1">
-                  ? Retour
+                  ← Retour
                 </button>
               )}
               <div className="mb-4">
@@ -965,7 +965,7 @@ function AddWorkoutModal({
             <div>
               <button type="button" onClick={() => setMode(null)}
                 className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4 flex items-center gap-1">
-                ? Retour
+                ← Retour
               </button>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Décrivez votre séance</label>
               <textarea className="input resize-none mb-4" rows={5} value={promptText}
@@ -980,7 +980,7 @@ function AddWorkoutModal({
               <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
                 <button type="button" onClick={onClose} disabled={isLoading} className="btn-secondary w-full sm:w-auto">Annuler</button>
                 <button type="button" onClick={() => promptMutation.mutate()} disabled={!promptText.trim() || isLoading}
-                  className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">? Analyser et sauvegarder</button>
+                  className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">✨ Analyser et sauvegarder</button>
               </div>
             </div>
           )}
@@ -1182,7 +1182,7 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
                   i === currentExIdx ? 'bg-amber-500 text-black' :
                   'bg-white/5 text-gray-500'
                 }`}>
-                  {i < currentExIdx ? '? ' : ''}{ep.exercise.name.split(' ').slice(0, 2).join(' ')}
+                  {i < currentExIdx ? '✓ ' : ''}{ep.exercise.name.split(' ').slice(0, 2).join(' ')}
                 </div>
               ))}
             </div>
@@ -1320,7 +1320,7 @@ function ActiveWorkoutSession({ plan, day, onFinish, onDiscard }: {
 
             {!isLastExercise && exercises[currentExIdx + 1] && (
               <div className="bg-white/[0.03] rounded-xl p-3 flex items-center gap-3 border border-white/10">
-                <span className="text-xl">?</span>
+                <span className="text-xl">⏭️</span>
                 <div>
                   <p className="text-xs text-gray-500">Prochain exercice</p>
                   <p className="text-sm font-medium">{exercises[currentExIdx + 1].exercise.name}</p>
@@ -1426,27 +1426,27 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange, onEdi
                   {localStatus === 'ACTIVE' && <>
                     <button type="button" onClick={() => changeStatus('PAUSED')}
                       className="text-xs font-medium px-3 py-1.5 rounded-xl bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 hover:bg-yellow-900/50 transition-colors">
-                      ? Mettre en pause
+                      ⏸ Mettre en pause
                     </button>
                     <button type="button" onClick={() => changeStatus('COMPLETED')}
                       className="text-xs font-medium px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-900/50 transition-colors">
-                      ? Marquer terminé
+                      ✓ Marquer terminé
                     </button>
                   </>}
                   {localStatus === 'PAUSED' && <>
                     <button type="button" onClick={() => changeStatus('ACTIVE')}
                       className="text-xs font-medium px-3 py-1.5 rounded-xl bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-900/50 transition-colors">
-                      ? Réactiver
+                      ▶ Réactiver
                     </button>
                     <button type="button" onClick={() => changeStatus('COMPLETED')}
                       className="text-xs font-medium px-3 py-1.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-900/50 transition-colors">
-                      ? Marquer terminé
+                      ✓ Marquer terminé
                     </button>
                   </>}
                   {localStatus === 'COMPLETED' && (
                     <button type="button" onClick={() => changeStatus('ACTIVE')}
                       className="text-xs font-medium px-3 py-1.5 rounded-xl bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-900/50 transition-colors">
-                      ? Relancer le programme
+                      🔄 Relancer le programme
                     </button>
                   )}
                 </div>
@@ -1541,7 +1541,7 @@ function ProgramDetailView({ plan, onBack, onStartSession, onStatusChange, onEdi
                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${cfg.badge}`}>Aujourd'hui</span>
                       )}
                       {completed && !isToday && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">? Complété</span>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-400 border border-green-500/20">✓ Complété</span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500">
@@ -1607,10 +1607,25 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
       ? Object.fromEntries(editingPlan.days.map(d => [d.dayNumber, (d.exercises ?? []) as PlanExercise[]]))
       : {}
   )
-  const [currentDayIndex, setCurrentDayIndex] = useState(0)
   const [customExercise, setCustomExercise] = useState({ name: '', sets: '', reps: '', weightKg: '' })
+  const [lastConfig, setLastConfig] = useState<{ sets: number | null; reps: number | null; weightKg: number | null }>({ sets: null, reps: null, weightKg: null })
+  const [perDayMode, setPerDayMode] = useState<Record<string, boolean>>({})
   const activeDays = dayConfigs.filter(d => d.active)
-  const currentDay = activeDays[currentDayIndex] ?? activeDays[0]
+
+  // Vue « par exercice » derivee de dayExercises (source de verite inchangee)
+  const exerciseBlocks = useMemo(() => {
+    const order: string[] = []
+    const map = new Map<string, { name: string; days: number[]; configs: Record<number, PlanExercise> }>()
+    for (const day of activeDays) {
+      for (const ex of dayExercises[day.dayNumber] ?? []) {
+        if (!map.has(ex.name)) { map.set(ex.name, { name: ex.name, days: [], configs: {} }); order.push(ex.name) }
+        const blk = map.get(ex.name)!
+        blk.days.push(day.dayNumber)
+        blk.configs[day.dayNumber] = ex
+      }
+    }
+    return order.map(name => map.get(name)!)
+  }, [dayExercises, activeDays])
 
   const planBody = () => ({
     name, goal, weeks,
@@ -1638,7 +1653,7 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
     mutationFn: () => api.put(`/workout-plans/${editingPlan!.id}`, planBody()),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workout-plans'] })
-      toast.success('Programme modifié ?')
+      toast.success('Programme modifié !')
       onSuccess()
     },
     onError: () => toast.error('Erreur lors de la modification'),
@@ -1658,21 +1673,50 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
       ...patch,
       label: patch.active === false ? 'Repos' : patch.label ?? day.label,
     } : day))
-  const addExerciseToDay = (dayNumber: number, exercise: PlanExercise) =>
-    setDayExercises(prev => ({ ...prev, [dayNumber]: [...(prev[dayNumber] ?? []), { ...exercise }] }))
-  const removeExerciseFromDay = (dayNumber: number, index: number) =>
-    setDayExercises(prev => ({ ...prev, [dayNumber]: (prev[dayNumber] ?? []).filter((_, i) => i !== index) }))
-  const updateDayExercise = (dayNumber: number, index: number, field: keyof PlanExercise, value: string) =>
-    setDayExercises(prev => ({
-      ...prev,
-      [dayNumber]: (prev[dayNumber] ?? []).map((ex, i) => i === index ? {
-        ...ex,
-        [field]: field === 'name' || field === 'notes' ? value : value ? Number(value) : null,
-      } : ex),
-    }))
+  // Ajoute un exercice a TOUS les jours actifs (l'utilisateur deselectionne ensuite)
+  const addExerciseAllDays = (ex: { name: string; sets?: number | null; reps?: number | null; weightKg?: number | null; notes?: string }) => {
+    const cfg = { sets: ex.sets ?? null, reps: ex.reps ?? null, weightKg: ex.weightKg ?? null }
+    setLastConfig(cfg)
+    setDayExercises(prev => {
+      const next = { ...prev }
+      for (const day of activeDays) {
+        const list = next[day.dayNumber] ?? []
+        if (!list.some(e => e.name === ex.name)) {
+          next[day.dayNumber] = [...list, { name: ex.name, sets: cfg.sets, reps: cfg.reps, weightKg: cfg.weightKg, notes: ex.notes ?? '' }]
+        }
+      }
+      return next
+    })
+  }
+  const removeExerciseAll = (name: string) =>
+    setDayExercises(prev => {
+      const next: Record<number, PlanExercise[]> = {}
+      for (const [key, list] of Object.entries(prev)) next[Number(key)] = list.filter(e => e.name !== name)
+      return next
+    })
+  // Coche/decoche un jour pour un exercice ; a l'ajout, herite de la derniere config saisie
+  const toggleExerciseDay = (name: string, dayNumber: number) =>
+    setDayExercises(prev => {
+      const list = prev[dayNumber] ?? []
+      if (list.some(e => e.name === name)) {
+        return { ...prev, [dayNumber]: list.filter(e => e.name !== name) }
+      }
+      return { ...prev, [dayNumber]: [...list, { name, sets: lastConfig.sets, reps: lastConfig.reps, weightKg: lastConfig.weightKg, notes: '' }] }
+    })
+  const setBlockConfig = (name: string, dayNumbers: number[], field: 'sets' | 'reps' | 'weightKg', value: string) => {
+    const num = value === '' ? null : Number(value)
+    setLastConfig(prev => ({ ...prev, [field]: num }))
+    setDayExercises(prev => {
+      const next = { ...prev }
+      for (const d of dayNumbers) {
+        next[d] = (next[d] ?? []).map(e => e.name === name ? { ...e, [field]: num } : e)
+      }
+      return next
+    })
+  }
   const addCustomExercise = () => {
-    if (!currentDay || !customExercise.name.trim()) return
-    addExerciseToDay(currentDay.dayNumber, {
+    if (!customExercise.name.trim()) return
+    addExerciseAllDays({
       name: customExercise.name.trim(),
       sets: customExercise.sets ? Number(customExercise.sets) : null,
       reps: customExercise.reps ? Number(customExercise.reps) : null,
@@ -1717,7 +1761,7 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
                 ))}
               </div>
               <div className="flex justify-end">
-                <button type="button" onClick={() => setStep(2)} disabled={!name.trim()} className="btn-primary">Suivant ?</button>
+                <button type="button" onClick={() => setStep(2)} disabled={!name.trim()} className="btn-primary">Suivant →</button>
               </div>
             </div>
           )}
@@ -1725,7 +1769,7 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
           {step === 2 && (
             <div>
               <button type="button" onClick={() => setStep(1)}
-                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4">? Retour</button>
+                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4">← Retour</button>
               <h4 className="font-semibold text-white mb-4">Planning semainier</h4>
               <div className="space-y-2 mb-4">
                 {dayConfigs.map(day => (
@@ -1747,54 +1791,110 @@ function CreatePlanModal({ onClose, onSuccess, editingPlan }: { onClose: () => v
               </div>
               <p className="text-sm text-gray-400 mb-4">{activeDays.length} jours d'entraînement / semaine</p>
               <div className="flex justify-end">
-                <button type="button" onClick={() => { setCurrentDayIndex(0); setStep(3) }} disabled={activeDays.length === 0} className="btn-primary">Suivant ?</button>
+                <button type="button" onClick={() => setStep(3)} disabled={activeDays.length === 0} className="btn-primary">Suivant →</button>
               </div>
             </div>
           )}
 
-          {step === 3 && currentDay && (
+          {step === 3 && (
             <div>
               <button type="button" onClick={() => setStep(2)}
-                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4">? Retour</button>
-              <h4 className="font-semibold text-white mb-4">Exercices par jour</h4>
-              <div className="overflow-x-auto flex gap-2 mb-4">
-                {activeDays.map((day, index) => (
-                  <button key={day.dayNumber} type="button" onClick={() => setCurrentDayIndex(index)}
-                    className={`rounded-full px-3 py-1.5 text-sm font-medium whitespace-nowrap ${currentDayIndex === index ? 'bg-slate-800 text-white' : 'bg-white/[0.05] text-gray-400'}`}>
-                    {DAY_SHORT[day.dayNumber - 1]} · {day.label}
-                  </button>
-                ))}
-              </div>
+                className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4">← Retour</button>
+              <h4 className="font-semibold text-white mb-1">Exercices du programme</h4>
+              <p className="text-xs text-gray-400 mb-4">
+                Ajoute un exercice, coche les jours où tu le fais, règle la config. Un nouveau jour reprend automatiquement la dernière config saisie.
+              </p>
               <ExercisePicker
-                onAdd={exercise => addExerciseToDay(currentDay.dayNumber, exercise)}
-                alreadyAdded={(dayExercises[currentDay.dayNumber] ?? []).map(exercise => exercise.name)}
+                onAdd={addExerciseAllDays}
+                alreadyAdded={exerciseBlocks.map(b => b.name)}
               />
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-5">
                 <input className="input col-span-2 sm:col-span-1" value={customExercise.name} onChange={e => setCustomExercise(prev => ({ ...prev, name: e.target.value }))} placeholder="Exercice" />
                 <input className="input" type="number" value={customExercise.sets} onChange={e => setCustomExercise(prev => ({ ...prev, sets: e.target.value }))} placeholder="Séries" />
                 <input className="input" type="number" value={customExercise.reps} onChange={e => setCustomExercise(prev => ({ ...prev, reps: e.target.value }))} placeholder="Reps" />
                 <input className="input" type="number" value={customExercise.weightKg} onChange={e => setCustomExercise(prev => ({ ...prev, weightKg: e.target.value }))} placeholder="Poids" />
                 <button type="button" onClick={addCustomExercise} className="btn-secondary flex items-center justify-center gap-1"><Plus size={14} /></button>
               </div>
-              <div className="space-y-2 mb-5">
-                {(dayExercises[currentDay.dayNumber] ?? []).map((ex, index) => (
-                  <div key={`${ex.name}-${index}`} className="rounded-xl border border-white/10 border-white/10 p-3">
-                    <div className="flex gap-2 mb-2">
-                      <input className="input flex-1" value={ex.name} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'name', e.target.value)} />
-                      <ExerciseInfoButton exerciseName={ex.name} sets={ex.sets} reps={ex.reps} weightKg={planExerciseWeight(ex)} />
-                      <button type="button" onClick={() => removeExerciseFromDay(currentDay.dayNumber, index)}
-                        className="p-2 text-gray-300 hover:text-red-400"><X size={14} /></button>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      <input className="input" type="number" value={ex.sets ?? ''} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'sets', e.target.value)} placeholder="Séries" />
-                      <input className="input" type="number" value={ex.reps ?? ''} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'reps', e.target.value)} placeholder="Reps" />
-                      <input className="input" type="number" value={planExerciseWeight(ex) ?? ''} onChange={e => updateDayExercise(currentDay.dayNumber, index, 'weightKg', e.target.value)} placeholder="Poids" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <DayMuscleSummary exercises={dayExercises[currentDay.dayNumber] ?? []} />
-              <div className="flex justify-end">
+
+              {exerciseBlocks.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-6">Aucun exercice. Ajoute-en depuis la bibliothèque ci-dessus.</p>
+              ) : (
+                <div className="space-y-3 mb-5">
+                  {exerciseBlocks.map(block => {
+                    const selected = block.days
+                    const ref = block.configs[selected[0]]
+                    const uniform = selected.every(d => {
+                      const c = block.configs[d]
+                      return c?.sets === ref?.sets && c?.reps === ref?.reps && planExerciseWeight(c) === planExerciseWeight(ref)
+                    })
+                    const perDay = perDayMode[block.name] ?? false
+                    return (
+                      <div key={block.name} className="rounded-xl border border-white/10 p-3">
+                        <div className="flex items-center justify-between mb-2.5">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-semibold text-white text-sm truncate">{block.name}</span>
+                            <ExerciseInfoButton exerciseName={block.name} sets={ref?.sets ?? null} reps={ref?.reps ?? null} weightKg={planExerciseWeight(ref)} />
+                          </div>
+                          <button type="button" onClick={() => removeExerciseAll(block.name)}
+                            className="p-1.5 text-gray-400 hover:text-red-400 shrink-0"><X size={15} /></button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          {activeDays.map(day => {
+                            const on = selected.includes(day.dayNumber)
+                            return (
+                              <button key={day.dayNumber} type="button" onClick={() => toggleExerciseDay(block.name, day.dayNumber)}
+                                title={day.label}
+                                className={`rounded-full px-2.5 py-1 text-xs font-semibold transition-colors ${on ? 'bg-amber-500 text-black' : 'bg-white/[0.05] text-gray-400 hover:bg-white/10'}`}>
+                                {DAY_SHORT[day.dayNumber - 1]}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        {selected.length === 0 ? (
+                          <p className="text-xs text-amber-400">Sélectionne au moins un jour.</p>
+                        ) : !perDay ? (
+                          <div>
+                            <div className="grid grid-cols-3 gap-2">
+                              <input className="input" type="number" value={ref?.sets ?? ''} onChange={e => setBlockConfig(block.name, selected, 'sets', e.target.value)} placeholder="Séries" />
+                              <input className="input" type="number" value={ref?.reps ?? ''} onChange={e => setBlockConfig(block.name, selected, 'reps', e.target.value)} placeholder="Reps" />
+                              <input className="input" type="number" value={planExerciseWeight(ref) ?? ''} onChange={e => setBlockConfig(block.name, selected, 'weightKg', e.target.value)} placeholder="Poids" />
+                            </div>
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-[11px] text-gray-500">{selected.length > 1 ? `Même config · ${selected.length} jours` : '1 jour'}</span>
+                              {selected.length > 1 && (
+                                <button type="button" onClick={() => setPerDayMode(p => ({ ...p, [block.name]: true }))}
+                                  className="text-xs font-medium text-amber-400 hover:text-amber-300">⚙ Ajuster par jour</button>
+                              )}
+                            </div>
+                            {!uniform && (
+                              <p className="text-[11px] text-amber-400 mt-1">Les jours n'ont pas la même config — ouvre « Ajuster par jour » pour les voir.</p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {selected.map(d => {
+                              const c = block.configs[d]
+                              return (
+                                <div key={d} className="flex items-center gap-2">
+                                  <span className="w-24 shrink-0 text-xs text-gray-300">{DAY_SHORT[d - 1]} · {dayConfigs[d - 1].label}</span>
+                                  <input className="input" type="number" value={c?.sets ?? ''} onChange={e => setBlockConfig(block.name, [d], 'sets', e.target.value)} placeholder="Séries" />
+                                  <input className="input" type="number" value={c?.reps ?? ''} onChange={e => setBlockConfig(block.name, [d], 'reps', e.target.value)} placeholder="Reps" />
+                                  <input className="input" type="number" value={planExerciseWeight(c) ?? ''} onChange={e => setBlockConfig(block.name, [d], 'weightKg', e.target.value)} placeholder="Poids" />
+                                </div>
+                              )
+                            })}
+                            <button type="button" onClick={() => setPerDayMode(p => ({ ...p, [block.name]: false }))}
+                              className="text-xs font-medium text-gray-400 hover:text-gray-200">↩ Config commune</button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-gray-400">{exerciseBlocks.length} exercice(s) · {activeDays.length} jour(s)</span>
                 <button type="button" onClick={handleSave} disabled={!name.trim() || activeDays.length === 0 || isPending}
                   className="btn-primary flex items-center gap-2">
                   <Check size={16} /> {isEdit ? 'Modifier le programme' : 'Créer le programme'}
@@ -1839,10 +1939,10 @@ function ProgramCard({ plan, onClick, onDelete }: {
           <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-green-400 ring-2 ring-white shadow-lg" />
         )}
         {plan.status === 'PAUSED' && (
-          <span className="absolute top-3 right-3 text-[10px] bg-yellow-400 text-yellow-900 font-bold px-2 py-0.5 rounded-full">?</span>
+          <span className="absolute top-3 right-3 text-[10px] bg-yellow-400 text-yellow-900 font-bold px-2 py-0.5 rounded-full">⏸</span>
         )}
         {plan.status === 'COMPLETED' && (
-          <span className="absolute top-3 right-3 text-[10px] bg-blue-400 text-white font-bold px-2 py-0.5 rounded-full">?</span>
+          <span className="absolute top-3 right-3 text-[10px] bg-blue-400 text-white font-bold px-2 py-0.5 rounded-full">✓</span>
         )}
       </div>
 
@@ -1965,7 +2065,7 @@ function TodaySessionBanner({ plans, onStartSession, onViewProgram }: {
   if (isRest) {
     return (
       <div className="card mb-5 text-center py-6">
-        <span className="text-3xl block mb-2">??</span>
+        <span className="text-3xl block mb-2">😴</span>
         <p className="font-semibold text-gray-300">Jour de repos</p>
         <p className="text-sm text-gray-400 mt-1">{activePlan.name} · Profite de la récupération</p>
       </div>
@@ -2025,11 +2125,11 @@ function PRSection({ sessions }: { sessions: WorkoutSession[] }) {
 
   return (
     <div className="card">
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">?? Records personnels</p>
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">🏆 Records personnels</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {prs.map(([name, pr]) => (
           <div key={name} className="flex items-center gap-3 rounded-xl bg-amber-50 dark:bg-amber-900/15 px-3 py-3 border border-amber-100 dark:border-amber-800/30">
-            <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-base shrink-0">??</div>
+            <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-base shrink-0">🏆</div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-black text-white truncate">{name}</p>
               <p className="text-xs text-gray-500">{format(new Date(`${pr.date}T00:00:00`), 'd MMM yyyy', { locale: fr })}</p>
@@ -2357,7 +2457,7 @@ export default function WorkoutPanel() {
             preview={
               <div className="card">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-xl">??</div>
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-xl">💪</div>
                   <div>
                     <p className="font-semibold text-white">Programme Prise de masse</p>
                     <p className="text-xs text-gray-400">12 semaines · 4 jours/sem · Intermédiaire</p>

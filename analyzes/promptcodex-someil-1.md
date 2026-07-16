@@ -1,0 +1,7 @@
+tu vois la section someil du projet, -voici des illustration pour voir plus clairement : 
+"C:\\Users\\ilyas\\OneDrive\\Bureau\\rapport\\screen-preprod\\Screenshots\\2026-05\\06\\Screenshots\\2026-06\\chrome\_DAvrpmVleN.png"
+
+"C:\\Users\\ilyas\\OneDrive\\Bureau\\rapport\\screen-preprod\\Screenshots\\2026-05\\06\\Screenshots\\2026-06\\chrome\_727FvHDMc4.png"
+
+"C:\\Users\\ilyas\\OneDrive\\Bureau\\rapport\\screen-preprod\\Screenshots\\2026-05\\06\\Screenshots\\2026-06\\chrome\_2lmarZiFXd.png" -, se que je veut est que cette section soit structurée quotidienne, l'user entre, gere son someil d'aujourd'hui(derniere nuit), ou des nuits precedantes, ou meme fait un plan pour les nuits prochaines, la sous-section lastnight doit contenir une structure intuitive et pro, facile pour l'user, just select l'heur du coucher, et l'heur de debout, nombre de night waking estimé, perturbations, sensation au next day...(soyer creative et impressionant), et l'app deduit son sleep score et donne des conseils, qlq conseil qui merite du consomation d'anthropic doivent etre aussi inclut, mais just 5 fois free, apres ca, ca deviens restricted(comme la section prompt)-aussi soit creatif-, on doit aussi avoir programme d'enviroment du someil ... donner une approche la plus professionelle, creative, effective, impressionnant, intuitive, facile a utilisée quotidienement et resolut un vrai problem utilisateur, donner cette approche detaillée, theoriquement et techniquement avec votre avie biensur et des propositions.
+

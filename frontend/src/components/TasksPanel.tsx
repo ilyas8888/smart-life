@@ -13,10 +13,10 @@ const TASK_CATEGORIES = {
   WORK: { label: 'Travail', emoji: '', color: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' },
   SCHOOL: { label: 'École', emoji: '', color: 'bg-violet-500/10 text-violet-400 border border-violet-500/20' },
   FREELANCE: { label: 'Freelance', emoji: '', color: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' },
-  HEALTH: { label: 'Santé', emoji: '??', color: 'bg-red-500/10 text-red-400 border border-red-500/20' },
+  HEALTH: { label: 'Santé', emoji: '❤️', color: 'bg-red-500/10 text-red-400 border border-red-500/20' },
   LEARNING: { label: 'Apprentissage', emoji: '', color: 'bg-green-500/10 text-green-400 border border-green-500/20' },
   SOCIAL: { label: 'Social', emoji: '', color: 'bg-pink-500/10 text-pink-400 border border-pink-500/20' },
-  PRODUCTIVITY: { label: 'Productivité', emoji: '?', color: 'bg-orange-500/10 text-orange-400 border border-orange-500/20' },
+  PRODUCTIVITY: { label: 'Productivité', emoji: '⚡', color: 'bg-orange-500/10 text-orange-400 border border-orange-500/20' },
 }
 
 interface Task {
@@ -335,7 +335,7 @@ function TaskDetailPanel({
         <div className="p-5 border-t border-white/10">
           <button type="button" onClick={() => onDelete(task.id)}
             className="w-full rounded-xl bg-red-900/30 text-red-300 px-4 py-2 text-sm font-semibold hover:bg-red-900/50 transition-colors border border-red-500/20">
-            Supprimer la t&#xe2;che
+            Supprimer la tâche
           </button>
         </div>
       </aside>
@@ -489,7 +489,7 @@ export default function TasksPanel() {
               <span className={`text-[10px] font-semibold ${STATUS_COLORS[task.status]}`}>{STATUS_LABEL[task.status]}</span>
               {overdue && (
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
-                  ? En retard
+                  ⏰ En retard
                 </span>
               )}
             </div>
@@ -652,7 +652,7 @@ export default function TasksPanel() {
               className={`text-xs px-3 py-1 rounded-full font-semibold transition-colors ${
                 sortBy === key ? 'bg-white/10 text-white' : 'bg-white/[0.05] text-gray-400'
               }`}>
-              {label} {sortBy === key ? (sortAsc ? '?' : '?') : ''}
+              {label} {sortBy === key ? (sortAsc ? '↑' : '↓') : ''}
             </button>
           ))}
         </div>
@@ -684,7 +684,7 @@ export default function TasksPanel() {
               <div className="flex items-start gap-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">?? Haute</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">🔴 Haute</span>
                     <span className="text-[10px] font-semibold text-yellow-600 dark:text-yellow-400">En cours</span>
                   </div>
                   <p className="font-semibold text-white">Finaliser le rapport de stage</p>

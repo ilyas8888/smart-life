@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SmartLife — Themes Preview</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #e8e8f0;
+      color: #1e1b4b;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 32px 20px 60px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+      color: #1e1b4b;
+    }
+    .subtitle {
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      max-width: 1200px;
+      margin: 0 auto 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #6b7280;
+      padding-left: 4px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto 40px;
+    }
+
+    /* ─── Theme card wrapper ─── */
+    .theme-card {
+      border-radius: 20px;
+      overflow: hidden;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform .2s, border-color .2s, box-shadow .2s;
+    }
+    .theme-card:hover { transform: translateY(-4px); }
+
+    .theme-label {
+      padding: 12px 16px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .badge-new      { background: #6366f1; color: #fff; font-size: 9px; padding: 2px 7px; border-radius: 99px; }
+    .badge-original { background: rgba(0,0,0,0.08); color: #6b7280; font-size: 9px; padding: 2px 7px; border-radius: 99px; }
+    .badge-light    { background: #f59e0b; color: #fff; font-size: 9px; padding: 2px 7px; border-radius: 99px; }
+    .badge-mid      { background: #10b981; color: #fff; font-size: 9px; padding: 2px 7px; border-radius: 99px; }
+
+    .preview { padding: 18px; }
+
+    .panel-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .panel-icon   { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; }
+    .panel-title  { font-size: 14px; font-weight: 700; }
+    .panel-sub    { font-size: 11px; margin-top: 1px; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
+    .stat { border-radius: 10px; padding: 10px 8px; text-align: center; }
+    .stat-num { font-size: 20px; font-weight: 900; letter-spacing: -1px; }
+    .stat-lbl { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+
+    .card-row { border-radius: 12px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+    .card-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .card-name   { font-size: 12px; font-weight: 600; }
+    .card-detail { font-size: 11px; margin-top: 2px; }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+    .btn { padding: 8px 14px; border-radius: 10px; font-size: 11px; font-weight: 600; border: none; cursor: pointer; flex: 1; }
+
+    .badge-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+    .badge { font-size: 10px; font-weight: 600; padding: 3px 9px; border-radius: 99px; border: 1px solid transparent; }
+
+
+    /* ════════════ DARK THEMES ════════════ */
+
+    /* 1. SOIRÉE INDIGO (original) */
+    .t1 { background: #1e1a38; border-color: rgba(99,102,241,0.4); box-shadow: 0 6px 24px rgba(99,102,241,0.25); }
+    .t1:hover { border-color: #6366f1; box-shadow: 0 10px 40px rgba(99,102,241,0.45); }
+    .t1 .theme-label { background: #2a2550; color: #a89fd4; }
+    .t1 .preview { background: #1e1a38; }
+    .t1 .panel-icon { background: linear-gradient(135deg,#6366f1,#7c3aed); }
+    .t1 .panel-title { color: #ede9ff; }
+    .t1 .panel-sub   { color: #a89fd4; }
+    .t1 .stat { background: #2a2550; border: 1px solid rgba(139,92,246,0.3); }
+    .t1 .stat-num { color: #6366f1; }
+    .t1 .stat-lbl { color: #a89fd4; }
+    .t1 .card-row { background: #2a2550; border: 1px solid rgba(139,92,246,0.25); }
+    .t1 .card-name { color: #ede9ff; }
+    .t1 .card-detail { color: #a89fd4; }
+    .t1 .card-dot { background: #6366f1; }
+    .t1 .btn-p { background: linear-gradient(135deg,#6366f1,#7c3aed); color:#fff; box-shadow:0 0 14px rgba(99,102,241,0.5); }
+    .t1 .btn-s { background: rgba(99,102,241,0.15); color:#a89fd4; border:1px solid rgba(139,92,246,0.3); }
+    .t1 .badge { background: rgba(99,102,241,0.18); color:#818cf8; border-color:rgba(99,102,241,0.3); }
+
+    /* 2. NUIT ARDOISE */
+    .t2 { background: #0f172a; border-color: rgba(56,189,248,0.35); box-shadow: 0 6px 24px rgba(56,189,248,0.15); }
+    .t2:hover { border-color: #38bdf8; box-shadow: 0 10px 40px rgba(56,189,248,0.30); }
+    .t2 .theme-label { background: #1e293b; color: #7dd3fc; }
+    .t2 .preview { background: #0f172a; }
+    .t2 .panel-icon { background: linear-gradient(135deg,#0ea5e9,#2563eb); }
+    .t2 .panel-title { color: #f0f9ff; }
+    .t2 .panel-sub   { color: #7dd3fc; }
+    .t2 .stat { background: #1e293b; border: 1px solid rgba(56,189,248,0.2); }
+    .t2 .stat-num { color: #38bdf8; }
+    .t2 .stat-lbl { color: #7dd3fc; }
+    .t2 .card-row { background: #1e293b; border: 1px solid rgba(56,189,248,0.15); }
+    .t2 .card-name { color: #f0f9ff; }
+    .t2 .card-detail { color: #7dd3fc; }
+    .t2 .card-dot { background: #38bdf8; }
+    .t2 .btn-p { background: linear-gradient(135deg,#0ea5e9,#2563eb); color:#fff; box-shadow:0 0 14px rgba(14,165,233,0.45); }
+    .t2 .btn-s { background: rgba(14,165,233,0.12); color:#7dd3fc; border:1px solid rgba(56,189,248,0.25); }
+    .t2 .badge { background: rgba(14,165,233,0.15); color:#7dd3fc; border-color:rgba(56,189,248,0.25); }
+
+    /* 3. COSMOS */
+    .t3 { background: #0d0a1a; border-color: rgba(168,85,247,0.45); box-shadow: 0 6px 24px rgba(168,85,247,0.20); }
+    .t3:hover { border-color: #a855f7; box-shadow: 0 10px 40px rgba(168,85,247,0.40); }
+    .t3 .theme-label { background: #160e2c; color: #d8b4fe; }
+    .t3 .preview { background: radial-gradient(ellipse at 80% 10%, rgba(168,85,247,0.15) 0%, transparent 60%), #0d0a1a; }
+    .t3 .panel-icon { background: linear-gradient(135deg,#a855f7,#ec4899); }
+    .t3 .panel-title { color: #fdf4ff; }
+    .t3 .panel-sub   { color: #d8b4fe; }
+    .t3 .stat { background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.25); }
+    .t3 .stat-num { background:linear-gradient(135deg,#a855f7,#ec4899); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .t3 .stat-lbl { color: #d8b4fe; }
+    .t3 .card-row { background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.18); }
+    .t3 .card-name { color: #fdf4ff; }
+    .t3 .card-detail { color: #d8b4fe; }
+    .t3 .card-dot { background: linear-gradient(135deg,#a855f7,#ec4899); border-radius:50%; }
+    .t3 .btn-p { background: linear-gradient(135deg,#a855f7,#ec4899); color:#fff; box-shadow:0 0 18px rgba(168,85,247,0.5); }
+    .t3 .btn-s { background: rgba(168,85,247,0.12); color:#d8b4fe; border:1px solid rgba(168,85,247,0.25); }
+    .t3 .badge { background: rgba(168,85,247,0.14); color:#e879f9; border-color:rgba(168,85,247,0.3); }
+
+    /* 4. CRÉPUSCULE AMBER */
+    .t4 { background: #110e05; border-color: rgba(245,158,11,0.4); box-shadow: 0 6px 24px rgba(245,158,11,0.18); }
+    .t4:hover { border-color: #f59e0b; box-shadow: 0 10px 40px rgba(245,158,11,0.35); }
+    .t4 .theme-label { background: #1c1808; color: #fcd34d; }
+    .t4 .preview { background: #110e05; }
+    .t4 .panel-icon { background: linear-gradient(135deg,#f59e0b,#ea580c); }
+    .t4 .panel-title { color: #fffbeb; }
+    .t4 .panel-sub   { color: #fcd34d; }
+    .t4 .stat { background: #1c1808; border: 1px solid rgba(245,158,11,0.25); }
+    .t4 .stat-num { color: #f59e0b; }
+    .t4 .stat-lbl { color: #fcd34d; }
+    .t4 .card-row { background: #1c1808; border: 1px solid rgba(245,158,11,0.2); }
+    .t4 .card-name { color: #fffbeb; }
+    .t4 .card-detail { color: #fcd34d; }
+    .t4 .card-dot { background: #f59e0b; }
+    .t4 .btn-p { background: linear-gradient(135deg,#f59e0b,#ea580c); color:#fff; box-shadow:0 0 14px rgba(245,158,11,0.45); }
+    .t4 .btn-s { background: rgba(245,158,11,0.12); color:#fcd34d; border:1px solid rgba(245,158,11,0.25); }
+    .t4 .badge { background: rgba(245,158,11,0.15); color:#fcd34d; border-color:rgba(245,158,11,0.3); }
+
+
+    /* ════════════ MID-TONE THEMES ════════════ */
+
+    /* 5. ARDOISE BLEUTÉE — gris-bleu moyen */
+    .t5 { background: #2d3748; border-color: rgba(99,179,237,0.5); box-shadow: 0 6px 24px rgba(99,179,237,0.20); }
+    .t5:hover { border-color: #63b3ed; box-shadow: 0 10px 40px rgba(99,179,237,0.35); }
+    .t5 .theme-label { background: #3d4e63; color: #bee3f8; }
+    .t5 .preview { background: #2d3748; }
+    .t5 .panel-icon { background: linear-gradient(135deg,#4299e1,#667eea); }
+    .t5 .panel-title { color: #ebf8ff; }
+    .t5 .panel-sub   { color: #bee3f8; }
+    .t5 .stat { background: #3d4e63; border: 1px solid rgba(99,179,237,0.3); }
+    .t5 .stat-num { color: #63b3ed; }
+    .t5 .stat-lbl { color: #bee3f8; }
+    .t5 .card-row { background: #3d4e63; border: 1px solid rgba(99,179,237,0.2); }
+    .t5 .card-name { color: #ebf8ff; }
+    .t5 .card-detail { color: #bee3f8; }
+    .t5 .card-dot { background: #63b3ed; }
+    .t5 .btn-p { background: linear-gradient(135deg,#4299e1,#667eea); color:#fff; box-shadow:0 0 14px rgba(99,179,237,0.4); }
+    .t5 .btn-s { background: rgba(99,179,237,0.15); color:#bee3f8; border:1px solid rgba(99,179,237,0.3); }
+    .t5 .badge { background: rgba(99,179,237,0.18); color:#bee3f8; border-color:rgba(99,179,237,0.3); }
+
+    /* 6. GRIS PERLE INDIGO — medium gray + indigo */
+    .t6 { background: #374151; border-color: rgba(129,140,248,0.5); box-shadow: 0 6px 24px rgba(129,140,248,0.20); }
+    .t6:hover { border-color: #818cf8; box-shadow: 0 10px 40px rgba(129,140,248,0.35); }
+    .t6 .theme-label { background: #4b5563; color: #c7d2fe; }
+    .t6 .preview { background: #374151; }
+    .t6 .panel-icon { background: linear-gradient(135deg,#6366f1,#8b5cf6); }
+    .t6 .panel-title { color: #eef2ff; }
+    .t6 .panel-sub   { color: #c7d2fe; }
+    .t6 .stat { background: #4b5563; border: 1px solid rgba(129,140,248,0.3); }
+    .t6 .stat-num { color: #818cf8; }
+    .t6 .stat-lbl { color: #c7d2fe; }
+    .t6 .card-row { background: #4b5563; border: 1px solid rgba(129,140,248,0.2); }
+    .t6 .card-name { color: #eef2ff; }
+    .t6 .card-detail { color: #c7d2fe; }
+    .t6 .card-dot { background: #818cf8; }
+    .t6 .btn-p { background: linear-gradient(135deg,#6366f1,#8b5cf6); color:#fff; box-shadow:0 0 14px rgba(99,102,241,0.45); }
+    .t6 .btn-s { background: rgba(129,140,248,0.15); color:#c7d2fe; border:1px solid rgba(129,140,248,0.3); }
+    .t6 .badge { background: rgba(129,140,248,0.18); color:#c7d2fe; border-color:rgba(129,140,248,0.3); }
+
+
+    /* ════════════ LIGHT THEMES ════════════ */
+
+    /* 7. LAVANDE DOUCE — fond très clair lavande (le style rejeté, pour comparaison) */
+    .t7 { background: #f0edfd; border-color: rgba(99,102,241,0.35); box-shadow: 0 6px 24px rgba(99,102,241,0.15); }
+    .t7:hover { border-color: #6366f1; box-shadow: 0 10px 40px rgba(99,102,241,0.25); }
+    .t7 .theme-label { background: #e5e0fa; color: #4338ca; }
+    .t7 .preview { background: #f5f4fd; }
+    .t7 .panel-icon { background: linear-gradient(135deg,#6366f1,#7c3aed); }
+    .t7 .panel-title { color: #1c1a2e; }
+    .t7 .panel-sub   { color: #56526e; }
+    .t7 .stat { background: #fff; border: 1px solid rgba(99,102,241,0.18); box-shadow: 0 2px 8px rgba(99,102,241,0.08); }
+    .t7 .stat-num { color: #4338ca; }
+    .t7 .stat-lbl { color: #56526e; }
+    .t7 .card-row { background: #fff; border: 1px solid rgba(99,102,241,0.15); box-shadow: 0 2px 6px rgba(99,102,241,0.07); }
+    .t7 .card-name { color: #1c1a2e; }
+    .t7 .card-detail { color: #56526e; }
+    .t7 .card-dot { background: #6366f1; }
+    .t7 .btn-p { background: linear-gradient(135deg,#6366f1,#7c3aed); color:#fff; box-shadow:0 0 14px rgba(99,102,241,0.35); }
+    .t7 .btn-s { background: rgba(99,102,241,0.08); color:#4338ca; border:1px solid rgba(99,102,241,0.2); }
+    .t7 .badge { background: rgba(99,102,241,0.10); color:#4338ca; border-color:rgba(99,102,241,0.2); }
+
+    /* 8. BRUME MATINALE — blanc pur + accent teal/cyan */
+    .t8 { background: #ecfeff; border-color: rgba(6,182,212,0.45); box-shadow: 0 6px 24px rgba(6,182,212,0.18); }
+    .t8:hover { border-color: #06b6d4; box-shadow: 0 10px 40px rgba(6,182,212,0.30); }
+    .t8 .theme-label { background: #cffafe; color: #0e7490; }
+    .t8 .preview { background: #f0fdfe; }
+    .t8 .panel-icon { background: linear-gradient(135deg,#06b6d4,#0891b2); }
+    .t8 .panel-title { color: #083344; }
+    .t8 .panel-sub   { color: #0e7490; }
+    .t8 .stat { background: #fff; border: 1px solid rgba(6,182,212,0.2); box-shadow: 0 2px 8px rgba(6,182,212,0.08); }
+    .t8 .stat-num { color: #0891b2; }
+    .t8 .stat-lbl { color: #0e7490; }
+    .t8 .card-row { background: #fff; border: 1px solid rgba(6,182,212,0.18); box-shadow: 0 2px 6px rgba(6,182,212,0.07); }
+    .t8 .card-name { color: #083344; }
+    .t8 .card-detail { color: #0e7490; }
+    .t8 .card-dot { background: #06b6d4; }
+    .t8 .btn-p { background: linear-gradient(135deg,#06b6d4,#0891b2); color:#fff; box-shadow:0 0 14px rgba(6,182,212,0.40); }
+    .t8 .btn-s { background: rgba(6,182,212,0.10); color:#0e7490; border:1px solid rgba(6,182,212,0.25); }
+    .t8 .badge { background: rgba(6,182,212,0.12); color:#0e7490; border-color:rgba(6,182,212,0.25); }
+
+    /* 9. SABLE CHAUD — fond crème/beige + amber chaud */
+    .t9 { background: #fef9f0; border-color: rgba(217,119,6,0.40); box-shadow: 0 6px 24px rgba(217,119,6,0.15); }
+    .t9:hover { border-color: #d97706; box-shadow: 0 10px 40px rgba(217,119,6,0.28); }
+    .t9 .theme-label { background: #fef3c7; color: #92400e; }
+    .t9 .preview { background: #fffbf0; }
+    .t9 .panel-icon { background: linear-gradient(135deg,#f59e0b,#d97706); }
+    .t9 .panel-title { color: #1c1307; }
+    .t9 .panel-sub   { color: #92400e; }
+    .t9 .stat { background: #fff; border: 1px solid rgba(217,119,6,0.2); box-shadow: 0 2px 8px rgba(217,119,6,0.08); }
+    .t9 .stat-num { color: #d97706; }
+    .t9 .stat-lbl { color: #92400e; }
+    .t9 .card-row { background: #fff; border: 1px solid rgba(217,119,6,0.18); box-shadow: 0 2px 6px rgba(217,119,6,0.07); }
+    .t9 .card-name { color: #1c1307; }
+    .t9 .card-detail { color: #92400e; }
+    .t9 .card-dot { background: #f59e0b; }
+    .t9 .btn-p { background: linear-gradient(135deg,#f59e0b,#d97706); color:#fff; box-shadow:0 0 14px rgba(245,158,11,0.40); }
+    .t9 .btn-s { background: rgba(245,158,11,0.10); color:#92400e; border:1px solid rgba(217,119,6,0.25); }
+    .t9 .badge { background: rgba(245,158,11,0.12); color:#92400e; border-color:rgba(217,119,6,0.25); }
+
+    /* 10. MENTHE FRAÎCHE — blanc + vert menthe/émeraude */
+    .t10 { background: #f0fdf4; border-color: rgba(16,185,129,0.40); box-shadow: 0 6px 24px rgba(16,185,129,0.15); }
+    .t10:hover { border-color: #10b981; box-shadow: 0 10px 40px rgba(16,185,129,0.28); }
+    .t10 .theme-label { background: #dcfce7; color: #065f46; }
+    .t10 .preview { background: #f7fef9; }
+    .t10 .panel-icon { background: linear-gradient(135deg,#10b981,#059669); }
+    .t10 .panel-title { color: #052e16; }
+    .t10 .panel-sub   { color: #065f46; }
+    .t10 .stat { background: #fff; border: 1px solid rgba(16,185,129,0.2); box-shadow: 0 2px 8px rgba(16,185,129,0.08); }
+    .t10 .stat-num { color: #059669; }
+    .t10 .stat-lbl { color: #065f46; }
+    .t10 .card-row { background: #fff; border: 1px solid rgba(16,185,129,0.18); box-shadow: 0 2px 6px rgba(16,185,129,0.07); }
+    .t10 .card-name { color: #052e16; }
+    .t10 .card-detail { color: #065f46; }
+    .t10 .card-dot { background: #10b981; }
+    .t10 .btn-p { background: linear-gradient(135deg,#10b981,#059669); color:#fff; box-shadow:0 0 14px rgba(16,185,129,0.40); }
+    .t10 .btn-s { background: rgba(16,185,129,0.10); color:#065f46; border:1px solid rgba(16,185,129,0.25); }
+    .t10 .badge { background: rgba(16,185,129,0.12); color:#065f46; border-color:rgba(16,185,129,0.25); }
+  </style>
+</head>
+<body>
+
+  <h1>SmartLife — Themes</h1>
+  <p class="subtitle">Choisissez l'ambiance visuelle · dis-moi le numéro ou le nom</p>
+
+  <div class="section-title">Sombres</div>
+  <div class="grid">
+
+    <div class="theme-card t1">
+      <div class="theme-label">1 · Soirée Indigo <span class="badge-original">Original</span></div>
+      <div class="preview">
+        <div class="panel-header">
+          <div class="panel-icon">🏋️</div>
+          <div><div class="panel-title">Entraînement</div><div class="panel-sub">Cette semaine · 3 séances</div></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-num">847</div><div class="stat-lbl">kcal</div></div>
+          <div class="stat"><div class="stat-num">2h</div><div class="stat-lbl">durée</div></div>
+          <div class="stat"><div class="stat-num">12k</div><div class="stat-lbl">kg vol.</div></div>
+        </div>
+        <div class="card-row"><div class="card-dot"></div><div class="card-text"><div class="card-name">Push Day — Pectoraux</div><div class="card-detail">Lundi · 45min · 320 kcal</div></div></div>
+        <div class="badge-row"><span class="badge">💪 Muscu</span><span class="badge">🔥 HIIT</span><span class="badge">✓ Complété</span></div>
+        <div class="btn-row"><button class="btn btn-p">Démarrer</button><button class="btn btn-s">Historique</button></div>
+      </div>
+    </div>
+
+    <div class="theme-card t2">
+      <div class="theme-label">2 · Nuit Ardoise <span class="badge-new">Nouveau</span></div>
+      <div class="preview">
+        <div class="panel-header">
+          <div class="panel-icon">🏋️</div>
+          <div><div class="panel-title">Entraînement</div><div class="panel-sub">Cette semaine · 3 séances</div></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-num">847</div><div class="stat-lbl">kcal</div></div>
+          <div class="stat"><div class="stat-num">2h</div><div class="stat-lbl">durée</div></div>
+          <div class="stat"><div class="stat-num">12k</div><div class="stat-lbl">kg vol.</div></div>
+        </div>
+        <div class="card-row"><div class="card-dot"></div><div class="card-text"><div class="card-name">Push Day — Pectoraux</div><div class="card-detail">Lundi · 45min · 320 kcal</div></div></div>
+        <div class="badge-row"><span class="badge">💪 Muscu</span><span class="badge">🔥 HIIT</span><span class="badge">✓ Complété</span></div>
+        <div class="btn-row"><button class="btn btn-p">Démarrer</button><button class="btn btn-s">Historique</button></div>
+      </div>
+    </div>
+
+    <div class="theme-card t3">
+      <div class="theme-label">3 · Cosmos <span class="badge-new">Nouveau</span></div>
+      <div class="preview">
+        <div class="panel-header">
+          <div class="panel-icon">🏋️</div>
+          <div><div class="panel-title">Entraînement</div><div class="panel-sub">Cette semaine · 3 séances</div></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-num">847</div><div class="stat-lbl">kcal</div></div>
+          <div class="stat"><div class="stat-num">2h</div><div class="stat-lbl">durée</div></div>
+          <div class="stat"><div class="stat-num">12k</div><div class="stat-lbl">kg vol.</div></div>
+        </div>
+        <div class="card-row"><div class="card-dot"></div><div class="card-text"><div class="card-name">Push Day — Pectoraux</div><div class="card-detail">Lundi · 45min · 320 kcal</div></div></div>
+        <div class="badge-row"><span class="badge">💪 Muscu</span><span class="badge">🔥 HIIT</span><span class="badge">✓ Complété</span></div>
+        <div class="btn-row"><button class="btn btn-p">Démarrer</button><button class="btn btn-s">Historique</button></div>
+      </div>
+    </div>
+
+    <div class="theme-card t4">
+      <div class="theme-label">4 · Crépuscule Amber <span class="badge-new">Nouveau</span></div>
+      <div class="preview">
+        <div class="panel-header">
+          <div class="panel-icon">🏋️</div>
+          <div><div class="panel-title">Entraînement</div><div class="panel-sub">Cette semaine · 3 séances</div></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-num">847</div><div class="stat-lbl">kcal</div></div>
+          <div class="stat"><div class="stat-num">2h</div><div class="stat-lbl">durée</div></div>
+          <div class="stat"><div class="stat-num">12k</div><div class="stat-lbl">kg vol.</div></div>
+        </div>
+        <div class="card-row"><div class="card-dot"></div><div class="card-text"><div class="card-name">Push Day — Pectoraux</div><div class="card-detail">Lundi · 45min · 320 kcal</div></div></div>
+        <div class="badge-row"><span class="badge">💪 Muscu</span><span class="badge">🔥 HIIT</span><span class="badge">✓ Complété</span></div>
+        <div class="btn-row"><button class="btn btn-p">Démarrer</button><button class="btn btn-s">Historique</button></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-title">Mi-ton (ni trop sombre ni trop clair)</div>
+  <div class="grid">
+
+    <div class="theme-card t5">
+      <div class="theme-label">5 · Ardoise Bleutée <span class="badge-mid">Mi-ton</span></div>
+      <div class="preview">
+        <div class="panel-header">
+          <div class="panel-icon">🏋️</div>
+          <div><div class="panel-title">Entraînement</div><div class="panel-sub">Cette semaine · 3 séances</div></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-num">847</div><div class="stat-lbl">kcal</div></div>
+          <div class="stat"><div class="stat-num">2h</div><div class="stat-lbl">durée</div></div>
+          <div class="stat"><div class="stat-num">12k</div><div class="stat-lbl">kg vol.</div></div>
+        </div>
+        <div class="card-row"><div class="card-dot"></div><div class="card-text"><div class="card-name">Push Day — Pectoraux</div><div class="card-detail">Lundi · 45min · 320 kcal</div></div></div>
+        <div class="badge-row"><span class="badge">💪 Muscu</span><span class="badge">🔥 HIIT</span><span class="badge">✓ Complété</span></div>
+        <div class="btn-row"><button class="btn btn-p">Démarrer</button><button class="btn btn-s">Historique</button></div>
+      </div>
+    </div>
+
+    <div class="theme-card t6">
+      <div class="theme-label">6 · Gris Perle Indigo <span class="badge-mid">Mi-ton</span></div>
+      <div class="preview">
+        <div class="panel-header">
+          <div class="panel-icon">🏋️</div>
+          <div><div class="panel-title">Entraînement</div><div class="panel-sub">Cette semaine · 3 séances</div></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-num">847</div><div class="stat-lbl">kcal</div></div>
+          <div class="stat"><div class="stat-num">2h</div><div class="stat-lbl">durée</div></div>
+          <div class="stat"><div class="stat-num">12k</div><div class="stat-lbl">kg vol.</div></div>
+        </div>
+        <div class="card-row"><div class="card-dot"></div><div class="card-text"><div class="card-name">Push Day — Pectoraux</div><div class="card-detail">Lundi · 45min · 320 kcal</div></div></div>
+        <div class="badge-row"><span class="badge">💪 Muscu</span><span class="badge">🔥 HIIT</span><span class="badge">✓ Complété</span></div>
+        <div class="btn-row"><button class="btn btn-p">Démarrer</button><button class="btn btn-s">Historique</button></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-title">Clairs</div>
+  <div class="grid">
+
+    <div class="theme-card t7">
+      <div class="theme-label">7 · Lavande Douce <span class="badge-light">Clair</span></div>
+      <div class="preview">
+        <div class="panel-header">
+          <div class="panel-icon">🏋️</div>
+          <div><div class="panel-title">Entraînement</div><div class="panel-sub">Cette semaine · 3 séances</div></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-num">847</div><div class="stat-lbl">kcal</div></div>
+          <div class="stat"><div class="stat-num">2h</div><div class="stat-lbl">durée</div></div>
+          <div class="stat"><div class="stat-num">12k</div><div class="stat-lbl">kg vol.</div></div>
+        </div>
+        <div class="card-row"><div class="card-dot"></div><div class="card-text"><div class="card-name">Push Day — Pectoraux</div><div class="card-detail">Lundi · 45min · 320 kcal</div></div></div>
+        <div class="badge-row"><span class="badge">💪 Muscu</span><span class="badge">🔥 HIIT</span><span class="badge">✓ Complété</span></div>
+        <div class="btn-row"><button class="btn btn-p">Démarrer</button><button class="btn btn-s">Historique</button></div>
+      </div>
+    </div>
+
+    <div class="theme-card t8">
+      <div class="theme-label">8 · Brume Matinale <span class="badge-light">Clair</span></div>
+      <div class="preview">
+        <div class="panel-header">
+          <div class="panel-icon">🏋️</div>
+          <div><div class="panel-title">Entraînement</div><div class="panel-sub">Cette semaine · 3 séances</div></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-num">847</div><div class="stat-lbl">kcal</div></div>
+          <div class="stat"><div class="stat-num">2h</div><div class="stat-lbl">durée</div></div>
+          <div class="stat"><div class="stat-num">12k</div><div class="stat-lbl">kg vol.</div></div>
+        </div>
+        <div class="card-row"><div class="card-dot"></div><div class="card-text"><div class="card-name">Push Day — Pectoraux</div><div class="card-detail">Lundi · 45min · 320 kcal</div></div></div>
+        <div class="badge-row"><span class="badge">💪 Muscu</span><span class="badge">🔥 HIIT</span><span class="badge">✓ Complété</span></div>
+        <div class="btn-row"><button class="btn btn-p">Démarrer</button><button class="btn btn-s">Historique</button></div>
+      </div>
+    </div>
+
+    <div class="theme-card t9">
+      <div class="theme-label">9 · Sable Chaud <span class="badge-light">Clair</span></div>
+      <div class="preview">
+        <div class="panel-header">
+          <div class="panel-icon">🏋️</div>
+          <div><div class="panel-title">Entraînement</div><div class="panel-sub">Cette semaine · 3 séances</div></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-num">847</div><div class="stat-lbl">kcal</div></div>
+          <div class="stat"><div class="stat-num">2h</div><div class="stat-lbl">durée</div></div>
+          <div class="stat"><div class="stat-num">12k</div><div class="stat-lbl">kg vol.</div></div>
+        </div>
+        <div class="card-row"><div class="card-dot"></div><div class="card-text"><div class="card-name">Push Day — Pectoraux</div><div class="card-detail">Lundi · 45min · 320 kcal</div></div></div>
+        <div class="badge-row"><span class="badge">💪 Muscu</span><span class="badge">🔥 HIIT</span><span class="badge">✓ Complété</span></div>
+        <div class="btn-row"><button class="btn btn-p">Démarrer</button><button class="btn btn-s">Historique</button></div>
+      </div>
+    </div>
+
+    <div class="theme-card t10">
+      <div class="theme-label">10 · Menthe Fraîche <span class="badge-light">Clair</span></div>
+      <div class="preview">
+        <div class="panel-header">
+          <div class="panel-icon">🏋️</div>
+          <div><div class="panel-title">Entraînement</div><div class="panel-sub">Cette semaine · 3 séances</div></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat"><div class="stat-num">847</div><div class="stat-lbl">kcal</div></div>
+          <div class="stat"><div class="stat-num">2h</div><div class="stat-lbl">durée</div></div>
+          <div class="stat"><div class="stat-num">12k</div><div class="stat-lbl">kg vol.</div></div>
+        </div>
+        <div class="card-row"><div class="card-dot"></div><div class="card-text"><div class="card-name">Push Day — Pectoraux</div><div class="card-detail">Lundi · 45min · 320 kcal</div></div></div>
+        <div class="badge-row"><span class="badge">💪 Muscu</span><span class="badge">🔥 HIIT</span><span class="badge">✓ Complété</span></div>
+        <div class="btn-row"><button class="btn btn-p">Démarrer</button><button class="btn btn-s">Historique</button></div>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>

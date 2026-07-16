@@ -41,7 +41,7 @@ gzip, deflate, br, zstd
 accept-language
 en-US,en;q=0.9,ar;q=0.8,fr;q=0.7
 authorization
-Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJpbHlhc3Nib3Vsb3VpekBvdXRsb29rLmNvbSIsImlhdCI6MTc3ODgzODc0OSwiZXhwIjoxNzc4OTI1MTQ5fQ.erpHcjkCrSJM3XVdTY0bVqyJTLXA5UTtX2tVfF9jHb8
+Bearer <token-masque>
 connection
 keep-alive
 content-length

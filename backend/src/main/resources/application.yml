@@ -85,6 +85,12 @@ management:
       exposure:
         include: health, info, prometheus
       base-path: /actuator
+  health:
+    # SMTP bloque sur HuggingFace (port 587 sortant ferme) : le check mettait
+    # ~137s a timeout et bloquait /actuator/health. L'envoi d'emails passe par
+    # l'API HTTP Brevo (MailService), pas par SMTP — ce check est donc inutile.
+    mail:
+      enabled: false
   endpoint:
     health:
       show-details: when-authorized

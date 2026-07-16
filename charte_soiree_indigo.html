@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartLife — Charte "Soirée Indigo"</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --app-bg:#1e1a38;
+      --app-bg-gradient:radial-gradient(at 20% 0%,#2d2760 0%,#1e1a38 50%,#231e4a 100%);
+      --surface:#2a2550;
+      --surface-elevated:#342f6a;
+      --surface-muted:rgba(99,102,241,0.12);
+      --surface-hover:rgba(99,102,241,0.22);
+      --text-primary:#ede9ff;
+      --text-secondary:#a89fd4;
+      --text-muted:#6b639e;
+      --border-subtle:rgba(139,92,246,0.35);
+      --shadow-card:0 8px 32px rgba(99,102,241,0.40),0 2px 8px rgba(139,92,246,0.20);
+      --shadow-elevated:0 20px 60px rgba(99,102,241,0.55),0 4px 16px rgba(139,92,246,0.30);
+      --ring-focus:rgba(139,92,246,0.55);
+      --brand:linear-gradient(135deg,#6366f1,#7c3aed);
+    }
+    body{
+      background:var(--app-bg-gradient);
+      background-attachment:fixed;
+      color:var(--text-primary);
+      font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      min-height:100vh;
+      line-height:1.5;
+    }
+    .wrap{max-width:1100px;margin:0 auto;padding:48px 24px}
+    .section{margin-bottom:72px}
+    .section-title{
+      font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+      color:var(--text-muted);margin-bottom:24px;padding-bottom:12px;
+      border-bottom:1px solid var(--border-subtle);
+    }
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+    .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+    .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    /* card */
+    .card{
+      background:var(--surface);border:1px solid var(--border-subtle);
+      border-radius:16px;box-shadow:var(--shadow-card);
+      backdrop-filter:blur(24px);padding:20px;
+      transition:all 150ms ease-out;
+    }
+    .card-hover:hover{background:var(--surface-hover);transform:translateY(-2px);box-shadow:var(--shadow-elevated)}
+    .card-el{
+      background:var(--surface-elevated);border:1px solid var(--border-subtle);
+      border-radius:16px;box-shadow:var(--shadow-elevated);padding:20px;
+    }
+    /* swatch */
+    .swatch{border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,.08)}
+    .swatch-bg{height:52px;border-radius:8px;margin-bottom:10px}
+    .sw-name{font-size:13px;font-weight:600;margin-bottom:3px}
+    .sw-token{font-size:10px;color:var(--text-muted);font-family:monospace;margin-bottom:2px}
+    .sw-val{font-size:10px;color:var(--text-secondary);font-family:monospace}
+    /* typography */
+    .type-row{padding:14px 0;border-bottom:1px solid rgba(139,92,246,.12);display:flex;align-items:baseline;gap:24px}
+    .type-row:last-child{border:none}
+    .type-meta{min-width:150px;font-size:11px;color:var(--text-muted);font-family:monospace;flex-shrink:0}
+    /* buttons */
+    .btn-p{
+      background:var(--brand);color:#fff;
+      box-shadow:0 0 20px rgba(99,102,241,.45);
+      border-radius:12px;padding:10px 20px;font-weight:600;font-size:14px;
+      border:none;cursor:pointer;transition:all 150ms ease-out;
+      display:inline-flex;align-items:center;gap:8px;font-family:inherit;
+    }
+    .btn-p:hover{box-shadow:0 0 32px rgba(99,102,241,.70);transform:translateY(-1px)}
+    .btn-s{
+      background:var(--surface-muted);border:1px solid var(--border-subtle);
+      color:var(--text-secondary);border-radius:12px;padding:10px 20px;
+      font-weight:500;font-size:14px;cursor:pointer;transition:all 150ms ease-out;
+      display:inline-flex;align-items:center;gap:8px;font-family:inherit;
+    }
+    .btn-s:hover{background:var(--surface-hover);color:var(--text-primary)}
+    .btn-g{
+      background:transparent;border:1px solid var(--border-subtle);
+      color:var(--text-muted);border-radius:12px;padding:10px 20px;
+      font-weight:500;font-size:14px;cursor:pointer;transition:all 150ms ease-out;
+      display:inline-flex;align-items:center;gap:8px;font-family:inherit;
+    }
+    .btn-g:hover{color:var(--text-primary);border-color:rgba(139,92,246,.55)}
+    .btn-d{
+      background:rgba(244,63,94,.15);border:1px solid rgba(244,63,94,.35);
+      color:#fb7185;border-radius:12px;padding:10px 20px;
+      font-weight:500;font-size:14px;cursor:pointer;transition:all 150ms ease-out;
+      display:inline-flex;align-items:center;gap:8px;font-family:inherit;
+    }
+    .btn-d:hover{background:rgba(244,63,94,.25)}
+    /* input */
+    .inp{
+      background:var(--surface-muted);border:1px solid var(--border-subtle);
+      color:var(--text-primary);border-radius:12px;padding:10px 14px;
+      font-size:14px;font-family:inherit;width:100%;outline:none;
+      transition:all 150ms ease-out;
+    }
+    .inp::placeholder{color:var(--text-muted)}
+    .inp:focus{border-color:rgba(139,92,246,.70);box-shadow:0 0 0 3px var(--ring-focus)}
+    .inp-label{font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;display:block}
+    .inp-group{display:flex;flex-direction:column;gap:4px}
+    /* module cards */
+    .mod{border-radius:14px;padding:16px;border:1px solid;transition:all 150ms ease-out;cursor:default}
+    .mod:hover{transform:translateY(-2px)}
+    .mod-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:10px}
+    .mod-name{font-size:13px;font-weight:700;margin-bottom:3px}
+    .mod-sub{font-size:11px;opacity:.65;margin-bottom:10px}
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600}
+    /* navigation */
+    .sidebar{
+      background:rgba(26,22,56,.88);backdrop-filter:blur(24px);
+      border:1px solid var(--border-subtle);border-radius:16px;
+      padding:12px;width:230px;flex-shrink:0;
+    }
+    .nav-logo{display:flex;align-items:center;gap:10px;padding:8px 10px 14px;border-bottom:1px solid var(--border-subtle);margin-bottom:8px}
+    .nav-logo-ico{
+      width:34px;height:34px;border-radius:10px;
+      background:var(--brand);box-shadow:0 0 18px rgba(99,102,241,.50);
+      display:flex;align-items:center;justify-content:center;font-size:15px;
+    }
+    .nav-logo-txt{font-size:15px;font-weight:900;background:linear-gradient(135deg,#818cf8,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .nav-item{
+      display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:10px;
+      font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;
+      transition:all 150ms ease-out;position:relative;margin-bottom:2px;
+    }
+    .nav-item:hover{color:var(--text-secondary);background:rgba(99,102,241,.10)}
+    .nav-item.act{background:rgba(99,102,241,.20);color:#818cf8}
+    .nav-item.act::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;background:#818cf8;border-radius:0 3px 3px 0}
+    .nav-dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0}
+    /* header */
+    .hdr{
+      background:rgba(30,26,56,.85);backdrop-filter:blur(20px);
+      border:1px solid var(--border-subtle);border-radius:12px;
+      padding:12px 20px;display:flex;align-items:center;justify-content:space-between;
+    }
+    .breadcrumb{display:flex;align-items:center;gap:8px;font-size:13px}
+    .chip{
+      background:var(--surface-muted);border:1px solid var(--border-subtle);
+      border-radius:8px;padding:5px 11px;font-size:12px;color:var(--text-secondary);
+      display:inline-flex;align-items:center;gap:5px;
+    }
+    /* modal */
+    .modal{
+      background:var(--surface-elevated);border:1px solid var(--border-subtle);
+      border-radius:20px;box-shadow:var(--shadow-elevated);padding:28px;max-width:400px;
+    }
+    .modal-hdr{display:flex;align-items:start;justify-content:space-between;margin-bottom:20px}
+    .modal-close{
+      width:28px;height:28px;border-radius:8px;background:var(--surface-muted);
+      border:none;cursor:pointer;color:var(--text-muted);font-size:14px;
+      display:flex;align-items:center;justify-content:center;
+    }
+    /* progress */
+    .prog-track{background:var(--surface-muted);border-radius:999px;height:7px;overflow:hidden}
+    .prog-fill{height:100%;border-radius:999px}
+    /* divider */
+    hr{border:none;border-top:1px solid var(--border-subtle);margin:12px 0}
+    /* stat */
+    .stat-val{font-size:36px;font-weight:900;line-height:1;color:var(--text-primary);margin-bottom:4px}
+    .stat-lbl{font-size:12px;color:var(--text-muted)}
+    .stat-up{font-size:12px;font-weight:600;color:#34d399;margin-top:5px}
+    .stat-dn{font-size:12px;font-weight:600;color:#fb7185;margin-top:5px}
+    /* shadow demo */
+    .sdemo{
+      background:var(--surface);border:1px solid var(--border-subtle);
+      border-radius:12px;padding:20px;text-align:center;font-size:13px;color:var(--text-secondary);
+    }
+    .sdemo .lbl{font-size:10px;color:var(--text-muted);margin-top:10px;font-family:monospace}
+    /* token table */
+    .ttable{width:100%;border-collapse:collapse}
+    .ttable th{text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);padding:10px 14px;border-bottom:1px solid var(--border-subtle)}
+    .ttable td{padding:10px 14px;font-size:13px;border-bottom:1px solid rgba(139,92,246,.08);vertical-align:middle}
+    .ttable td:first-child{font-family:monospace;font-size:12px;color:#818cf8}
+    .ttable td:nth-child(2){font-family:monospace;font-size:11px;color:var(--text-secondary)}
+    .ttable td:nth-child(3){font-size:12px;color:var(--text-muted)}
+    .cdot{width:13px;height:13px;border-radius:4px;display:inline-block;vertical-align:middle;margin-right:7px;border:1px solid rgba(255,255,255,.10)}
+    /* compare table */
+    .ctable{width:100%;border-collapse:collapse}
+    .ctable th{text-align:left;font-size:12px;font-weight:700;color:var(--text-secondary);padding:10px 14px;border-bottom:1px solid var(--border-subtle)}
+    .ctable td{padding:10px 14px;font-size:13px;border-bottom:1px solid rgba(139,92,246,.08);color:var(--text-secondary)}
+    .ctable td:first-child{font-weight:600;color:var(--text-muted);font-size:12px;font-family:monospace}
+    /* responsive */
+    @media(max-width:768px){.g3,.g4{grid-template-columns:1fr 1fr}}
+    @media(max-width:500px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <div style="text-align:center;padding:48px 0 72px">
+    <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(99,102,241,.18);border:1px solid rgba(99,102,241,.35);color:#818cf8;padding:6px 16px;border-radius:999px;font-size:12px;font-weight:600;letter-spacing:.05em;margin-bottom:24px">
+      ✦ SmartLife Design System
+    </div>
+    <h1 style="font-size:52px;font-weight:900;background:linear-gradient(135deg,#818cf8,#a78bfa,#c4b5fd);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:16px;line-height:1.1">
+      Soirée Indigo
+    </h1>
+    <p style="color:var(--text-secondary);font-size:16px;max-width:520px;margin:0 auto;line-height:1.7">
+      Thème alternatif — ni sombre ni clair. Fond violet profond, surfaces lumineuses, accents de modules brillants. À respecter sur toute l'application.
+    </p>
+  </div>
+
+  <!-- 1. FOND & SURFACES -->
+  <div class="section">
+    <div class="section-title">1 — Fond &amp; Surfaces</div>
+    <div class="g4">
+      <div class="swatch" style="background:#1e1a38">
+        <div class="swatch-bg" style="background:#1e1a38;border:2px solid rgba(255,255,255,.12)"></div>
+        <div class="sw-name">App Background</div>
+        <div class="sw-token">--app-bg</div>
+        <div class="sw-val">#1e1a38</div>
+      </div>
+      <div class="swatch" style="background:#252148">
+        <div class="swatch-bg" style="background:#2a2550;border:1px solid rgba(139,92,246,.35)"></div>
+        <div class="sw-name">Surface</div>
+        <div class="sw-token">--surface</div>
+        <div class="sw-val">#2a2550</div>
+      </div>
+      <div class="swatch" style="background:#2e2a5a">
+        <div class="swatch-bg" style="background:#342f6a;border:1px solid rgba(139,92,246,.35)"></div>
+        <div class="sw-name">Surface Elevated</div>
+        <div class="sw-token">--surface-elevated</div>
+        <div class="sw-val">#342f6a</div>
+      </div>
+      <div class="swatch" style="background:#2a2550">
+        <div class="swatch-bg" style="background:rgba(99,102,241,.12);border:1px solid rgba(139,92,246,.35)"></div>
+        <div class="sw-name">Surface Muted</div>
+        <div class="sw-token">--surface-muted</div>
+        <div class="sw-val">rgba(99,102,241,.12)</div>
+      </div>
+    </div>
+    <div style="margin-top:16px">
+      <div class="card" style="background:var(--app-bg-gradient);padding:16px">
+        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Gradient appliqué sur body (background-attachment: fixed)</div>
+        <code style="font-size:11px;color:#a78bfa;font-family:monospace">radial-gradient(at 20% 0%, #2d2760 0%, #1e1a38 50%, #231e4a 100%)</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. TYPOGRAPHIE -->
+  <div class="section">
+    <div class="section-title">2 — Typographie</div>
+    <div class="card">
+      <div class="type-row">
+        <div class="type-meta">H1 · 900 · 36px</div>
+        <div style="font-size:36px;font-weight:900;color:#ede9ff">Bonne journée, Ilyas</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">H2 · 700 · 24px</div>
+        <div style="font-size:24px;font-weight:700;color:#ede9ff">Alimentation du jour</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">H3 · 600 · 18px</div>
+        <div style="font-size:18px;font-weight:600;color:#ede9ff">Tâches en cours (4)</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Body · 400 · 14px</div>
+        <div style="font-size:14px;color:#ede9ff">Décrivez votre journée, vos tâches, vos repas… l'IA structure tout automatiquement.</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Secondary · 400 · 13px</div>
+        <div style="font-size:13px;color:#a89fd4">Dernière mise à jour il y a 2 minutes · 3 essais restants</div>
+      </div>
+      <div class="type-row">
+        <div class="type-meta">Muted · 400 · 12px</div>
+        <div style="font-size:12px;color:#6b639e">Entrez votre email… · Désactivé · Optionnel · Placeholder</div>
+      </div>
+      <div style="margin-top:16px;padding:12px;background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.25);border-radius:10px;font-size:12px;color:#fb7185">
+        ⚠ Règle : ne jamais utiliser <code style="font-family:monospace">#ffffff</code> pur pour le texte. Maximum autorisé : <code style="font-family:monospace">#ede9ff</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. BOUTONS -->
+  <div class="section">
+    <div class="section-title">3 — Boutons</div>
+    <div class="card">
+      <div class="row" style="margin-bottom:16px">
+        <button class="btn-p">✦ Envoyer à l'IA</button>
+        <button class="btn-s">Annuler</button>
+        <button class="btn-g">Voir tout</button>
+        <button class="btn-d">Supprimer</button>
+      </div>
+      <div class="row" style="margin-bottom:16px">
+        <button class="btn-p" style="opacity:.45;cursor:not-allowed">Chargement…</button>
+        <button class="btn-s" style="opacity:.45;cursor:not-allowed">Désactivé</button>
+      </div>
+      <hr>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;font-size:12px;color:var(--text-muted);line-height:1.8">
+        <div><span style="color:#818cf8;font-weight:600">Primary :</span> gradient indigo→violet + glow 0.45 · hover glow 0.70 + translateY(-1px)</div>
+        <div><span style="color:#a89fd4;font-weight:600">Secondary :</span> surface-muted + border-subtle · hover surface-hover</div>
+        <div><span style="color:var(--text-muted);font-weight:600">Ghost :</span> transparent + border · hover border violet 55%</div>
+        <div><span style="color:#fb7185;font-weight:600">Danger :</span> rose teinté 15% + border rose 35%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. INPUTS -->
+  <div class="section">
+    <div class="section-title">4 — Champs de saisie</div>
+    <div class="g2">
+      <div class="card">
+        <div class="inp-group" style="margin-bottom:14px">
+          <label class="inp-label">Email</label>
+          <input class="inp" type="email" placeholder="votre@email.com">
+        </div>
+        <div class="inp-group" style="margin-bottom:14px">
+          <label class="inp-label">Mot de passe</label>
+          <input class="inp" type="password" placeholder="••••••••">
+        </div>
+        <div class="inp-group">
+          <label class="inp-label">Focus actif</label>
+          <input class="inp" value="Réunion Ahmed demain 14h" style="border-color:rgba(139,92,246,.70);box-shadow:0 0 0 3px rgba(139,92,246,.55)">
+        </div>
+      </div>
+      <div class="card">
+        <div class="inp-group" style="margin-bottom:14px">
+          <label class="inp-label">Prompt IA</label>
+          <textarea class="inp" rows="4" placeholder="Pizza à midi, puis 45min de muscu (squat 80kg × 4 séries)…" style="resize:none"></textarea>
+        </div>
+        <div class="inp-group">
+          <label class="inp-label">Sélection</label>
+          <select class="inp" style="color:var(--text-secondary)">
+            <option>Priorité haute</option>
+            <option>Priorité moyenne</option>
+            <option>Priorité basse</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. CARDS -->
+  <div class="section">
+    <div class="section-title">5 — Cards &amp; Surfaces</div>
+    <div class="g3" style="margin-bottom:16px">
+      <div class="card card-hover">
+        <div style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Card standard (hover me)</div>
+        <div class="stat-val">2 847</div>
+        <div class="stat-lbl">calories aujourd'hui</div>
+        <div class="stat-up">↑ 12% vs hier</div>
+      </div>
+      <div class="card" style="background:var(--surface-hover)">
+        <div style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Card hover state</div>
+        <div class="stat-val">8h 20m</div>
+        <div class="stat-lbl">sommeil cette nuit</div>
+        <div class="stat-up">↑ +45min vs moyenne</div>
+      </div>
+      <div class="card-el">
+        <div style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Card elevated (modal)</div>
+        <div class="stat-val">94</div>
+        <div class="stat-lbl">Smart Day Score</div>
+        <div class="stat-up">↑ Excellent</div>
+      </div>
+    </div>
+    <div class="card" style="padding:16px 20px">
+      <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:16px">Macros du jour — barres de progression</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:12px;color:#818cf8;font-weight:600">Protéines</span>
+            <span style="font-size:12px;color:var(--text-secondary)">142g / 180g</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill" style="width:79%;background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:12px;color:#34d399;font-weight:600">Glucides</span>
+            <span style="font-size:12px;color:var(--text-secondary)">210g / 250g</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill" style="width:84%;background:linear-gradient(90deg,#059669,#34d399)"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-size:12px;color:#fbbf24;font-weight:600">Lipides</span>
+            <span style="font-size:12px;color:var(--text-secondary)">58g / 80g</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill" style="width:72%;background:linear-gradient(90deg,#d97706,#fbbf24)"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. MODULES -->
+  <div class="section">
+    <div class="section-title">6 — Accents par module</div>
+    <div class="g4">
+      <div class="mod" style="background:rgba(99,102,241,.18);border-color:rgba(99,102,241,.35);color:#818cf8">
+        <div class="mod-icon" style="background:rgba(99,102,241,.25)">✓</div>
+        <div class="mod-name">Tâches</div>
+        <div class="mod-sub">Tasks · Indigo · #818cf8</div>
+        <span class="badge" style="background:rgba(99,102,241,.20);color:#818cf8">4 en cours</span>
+      </div>
+      <div class="mod" style="background:rgba(139,92,246,.18);border-color:rgba(139,92,246,.35);color:#a78bfa">
+        <div class="mod-icon" style="background:rgba(139,92,246,.25)">📅</div>
+        <div class="mod-name">Agenda</div>
+        <div class="mod-sub">Calendar · Violet · #a78bfa</div>
+        <span class="badge" style="background:rgba(139,92,246,.20);color:#a78bfa">2 réunions</span>
+      </div>
+      <div class="mod" style="background:rgba(14,165,233,.18);border-color:rgba(14,165,233,.35);color:#38bdf8">
+        <div class="mod-icon" style="background:rgba(14,165,233,.25)">📝</div>
+        <div class="mod-name">Notes</div>
+        <div class="mod-sub">Notes · Sky · #38bdf8</div>
+        <span class="badge" style="background:rgba(14,165,233,.20);color:#38bdf8">12 notes</span>
+      </div>
+      <div class="mod" style="background:rgba(16,185,129,.18);border-color:rgba(16,185,129,.35);color:#34d399">
+        <div class="mod-icon" style="background:rgba(16,185,129,.25)">🥗</div>
+        <div class="mod-name">Alimentation</div>
+        <div class="mod-sub">Food · Emerald · #34d399</div>
+        <span class="badge" style="background:rgba(16,185,129,.20);color:#34d399">1 840 kcal</span>
+      </div>
+      <div class="mod" style="background:rgba(245,158,11,.18);border-color:rgba(245,158,11,.35);color:#fbbf24">
+        <div class="mod-icon" style="background:rgba(245,158,11,.25)">🔔</div>
+        <div class="mod-name">Rappels</div>
+        <div class="mod-sub">Reminders · Amber · #fbbf24</div>
+        <span class="badge" style="background:rgba(245,158,11,.20);color:#fbbf24">3 aujourd'hui</span>
+      </div>
+      <div class="mod" style="background:rgba(244,63,94,.18);border-color:rgba(244,63,94,.35);color:#fb7185">
+        <div class="mod-icon" style="background:rgba(244,63,94,.25)">🌙</div>
+        <div class="mod-name">Sommeil</div>
+        <div class="mod-sub">Sleep · Rose · #fb7185</div>
+        <span class="badge" style="background:rgba(244,63,94,.20);color:#fb7185">8h20 · 4.5/5</span>
+      </div>
+      <div class="mod" style="background:rgba(249,115,22,.18);border-color:rgba(249,115,22,.35);color:#fb923c">
+        <div class="mod-icon" style="background:rgba(249,115,22,.25)">🌐</div>
+        <div class="mod-name">Together</div>
+        <div class="mod-sub">Social · Orange · #fb923c</div>
+        <span class="badge" style="background:rgba(249,115,22,.20);color:#fb923c">5 posts</span>
+      </div>
+      <div class="mod" style="background:rgba(6,182,212,.18);border-color:rgba(6,182,212,.35);color:#22d3ee">
+        <div class="mod-icon" style="background:rgba(6,182,212,.25)">📚</div>
+        <div class="mod-name">Apprentissage</div>
+        <div class="mod-sub">Study · Cyan · #22d3ee</div>
+        <span class="badge" style="background:rgba(6,182,212,.20);color:#22d3ee">45min · +2h</span>
+      </div>
+    </div>
+    <div style="margin-top:16px" class="card">
+      <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">Glows par module (box-shadow sur hover)</div>
+      <div class="row">
+        <div style="padding:8px 16px;border-radius:10px;font-size:12px;font-weight:600;color:#818cf8;box-shadow:0 0 20px rgba(99,102,241,.50);background:rgba(99,102,241,.12)">Indigo</div>
+        <div style="padding:8px 16px;border-radius:10px;font-size:12px;font-weight:600;color:#a78bfa;box-shadow:0 0 20px rgba(139,92,246,.50);background:rgba(139,92,246,.12)">Violet</div>
+        <div style="padding:8px 16px;border-radius:10px;font-size:12px;font-weight:600;color:#38bdf8;box-shadow:0 0 20px rgba(14,165,233,.50);background:rgba(14,165,233,.12)">Sky</div>
+        <div style="padding:8px 16px;border-radius:10px;font-size:12px;font-weight:600;color:#34d399;box-shadow:0 0 20px rgba(16,185,129,.50);background:rgba(16,185,129,.12)">Emerald</div>
+        <div style="padding:8px 16px;border-radius:10px;font-size:12px;font-weight:600;color:#fbbf24;box-shadow:0 0 20px rgba(245,158,11,.50);background:rgba(245,158,11,.12)">Amber</div>
+        <div style="padding:8px 16px;border-radius:10px;font-size:12px;font-weight:600;color:#fb7185;box-shadow:0 0 20px rgba(244,63,94,.50);background:rgba(244,63,94,.12)">Rose</div>
+        <div style="padding:8px 16px;border-radius:10px;font-size:12px;font-weight:600;color:#fb923c;box-shadow:0 0 20px rgba(249,115,22,.50);background:rgba(249,115,22,.12)">Orange</div>
+        <div style="padding:8px 16px;border-radius:10px;font-size:12px;font-weight:600;color:#22d3ee;box-shadow:0 0 20px rgba(6,182,212,.50);background:rgba(6,182,212,.12)">Cyan</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. NAVIGATION & HEADER -->
+  <div class="section">
+    <div class="section-title">7 — Navigation &amp; Header</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+      <div class="sidebar">
+        <div class="nav-logo">
+          <div class="nav-logo-ico">🧠</div>
+          <span class="nav-logo-txt">SmartLife</span>
+        </div>
+        <div class="nav-item act"><div class="nav-dot"></div>Accueil</div>
+        <div class="nav-item"><div class="nav-dot" style="background:#a78bfa"></div>Agenda</div>
+        <div class="nav-item"><div class="nav-dot" style="background:var(--text-muted)"></div>Prompt IA</div>
+        <div class="nav-item"><div class="nav-dot" style="background:var(--text-muted)"></div>Tâches</div>
+        <div class="nav-item"><div class="nav-dot" style="background:var(--text-muted)"></div>Rappels</div>
+        <div class="nav-item"><div class="nav-dot" style="background:var(--text-muted)"></div>Alimentation</div>
+        <div class="nav-item"><div class="nav-dot" style="background:var(--text-muted)"></div>Sommeil</div>
+        <hr>
+        <div style="padding:8px 10px;display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:999px;background:var(--brand);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;box-shadow:0 0 12px rgba(99,102,241,.40)">I</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-primary)">Ilyas</div>
+            <div style="font-size:11px;color:var(--text-muted)">ilyas@smartlife.app</div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:12px">
+        <div class="hdr">
+          <div class="breadcrumb">
+            <span style="color:var(--text-muted)">SmartLife</span>
+            <span style="color:var(--text-muted)">›</span>
+            <span style="color:var(--text-primary);font-weight:600">Alimentation</span>
+          </div>
+          <div class="row" style="gap:8px">
+            <div class="chip">🔔 3</div>
+            <div class="chip">🌙 Soirée</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);padding:0 4px">
+          Sidebar : rgba(26,22,56,.88) + blur(24px) · Header : rgba(30,26,56,.85) + blur(20px)
+        </div>
+        <div class="card">
+          <div style="font-size:10px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">Gradient ligne module (séparateur de section)</div>
+          <div style="height:3px;border-radius:2px;background:linear-gradient(90deg,#6366f1,#7c3aed,#a78bfa);opacity:.7;margin-bottom:16px"></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <div style="height:3px;flex:1;border-radius:2px;background:linear-gradient(90deg,#6366f1,#818cf8)"></div>
+            <div style="height:3px;flex:1;border-radius:2px;background:linear-gradient(90deg,#7c3aed,#a78bfa)"></div>
+            <div style="height:3px;flex:1;border-radius:2px;background:linear-gradient(90deg,#0ea5e9,#38bdf8)"></div>
+            <div style="height:3px;flex:1;border-radius:2px;background:linear-gradient(90deg,#059669,#34d399)"></div>
+            <div style="height:3px;flex:1;border-radius:2px;background:linear-gradient(90deg,#d97706,#fbbf24)"></div>
+            <div style="height:3px;flex:1;border-radius:2px;background:linear-gradient(90deg,#e11d48,#fb7185)"></div>
+            <div style="height:3px;flex:1;border-radius:2px;background:linear-gradient(90deg,#ea580c,#fb923c)"></div>
+            <div style="height:3px;flex:1;border-radius:2px;background:linear-gradient(90deg,#0891b2,#22d3ee)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. MODAL -->
+  <div class="section">
+    <div class="section-title">8 — Modales</div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+      <div class="modal">
+        <div class="modal-hdr">
+          <div>
+            <div style="font-size:11px;color:#818cf8;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">✦ Prompt IA</div>
+            <div style="font-size:18px;font-weight:700;color:var(--text-primary)">Demander l'accès complet</div>
+          </div>
+          <button class="modal-close">✕</button>
+        </div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;line-height:1.6">
+          L'assistant IA transforme vos phrases en tâches, repas, sport et journal automatiquement.
+        </div>
+        <div class="inp-group" style="margin-bottom:16px">
+          <label class="inp-label">Pourquoi souhaitez-vous l'accès ? <span style="font-weight:400;color:var(--text-muted)">(optionnel)</span></label>
+          <textarea class="inp" rows="3" placeholder="Ex: Je veux organiser mes repas…" style="resize:none"></textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px">
+          <button class="btn-s">Annuler</button>
+          <button class="btn-p">Envoyer</button>
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);line-height:1.9;flex:1;min-width:200px">
+        <div style="font-weight:700;color:var(--text-secondary);margin-bottom:8px">Specs modale</div>
+        background: <code style="font-family:monospace;color:#818cf8">--surface-elevated</code> (#342f6a)<br>
+        border: <code style="font-family:monospace;color:#818cf8">--border-subtle</code><br>
+        border-radius: <code style="font-family:monospace;color:#818cf8">20px</code><br>
+        box-shadow: <code style="font-family:monospace;color:#818cf8">--shadow-elevated</code><br>
+        backdrop overlay: <code style="font-family:monospace;color:#818cf8">rgba(10,8,28,.75)</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. OMBRES -->
+  <div class="section">
+    <div class="section-title">9 — Système d'ombres (toutes teintées indigo/violet)</div>
+    <div class="g3">
+      <div class="sdemo" style="box-shadow:0 8px 32px rgba(99,102,241,.40),0 2px 8px rgba(139,92,246,.20)">
+        Card standard
+        <div class="lbl">--shadow-card</div>
+      </div>
+      <div class="sdemo" style="box-shadow:0 20px 60px rgba(99,102,241,.55),0 4px 16px rgba(139,92,246,.30)">
+        Modal / Elevated
+        <div class="lbl">--shadow-elevated</div>
+      </div>
+      <div class="sdemo" style="box-shadow:0 0 24px rgba(99,102,241,.60)">
+        Brand glow
+        <div class="lbl">btn-primary:hover</div>
+      </div>
+    </div>
+    <div style="margin-top:14px;padding:12px 16px;background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.25);border-radius:10px;font-size:12px;color:#fb7185">
+      ⚠ Règle absolue : aucune ombre <code style="font-family:monospace">rgba(0,0,0,...)</code> grise. Toutes les ombres utilisent les teintes indigo (#6366f1) ou violet (#7c3aed).
+    </div>
+  </div>
+
+  <!-- 10. TOKENS COMPLETS -->
+  <div class="section">
+    <div class="section-title">10 — Tokens CSS complets</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="ttable">
+        <thead>
+          <tr><th>Token</th><th>Valeur</th><th>Usage</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>--app-bg</td><td><span class="cdot" style="background:#1e1a38"></span>#1e1a38</td><td>Fond page entière</td></tr>
+          <tr><td>--app-bg-gradient</td><td style="font-size:10px;color:var(--text-muted)">radial-gradient(at 20% 0%…)</td><td>body background-attachment:fixed</td></tr>
+          <tr><td>--surface</td><td><span class="cdot" style="background:#2a2550"></span>#2a2550</td><td>Cards, panels, sections</td></tr>
+          <tr><td>--surface-elevated</td><td><span class="cdot" style="background:#342f6a"></span>#342f6a</td><td>Modales, dropdowns, tooltips</td></tr>
+          <tr><td>--surface-muted</td><td><span class="cdot" style="background:rgba(99,102,241,.12)"></span>rgba(99,102,241,.12)</td><td>Inputs bg, zones secondaires</td></tr>
+          <tr><td>--surface-hover</td><td><span class="cdot" style="background:rgba(99,102,241,.22)"></span>rgba(99,102,241,.22)</td><td>Hover sur éléments interactifs</td></tr>
+          <tr><td>--text-primary</td><td><span class="cdot" style="background:#ede9ff;border-color:rgba(0,0,0,.3)"></span>#ede9ff</td><td>Titres, labels, contenu principal</td></tr>
+          <tr><td>--text-secondary</td><td><span class="cdot" style="background:#a89fd4"></span>#a89fd4</td><td>Sous-titres, métadonnées</td></tr>
+          <tr><td>--text-muted</td><td><span class="cdot" style="background:#6b639e"></span>#6b639e</td><td>Placeholders, disabled, hints</td></tr>
+          <tr><td>--border-subtle</td><td><span class="cdot" style="background:rgba(139,92,246,.35)"></span>rgba(139,92,246,.35)</td><td>Toutes les bordures cards/inputs</td></tr>
+          <tr><td>--shadow-card</td><td style="font-size:10px;color:var(--text-muted)">0 8px 32px rgba(99,102,241,.40)…</td><td>Cards standard</td></tr>
+          <tr><td>--shadow-elevated</td><td style="font-size:10px;color:var(--text-muted)">0 20px 60px rgba(99,102,241,.55)…</td><td>Modales, popovers</td></tr>
+          <tr><td>--ring-focus</td><td><span class="cdot" style="background:rgba(139,92,246,.55)"></span>rgba(139,92,246,.55)</td><td>Focus ring inputs/buttons</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 11. SPACING -->
+  <div class="section">
+    <div class="section-title">11 — Espacement &amp; Border-radius</div>
+    <div class="g2">
+      <div class="card">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">Espacements</div>
+        <div style="font-size:13px;color:var(--text-secondary);line-height:2.2">
+          Gap cartes mobile : <code style="color:#818cf8;font-family:monospace">16px</code><br>
+          Gap cartes desktop : <code style="color:#818cf8;font-family:monospace">24px</code><br>
+          Padding card interne : <code style="color:#818cf8;font-family:monospace">16px (sm) / 20px (md)</code><br>
+          Padding page : <code style="color:#818cf8;font-family:monospace">12px (mobile) / 24px (desktop)</code>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-size:11px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px">Border-radius</div>
+        <div style="font-size:13px;color:var(--text-secondary);line-height:2.2">
+          Cards &amp; panels : <code style="color:#a78bfa;font-family:monospace">16px</code><br>
+          Boutons &amp; inputs : <code style="color:#a78bfa;font-family:monospace">12px</code><br>
+          Modales : <code style="color:#a78bfa;font-family:monospace">20px</code><br>
+          Badges &amp; pills : <code style="color:#a78bfa;font-family:monospace">999px</code><br>
+          Icônes module : <code style="color:#a78bfa;font-family:monospace">10px</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 12. MOTION -->
+  <div class="section">
+    <div class="section-title">12 — Motion &amp; Transitions</div>
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+        <div style="padding:12px;border-right:1px solid rgba(139,92,246,.12);font-size:13px;color:var(--text-secondary);line-height:2.2">
+          Hover card / button : <code style="color:#818cf8;font-family:monospace">150ms ease-out</code><br>
+          Ouverture modale : <code style="color:#818cf8;font-family:monospace">220ms ease-out</code><br>
+          Fermeture modale : <code style="color:#818cf8;font-family:monospace">150ms ease-in</code><br>
+          Focus ring : <code style="color:#818cf8;font-family:monospace">100ms ease</code>
+        </div>
+        <div style="padding:12px;font-size:13px;color:var(--text-secondary);line-height:2.2">
+          Changement panel : <code style="color:#a78bfa;font-family:monospace">220ms ease-out (fadeSlideIn)</code><br>
+          Sidebar collapse : <code style="color:#a78bfa;font-family:monospace">300ms ease</code><br>
+          Card hover lift : <code style="color:#a78bfa;font-family:monospace">translateY(-2px)</code><br>
+          Button hover lift : <code style="color:#a78bfa;font-family:monospace">translateY(-1px)</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13. ANTI-PATTERNS -->
+  <div class="section">
+    <div class="section-title">13 — Anti-patterns — ce qui est interdit</div>
+    <div class="g2">
+      <div class="card" style="border-color:rgba(244,63,94,.35)">
+        <div style="color:#fb7185;font-size:13px;font-weight:700;margin-bottom:14px">✕ Interdit dans ce thème</div>
+        <div style="font-size:13px;color:var(--text-secondary);line-height:2.4;font-family:monospace">
+          <span style="color:#fb7185">color: #ffffff</span> — trop agressif sur violet<br>
+          <span style="color:#fb7185">background: black / #000</span><br>
+          <span style="color:#fb7185">rgba(0,0,0,...)</span> pour ombres<br>
+          <span style="color:#fb7185">background: #ffffff</span> surfaces blanches<br>
+          <span style="color:#fb7185">#0D1117 / #070B14</span> hardcodés<br>
+          <span style="color:#fb7185">border-gray-* / text-gray-*</span> non mappés<br>
+          <span style="color:#fb7185">bg-white/5</span> inline sans token
+        </div>
+      </div>
+      <div class="card" style="border-color:rgba(16,185,129,.35)">
+        <div style="color:#34d399;font-size:13px;font-weight:700;margin-bottom:14px">✓ Correct</div>
+        <div style="font-size:13px;color:var(--text-secondary);line-height:2.4;font-family:monospace">
+          <span style="color:#34d399">color: var(--text-primary)</span> → #ede9ff<br>
+          <span style="color:#34d399">background: var(--surface)</span> → #2a2550<br>
+          <span style="color:#34d399">box-shadow: var(--shadow-card)</span><br>
+          <span style="color:#34d399">border: 1px solid var(--border-subtle)</span><br>
+          <span style="color:#34d399">rgba(99,102,241,...)</span> tintes indigo<br>
+          <span style="color:#34d399">.module-accent-{color}</span> pour badges<br>
+          <span style="color:#34d399">var(--surface-muted)</span> zones secondaires
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14. COMPARAISON MODES -->
+  <div class="section">
+    <div class="section-title">14 — Comparaison avec le dark mode actuel</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="ctable">
+        <thead>
+          <tr><th>Propriété</th><th>Dark mode actuel</th><th>Soirée Indigo (nouveau)</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>--app-bg</td>
+            <td><span class="cdot" style="background:#070b14"></span>#070b14 (quasi-noir)</td>
+            <td><span class="cdot" style="background:#1e1a38"></span>#1e1a38 (violet profond)</td>
+          </tr>
+          <tr>
+            <td>--surface</td>
+            <td><span class="cdot" style="background:#0d1117"></span>#0d1117</td>
+            <td><span class="cdot" style="background:#2a2550"></span>#2a2550</td>
+          </tr>
+          <tr>
+            <td>--text-primary</td>
+            <td><span class="cdot" style="background:#f1f5f9;border-color:rgba(0,0,0,.3)"></span>#f1f5f9 (froid)</td>
+            <td><span class="cdot" style="background:#ede9ff;border-color:rgba(0,0,0,.3)"></span>#ede9ff (lavande)</td>
+          </tr>
+          <tr>
+            <td>Ombres</td>
+            <td>Noires opaques rgba(0,0,0,.60)</td>
+            <td>Teintées indigo/violet</td>
+          </tr>
+          <tr>
+            <td>Ambiance</td>
+            <td>Techno · nuit profonde</td>
+            <td>Cosmique · soirée premium</td>
+          </tr>
+          <tr>
+            <td>Glow modules</td>
+            <td>Néon sur noir</td>
+            <td>Lumineux sur violet</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="text-align:center;padding:32px 0 48px;color:var(--text-muted);font-size:12px;border-top:1px solid var(--border-subtle)">
+    SmartLife — Charte Graphique <strong style="color:#818cf8">Soirée Indigo</strong> · 2026 · À respecter sur toute l'application
+  </div>
+
+</div>
+</body>
+</html>

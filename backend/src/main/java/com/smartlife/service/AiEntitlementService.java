@@ -49,8 +49,12 @@ public class AiEntitlementService {
                         .build()));
     }
 
+    /**
+     * Valide l'accès IA SANS consommer de crédit. Lève une exception si l'accès
+     * est refusé. À appeler AVANT l'appel au service IA.
+     */
     @Transactional
-    public void checkAndConsume(User user) {
+    public void checkAccess(User user) {
         var entitlement = getOrCreate(user);
         resetMonthlyIfNeeded(entitlement);
 
@@ -69,8 +73,6 @@ public class AiEntitlementService {
             if (trialUsed >= trialQuota) {
                 denyAiAccess(entitlement);
             }
-            entitlement.setTrialUsed(trialUsed + 1);
-            entitlementRepository.save(entitlement);
             return;
         }
 
@@ -79,8 +81,81 @@ public class AiEntitlementService {
         if (monthlyQuota != null && monthlyUsed >= monthlyQuota) {
             denyAiAccess(entitlement);
         }
-        entitlement.setMonthlyUsed(monthlyUsed + 1);
+    }
+
+    /**
+     * Consomme une unité de quota IA. À appeler UNIQUEMENT après un appel IA
+     * réussi, pour ne pas facturer l'utilisateur en cas d'échec du service IA.
+     */
+    @Transactional
+    public void consume(User user) {
+        var entitlement = getOrCreate(user);
+        String status = normalizeStatus(entitlement.getStatus());
+
+        if (ADMIN.equals(status)) {
+            return;
+        }
+
+        if (FREE.equals(status)) {
+            entitlement.setTrialUsed(valueOrZero(entitlement.getTrialUsed()) + 1);
+            entitlementRepository.save(entitlement);
+            return;
+        }
+
+        entitlement.setMonthlyUsed(valueOrZero(entitlement.getMonthlyUsed()) + 1);
         entitlementRepository.save(entitlement);
+    }
+
+    /**
+     * Réserve atomiquement une unité de quota AVANT l'appel IA. Sûr en
+     * concurrence (UPDATE conditionnel en base). Lève si le quota est épuisé.
+     * En cas d'échec de l'appel IA ensuite, appeler {@link #refund(User)}.
+     */
+    @Transactional
+    public void reserve(User user) {
+        var entitlement = getOrCreate(user);
+        String status = normalizeStatus(entitlement.getStatus());
+
+        if (BLOCKED.equals(status)) {
+            denyAiAccess(entitlement);
+        }
+        if (ADMIN.equals(status)) {
+            return;
+        }
+
+        int updated = FREE.equals(status)
+                ? entitlementRepository.tryConsumeTrial(entitlement.getId())
+                : entitlementRepository.tryConsumeMonthly(entitlement.getId());
+
+        if (updated == 0) {
+            denyAiAccess(entitlement);
+        }
+    }
+
+    /** Rembourse une unité de quota si l'appel IA a échoué après {@link #reserve(User)}. */
+    @Transactional
+    public void refund(User user) {
+        var entitlement = getOrCreate(user);
+        String status = normalizeStatus(entitlement.getStatus());
+        if (ADMIN.equals(status)) {
+            return;
+        }
+        if (FREE.equals(status)) {
+            entitlementRepository.refundTrial(entitlement.getId());
+        } else {
+            entitlementRepository.refundMonthly(entitlement.getId());
+        }
+    }
+
+    /**
+     * @deprecated consomme le crédit même si l'appel IA échoue ensuite.
+     * Préférer {@link #reserve(User)} avant et {@link #refund(User)} si échec.
+     */
+    @Deprecated
+    @Transactional
+    public void checkAndConsume(User user) {
+        checkAccess(user);
+        consume(user);
     }
 
     @Transactional

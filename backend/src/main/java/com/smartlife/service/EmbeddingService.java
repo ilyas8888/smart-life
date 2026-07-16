@@ -1,5 +1,6 @@
 package com.smartlife.service;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,15 @@ public class EmbeddingService {
 
     @Value("${voyage.api-key:}")
     private String voyageApiKey;
+
+    @PostConstruct
+    void logEmbeddingStatus() {
+        if (voyageApiKey == null || voyageApiKey.isBlank()) {
+            log.warn("VOYAGE_API_KEY absente — recherche par similarité vectorielle DÉSACTIVÉE (matching aliments par préfixe/alias uniquement)");
+        } else {
+            log.info("Embeddings Voyage AI activés (recherche par similarité vectorielle disponible)");
+        }
+    }
 
     @SuppressWarnings("unchecked")
     public Optional<String> embed(String text) {

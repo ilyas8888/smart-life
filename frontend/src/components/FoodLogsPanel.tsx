@@ -694,7 +694,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     },
     onSuccess: () => {
       const count = foodItems.length
-      toast.success(`${count} aliment${count > 1 ? 's' : ''} ajouté${count > 1 ? 's' : ''} ?`)
+      toast.success(`${count} aliment${count > 1 ? 's' : ''} ajouté${count > 1 ? 's' : ''} !`)
       onSuccess()
     },
     onError: () => toast.error("Erreur lors de l'enregistrement"),
@@ -707,7 +707,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
     }),
     onSuccess: (res) => {
       const count = Array.isArray(res.data) ? res.data.length : 1
-      toast.success(`${count} aliment${count > 1 ? 's' : ''} ajouté${count > 1 ? 's' : ''} ?`)
+      toast.success(`${count} aliment${count > 1 ? 's' : ''} ajouté${count > 1 ? 's' : ''} !`)
       onSuccess()
     },
     onError: () => toast.error("Erreur lors de l'analyse"),
@@ -796,7 +796,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
             <div>
               <button type="button" onClick={() => setMode(null)}
                 className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4 flex items-center gap-1">
-                ? Retour
+                ← Retour
               </button>
 
               <div className="mb-4">
@@ -941,7 +941,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                         })()}
                         {!item.hasNutrition && (
                           <p className="text-xs text-amber-500 dark:text-amber-400 mt-0.5">
-                            ? Valeurs estimées par l'IA
+                            ⚠️ Valeurs estimées par l'IA
                           </p>
                         )}
                         {item.quantity && (
@@ -980,7 +980,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                   onClick={() => saveMutation.mutate()}
                   disabled={foodItems.length === 0 || isLoading}
                   className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
-                  {foodItems.some(f => !f.hasNutrition) ? '? Analyser et sauvegarder' : 'Sauvegarder'}
+                  {foodItems.some(f => !f.hasNutrition) ? 'Analyser et sauvegarder' : 'Sauvegarder'}
                 </button>
               </div>
             </div>
@@ -991,7 +991,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
             <div>
               <button type="button" onClick={() => setMode(null)}
                 className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4 flex items-center gap-1">
-                ? Retour
+                ← Retour
               </button>
 
               <div className="mb-4">
@@ -1031,7 +1031,7 @@ function AddFoodModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: 
                   onClick={() => fromPromptMutation.mutate()}
                   disabled={!promptText.trim() || isLoading}
                   className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
-                  ? Analyser et sauvegarder
+                  Analyser et sauvegarder
                 </button>
               </div>
             </div>
@@ -1168,7 +1168,7 @@ export default function FoodLogsPanel() {
           preview={
             <div className="card">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-base">??</span>
+                <span className="text-base">🍽️</span>
                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Déjeuner</span>
                 <span className="ml-auto text-xs text-gray-400">500 kcal</span>
               </div>
