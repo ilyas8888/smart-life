@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.util.retry.Retry;
@@ -143,6 +144,23 @@ public class AiService {
         PromptResponse response = new PromptResponse();
         response.setSummary(sanitizeSummary((String) aiResult.getOrDefault("summary", ""), user, ip));
         response.setRawAiResponse(aiResult.toString());
+
+        // Intention de suppression : le LLM ne fait que la SIGNALER. On ne crée ni ne
+        // supprime rien ici ; on renvoie un apercu a confirmer (human-in-the-loop, anti
+        // Excessive Agency LLM08). La suppression reelle passe par confirmDeletion().
+        List<Map<String, Object>> deletionIntents =
+                (List<Map<String, Object>>) aiResult.getOrDefault("deletions", List.of());
+        if (deletionIntents != null && !deletionIntents.isEmpty()) {
+            List<Map<String, Object>> preview = buildDeletionPreview(deletionIntents, user);
+            if (preview.isEmpty()) {
+                response.setSummary("Il n'y a rien a supprimer pour cette demande.");
+            } else {
+                response.setPendingDeletion(preview);
+                response.setSummary(deletionSummary(preview));
+                auditLogService.log(user.getId(), "AI_DELETE_PREVIEW", "PROMPT", null, ip);
+            }
+            return response;
+        }
 
         List<Map<String, Object>> tasksCreated = new ArrayList<>();
         List<Map<String, Object>> remindersCreated = new ArrayList<>();
@@ -312,6 +330,159 @@ public class AiService {
         auditLogService.log(user.getId(), "PROMPT_PROCESSED", "PROMPT_HISTORY", history.getId(), ip);
 
         return response;
+    }
+
+    // ─── Suppression via l'assistant (human-in-the-loop) ────────────────────────
+
+    /** Construit l'apercu (comptes par type/portee) sans rien supprimer. */
+    private List<Map<String, Object>> buildDeletionPreview(List<Map<String, Object>> intents, User user) {
+        List<Map<String, Object>> preview = new ArrayList<>();
+        if (intents == null) return preview;
+        for (var intent : intents) {
+            String type = normalizeEntityType(String.valueOf(intent.get("entity_type")));
+            String scope = normalizeScope(String.valueOf(intent.get("scope")));
+            if (type == null) continue;
+            int count = gather(type, scope, user.getId()).size();
+            if (count == 0) continue;
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("entityType", type);
+            row.put("scope", scope);
+            row.put("count", count);
+            row.put("label", entityLabel(type, count) + " " + scopeLabel(scope));
+            preview.add(row);
+        }
+        return preview;
+    }
+
+    private String deletionSummary(List<Map<String, Object>> preview) {
+        List<String> parts = preview.stream()
+                .map(p -> p.get("count") + " " + p.get("label"))
+                .toList();
+        return "Confirme la suppression de : " + String.join(", ", parts) + ".";
+    }
+
+    /**
+     * Supprime reellement les entites confirmees. Securite : re-derive les entites a
+     * partir de l'intention et les scope a l'utilisateur authentifie (l'appelant ne
+     * fournit jamais d'identifiants). Un compte ne peut donc supprimer que SES donnees.
+     */
+    @Transactional
+    public Map<String, Object> confirmDeletion(List<Map<String, String>> intents, User user, String ip) {
+        int totalDeleted = 0;
+        List<Map<String, Object>> deleted = new ArrayList<>();
+        if (intents != null) {
+            for (var intent : intents) {
+                String type = normalizeEntityType(intent.get("entity_type"));
+                String scope = normalizeScope(intent.get("scope"));
+                if (type == null) continue;
+                List<Object> items = gather(type, scope, user.getId());
+                int n = items.size();
+                deleteGathered(type, items);
+                totalDeleted += n;
+                if (n > 0) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("entityType", type);
+                    row.put("count", n);
+                    deleted.add(row);
+                }
+            }
+        }
+        auditLogService.log(user.getId(), "AI_DELETE_CONFIRMED", "PROMPT", null, ip);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("deletedTotal", totalDeleted);
+        result.put("deleted", deleted);
+        result.put("summary", totalDeleted == 0
+                ? "Rien a supprimer."
+                : totalDeleted + " element(s) supprime(s).");
+        return result;
+    }
+
+    /** Recupere les entites d'un type/portee, toujours scopees a l'utilisateur. */
+    private List<Object> gather(String type, String scope, Long uid) {
+        boolean today = "today".equals(scope);
+        LocalDate d = LocalDate.now();
+        List<?> src;
+        switch (type) {
+            case "food_logs" -> src = today
+                    ? foodLogRepository.findByUserIdAndLogDate(uid, d)
+                    : foodLogRepository.findByUserIdOrderByLogDateDescLoggedAtDesc(uid);
+            case "workouts" -> src = today
+                    ? workoutSessionRepository.findByUserIdAndSessionDate(uid, d)
+                    : workoutSessionRepository.findByUserIdOrderBySessionDateDescCreatedAtDesc(uid);
+            case "diary" -> src = today
+                    ? diaryEntryRepository.findByUserIdOrderByEntryDateDesc(uid).stream()
+                        .filter(e -> d.isEqual(e.getEntryDate())).toList()
+                    : diaryEntryRepository.findByUserIdOrderByEntryDateDesc(uid);
+            case "tasks" -> src = onlyTodayIf(taskRepository.findByUserIdOrderByCreatedAtDesc(uid), today, Task::getCreatedAt);
+            case "reminders" -> src = onlyTodayIf(reminderRepository.findByUserIdOrderByRemindAtAsc(uid), today, Reminder::getCreatedAt);
+            case "notes" -> src = onlyTodayIf(noteRepository.findByUserIdOrderByIsPinnedDescCreatedAtDesc(uid), today, Note::getCreatedAt);
+            case "contacts" -> src = onlyTodayIf(contactRepository.findByUserIdOrderByNameAsc(uid), today, Contact::getCreatedAt);
+            default -> src = List.of();
+        }
+        return new ArrayList<>(src);
+    }
+
+    private static <T> List<T> onlyTodayIf(List<T> list, boolean today,
+                                           java.util.function.Function<T, LocalDateTime> timestamp) {
+        if (!today) return list;
+        LocalDate d = LocalDate.now();
+        return list.stream()
+                .filter(x -> {
+                    LocalDateTime t = timestamp.apply(x);
+                    return t != null && d.isEqual(t.toLocalDate());
+                })
+                .toList();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void deleteGathered(String type, List<Object> items) {
+        if (items.isEmpty()) return;
+        switch (type) {
+            case "food_logs" -> foodLogRepository.deleteAll((List<FoodLog>) (List<?>) items);
+            case "workouts" -> workoutSessionRepository.deleteAll((List<WorkoutSession>) (List<?>) items);
+            case "diary" -> diaryEntryRepository.deleteAll((List<DiaryEntry>) (List<?>) items);
+            case "tasks" -> taskRepository.deleteAll((List<Task>) (List<?>) items);
+            case "reminders" -> reminderRepository.deleteAll((List<Reminder>) (List<?>) items);
+            case "notes" -> noteRepository.deleteAll((List<Note>) (List<?>) items);
+            case "contacts" -> contactRepository.deleteAll((List<Contact>) (List<?>) items);
+            default -> { }
+        }
+    }
+
+    private String normalizeEntityType(String raw) {
+        if (raw == null) return null;
+        return switch (raw.trim().toLowerCase()) {
+            case "tasks", "task", "tache", "taches", "tâche", "tâches" -> "tasks";
+            case "reminders", "reminder", "rappel", "rappels" -> "reminders";
+            case "notes", "note" -> "notes";
+            case "contacts", "contact" -> "contacts";
+            case "food_logs", "food", "foods", "repas", "meal", "meals" -> "food_logs";
+            case "diary", "journal", "diary_entries" -> "diary";
+            case "workouts", "workout", "sport", "seance", "seances", "séance", "séances" -> "workouts";
+            default -> null;
+        };
+    }
+
+    private String normalizeScope(String raw) {
+        return raw != null && raw.trim().equalsIgnoreCase("today") ? "today" : "all";
+    }
+
+    private String entityLabel(String type, int count) {
+        boolean plural = count > 1;
+        return switch (type) {
+            case "tasks" -> plural ? "taches" : "tache";
+            case "reminders" -> plural ? "rappels" : "rappel";
+            case "notes" -> plural ? "notes" : "note";
+            case "contacts" -> plural ? "contacts" : "contact";
+            case "food_logs" -> "repas";
+            case "diary" -> plural ? "entrees de journal" : "entree de journal";
+            case "workouts" -> plural ? "seances de sport" : "seance de sport";
+            default -> "elements";
+        };
+    }
+
+    private String scopeLabel(String scope) {
+        return "today".equals(scope) ? "d'aujourd'hui" : "au total";
     }
 
     @SuppressWarnings("unchecked")

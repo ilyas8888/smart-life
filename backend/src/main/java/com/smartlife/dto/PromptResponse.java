@@ -15,5 +15,8 @@ public class PromptResponse {
     private List<Map<String, Object>> foodLogsCreated;
     private List<Map<String, Object>> diaryEntriesCreated;
     private List<Map<String, Object>> workoutsCreated;
+    // Aperçu d'une demande de suppression en attente de confirmation (human-in-the-loop).
+    // Null tant qu'aucune suppression n'est demandée. Chaque entrée : {entityType, scope, count, label}.
+    private List<Map<String, Object>> pendingDeletion;
     private String rawAiResponse;
 }

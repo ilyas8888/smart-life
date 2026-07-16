@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Brain, CheckSquare, Bell, FileText, Users, LogOut,
-  Send, Sparkles, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon, BookOpen, Dumbbell, Menu, X, Lock, ShieldCheck, ExternalLink, Globe
+  Send, Sparkles, ChevronLeft, ChevronRight, Loader2, UtensilsCrossed, CalendarDays, Sun, Moon, BookOpen, Dumbbell, Menu, X, Lock, ShieldCheck, ExternalLink, Globe, Trash2, AlertTriangle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
@@ -117,6 +117,17 @@ export default function DashboardPage() {
       }
       toast.error('Erreur lors du traitement du prompt.')
     },
+  })
+
+  const confirmDeletionMutation = useMutation({
+    mutationFn: (deletions: Array<{ entity_type: string; scope: string }>) =>
+      api.post('/prompt/confirm-deletion', { deletions }).then((r) => r.data),
+    onSuccess: (data) => {
+      toast.success(data.summary || 'Suppression effectuee.')
+      promptMutation.reset()
+      queryClient.invalidateQueries()
+    },
+    onError: () => toast.error('Erreur lors de la suppression.'),
   })
 
   const requestAccessMutation = useMutation({
@@ -507,7 +518,52 @@ export default function DashboardPage() {
               </form>
               )}
 
-              {promptMutation.isSuccess && promptMutation.data && (
+              {promptMutation.isSuccess && promptMutation.data?.pendingDeletion?.length ? (
+                <div className="card mt-4 bg-amber-50 border-amber-200">
+                  <h3 className="font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                    <AlertTriangle size={16} />
+                    Confirmer la suppression
+                  </h3>
+                  <p className="text-amber-800 mb-3">{promptMutation.data.summary}</p>
+                  <ul className="mb-4 space-y-1 text-sm text-amber-900">
+                    {promptMutation.data.pendingDeletion.map((d: Record<string, unknown>, i: number) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <Trash2 size={13} className="text-amber-600 shrink-0" />
+                        <span>{String(d.count)} {String(d.label)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+                      onClick={() => promptMutation.reset()}
+                      disabled={confirmDeletionMutation.isPending}
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-primary flex items-center justify-center gap-2 !bg-red-600 hover:!bg-red-700"
+                      onClick={() =>
+                        confirmDeletionMutation.mutate(
+                          (promptMutation.data.pendingDeletion as Array<Record<string, string>>).map((d) => ({
+                            entity_type: String(d.entityType),
+                            scope: String(d.scope),
+                          }))
+                        )
+                      }
+                      disabled={confirmDeletionMutation.isPending}
+                    >
+                      {confirmDeletionMutation.isPending ? (
+                        <><Loader2 size={16} className="animate-spin" /> Suppression...</>
+                      ) : (
+                        <><Trash2 size={16} /> Confirmer la suppression</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : promptMutation.isSuccess && promptMutation.data && (
                 <div className="card mt-4 bg-green-50 border-green-100">
                   <h3 className="font-semibold text-green-800 mb-3 flex items-center gap-2">
                     <Sparkles size={16} />

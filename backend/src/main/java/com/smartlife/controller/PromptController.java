@@ -1,5 +1,6 @@
 package com.smartlife.controller;
 
+import com.smartlife.dto.DeletionConfirmRequest;
 import com.smartlife.dto.PromptRequest;
 import com.smartlife.dto.PromptResponse;
 import com.smartlife.model.User;
@@ -11,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/prompt")
@@ -27,5 +30,18 @@ public class PromptController {
             HttpServletRequest http) {
         entitlementService.checkAndConsume(user);
         return ResponseEntity.ok(aiService.processPrompt(request.getPrompt(), user, http.getRemoteAddr()));
+    }
+
+    /**
+     * Confirme une suppression proposee par l'assistant (human-in-the-loop).
+     * Ne consomme pas de credit IA : aucun appel au modele, juste l'action confirmee.
+     * La suppression est re-derivee et scopee a l'utilisateur cote service.
+     */
+    @PostMapping("/confirm-deletion")
+    public ResponseEntity<Map<String, Object>> confirmDeletion(
+            @RequestBody DeletionConfirmRequest request,
+            @AuthenticationPrincipal User user,
+            HttpServletRequest http) {
+        return ResponseEntity.ok(aiService.confirmDeletion(request.getDeletions(), user, http.getRemoteAddr()));
     }
 }
