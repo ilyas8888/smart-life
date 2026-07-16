@@ -10,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.util.retry.Retry;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -653,7 +655,22 @@ public class AiService {
                 .retrieve()
                 .bodyToMono(Map.class)
                 .timeout(Duration.ofSeconds(90))
+                // Un 429 (throttle du Space HF / limite de debit OpenAI) est transitoire :
+                // on retente jusqu'a 3 fois avec un backoff exponentiel (1s, 2s, 4s) plutot
+                // que de faire echouer la requete utilisateur.
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(1))
+                        .maxBackoff(Duration.ofSeconds(8))
+                        .filter(this::isRetryable)
+                        .doBeforeRetry(sig -> log.warn(
+                                "Appel ai-service {} en echec transitoire (tentative {}), retry...",
+                                path, sig.totalRetries() + 1)))
                 .block();
+    }
+
+    /** Vrai si l'erreur merite un retry : throttling (429) ou indisponibilite temporaire du Space (503). */
+    private boolean isRetryable(Throwable throwable) {
+        return throwable instanceof WebClientResponseException ex
+                && (ex.getStatusCode().value() == 429 || ex.getStatusCode().value() == 503);
     }
 
     private Task.Priority parsePriority(String p) {
